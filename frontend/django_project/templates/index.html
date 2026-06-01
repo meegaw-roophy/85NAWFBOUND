@@ -4,9 +4,37 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{{ title }}</title>
+    <style>
+      body { font-family: Arial, sans-serif; line-height: 1.6; margin: 1.5rem; }
+      h1 { color: #1f4e79; }
+      section { margin-bottom: 1.25rem; }
+      code, pre { background: #f4f4f4; padding: 0.2rem 0.4rem; border-radius: 4px; }
+      ul { margin-top: 0.25rem; }
+    </style>
   </head>
   <body>
-    <h1>Welcome to VEKTRA</h1>
-    <p>This is a Django placeholder UI. Replace with your chosen frontend stack.</p>
+    <h1>VEKTRA Dashboard</h1>
+    <p>This Django placeholder is now a working UI surface for the FastAPI backend.</p>
+    <section>
+      <h2>Backend</h2>
+      <p>FastAPI is available at <code>http://localhost:8000</code>.</p>
+      <p>Use these example routes:</p>
+      <ul>
+        <li><code>POST /api/v1/auth/register</code></li>
+        <li><code>POST /api/v1/auth/token</code></li>
+        <li><code>GET /api/v1/users/me</code></li>
+        <li><code>POST /api/v1/users/{user_id}/snapshots</code></li>
+        <li><code>POST /api/v1/users/{user_id}/reports/generate</code></li>
+      </ul>
+    </section>
+    <section>
+      <h2>Frontend</h2>
+      <p>This is a Django templates placeholder. You can keep it or swap it for React/Next.js later.</p>
+      <p>Run the frontend from <code>frontend/django_project</code> with Django's dev server.</p>
+    </section>
+    <section>
+      <h2>Local repo</h2>
+      <p>The project repo is initialized locally and mirrored to <code>C:\Users\Admin\Documents\GitHub\85NAWFBOUND</code>.</p>
+    </section>
   </body>
 </html>

@@ -9,8 +9,9 @@ Structure:
 - `ai/` — AI integration notes (Claude)
 - `payments/` — payment integrations (Stripe, M-Pesa)
 
-Next steps: install dependencies, init git, configure Postgres, and choose frontend framework.
+Next steps: install dependencies, configure Postgres, and choose whether to keep Django or replace it with React/Next.js.
 Helpful notes:
+- The local Git repository is already initialized and mirrored to `C:\Users\Admin\Documents\GitHub\85NAWFBOUND`.
 - To run everything locally with Docker Compose:
 
 ```bash
@@ -20,16 +21,14 @@ docker compose up -d
 # frontend (Django placeholder): http://localhost:8001
 ```
 
-- Git is not installed in your environment here; install Git and run:
+- If you want to add a remote URL, use:
 
 ```bash
-cd C:/Users/Admin/Desktop/VEKTRA
-git init
-git add .
-git commit -m "Initial VEKTRA scaffold"
+git remote add origin <REMOTE_URL>
+git branch -M main
+git push -u origin main
 ```
 
-If you want, I can prepare a `git remote add` command for your chosen hosting provider.
 Dockerfiles:
 - `backend/Dockerfile` — builds the FastAPI app container used by `infra/docker-compose.yml`.
 - `frontend/django_project/Dockerfile` — builds the Django placeholder container.
