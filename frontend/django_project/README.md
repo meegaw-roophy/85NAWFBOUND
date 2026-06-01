@@ -12,7 +12,13 @@ pip install -r requirements.txt
 python manage.py runserver 8001
 ```
 
-The chosen frontend is now Django templates, with a simple dashboard page and backend health-check UI. You can keep this setup or migrate to React/Next.js later when Node is available.
+The chosen frontend is now Django templates, with a simple dashboard page and backend health-check UI. The current dashboard also supports:
+- register/login with JWT auth
+- snapshot creation
+- report generation
+- live snapshot history
+- live report history
+You can keep this setup or migrate to React/Next.js later when Node is available.
 
 The placeholder currently renders a simple dashboard page and is ready to keep as the frontend or replace with React/Next.js later.
 

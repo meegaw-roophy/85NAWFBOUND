@@ -64,6 +64,24 @@
 
       <section class="section-grid">
         <div class="card">
+          <h2>User info</h2>
+          <p id="current-user">Not logged in</p>
+          <button id="refresh-user">Refresh user</button>
+          <div id="user-status" class="status"></div>
+        </div>
+
+        <div class="card">
+          <h2>History</h2>
+          <p class="small-note">After login, snapshot and report history will auto-load for the current user.</p>
+          <h3>Snapshots</h3>
+          <ul id="snapshot-list"><li>No snapshots loaded.</li></ul>
+          <h3>Reports</h3>
+          <ul id="report-list"><li>No reports loaded.</li></ul>
+        </div>
+      </section>
+
+      <section class="section-grid">
+        <div class="card">
           <h2>Create snapshot</h2>
           <label for="snapshot-user-id">User ID</label>
           <input id="snapshot-user-id" placeholder="1" />
@@ -86,7 +104,7 @@
         </div>
       </section>
 
-      <section class="card full-width">
+        <section class="card full-width">
         <h2>API output</h2>
         <div id="api-output" class="output">API output will appear here.</div>
       </section>
@@ -96,9 +114,16 @@
       const backendBase = 'http://localhost:8000';
       const apiOutput = document.getElementById('api-output');
       let token = null;
+      let currentUser = null;
 
       function logOutput(message) {
         apiOutput.textContent = message;
+      }
+
+      function getAuthHeaders() {
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+        return headers;
       }
 
       async function fetchJson(url, options = {}) {
@@ -107,6 +132,64 @@
         if (!res.ok) throw new Error(JSON.stringify(data));
         return data;
       }
+
+      function setCurrentUser(user) {
+        currentUser = user;
+        document.getElementById('current-user').textContent = user ? `${user.username} (id: ${user.id})` : 'Not logged in';
+        if (user) {
+          document.getElementById('snapshot-user-id').value = user.id;
+          document.getElementById('report-user-id').value = user.id;
+        }
+      }
+
+      async function loadUserMe() {
+        if (!token) return;
+        try {
+          const data = await fetchJson(`${backendBase}/api/v1/users/me`, { headers: { Authorization: `Bearer ${token}` } });
+          setCurrentUser(data);
+          logOutput(JSON.stringify(data, null, 2));
+        } catch (error) {
+          logOutput(error.message);
+        }
+      }
+
+      async function loadSnapshots() {
+        const userId = document.getElementById('snapshot-user-id').value;
+        if (!userId) return;
+        try {
+          const data = await fetchJson(`${backendBase}/api/v1/users/${userId}/snapshots`, { headers: getAuthHeaders() });
+          const list = document.getElementById('snapshot-list');
+          list.innerHTML = data.length ? data.map(s => `<li><strong>${s.timestamp}</strong> mood=${s.mood} income=${s.income} expenses=${s.expenses}</li>`).join('') : '<li>No snapshots yet.</li>';
+        } catch (error) {
+          logOutput(error.message);
+        }
+      }
+
+      async function loadReports() {
+        const userId = document.getElementById('report-user-id').value;
+        if (!userId) return;
+        try {
+          const data = await fetchJson(`${backendBase}/api/v1/users/${userId}/reports`, { headers: getAuthHeaders() });
+          const list = document.getElementById('report-list');
+          list.innerHTML = data.length ? data.map(r => `<li><strong>${r.generated_at}</strong> summary=${r.summary_text || 'no summary'}</li>`).join('') : '<li>No reports yet.</li>';
+        } catch (error) {
+          logOutput(error.message);
+        }
+      }
+
+      document.getElementById('refresh-user').addEventListener('click', async () => {
+        const status = document.getElementById('user-status');
+        status.textContent = 'Refreshing...';
+        try {
+          await loadUserMe();
+          await loadSnapshots();
+          await loadReports();
+          status.textContent = 'User refreshed';
+        } catch (error) {
+          status.textContent = 'Error';
+          logOutput(error.message);
+        }
+      });
 
       document.getElementById('check-health').addEventListener('click', async () => {
         const result = document.getElementById('health-result');
@@ -130,10 +213,11 @@
         try {
           const data = await fetchJson(`${backendBase}/api/v1/auth/register`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: getAuthHeaders(),
             body: JSON.stringify({ username, email, password }),
           });
           result.textContent = 'Registered';
+          setCurrentUser(data);
           logOutput(JSON.stringify(data, null, 2));
         } catch (error) {
           result.textContent = 'Error';
@@ -154,6 +238,9 @@
           });
           token = data.access_token;
           result.textContent = 'Logged in';
+          await loadUserMe();
+          await loadSnapshots();
+          await loadReports();
           logOutput(JSON.stringify(data, null, 2));
         } catch (error) {
           result.textContent = 'Error';
@@ -172,13 +259,11 @@
           const payload = { mood, income, expenses };
           const data = await fetchJson(`${backendBase}/api/v1/users/${userId}/snapshots`, {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': token ? `Bearer ${token}` : '',
-            },
+            headers: getAuthHeaders(),
             body: JSON.stringify(payload),
           });
           result.textContent = 'Snapshot saved';
+          await loadSnapshots();
           logOutput(JSON.stringify(data, null, 2));
         } catch (error) {
           result.textContent = 'Error';
@@ -193,13 +278,11 @@
         try {
           const data = await fetchJson(`${backendBase}/api/v1/users/${userId}/reports/generate`, {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': token ? `Bearer ${token}` : '',
-            },
+            headers: getAuthHeaders(),
             body: JSON.stringify({}),
           });
           result.textContent = 'Report generated';
+          await loadReports();
           logOutput(JSON.stringify(data, null, 2));
         } catch (error) {
           result.textContent = 'Error';
