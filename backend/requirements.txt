@@ -1,0 +1,17 @@
+fastapi
+uvicorn[standard]
+SQLAlchemy
+asyncpg
+alembic
+python-dotenv
+httpx
+stripe
+anthropic
+pytest
+pytest-asyncio
+python-jose[cryptography]
+passlib[bcrypt]
+bcrypt
+pydantic-settings
+email-validator
+python-multipart

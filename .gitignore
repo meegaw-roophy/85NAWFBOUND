@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.env
+.env.*
+
+# Virtualenv
+venv/
+.env/
+
+# Byte-compiled / optimized / DLL files
+*.so
+
+# VSCode
+.vscode/
+
+# Docker
+*.log
+
+# Node
+node_modules/
