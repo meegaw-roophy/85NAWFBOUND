@@ -12,7 +12,7 @@ Structure:
 Next steps: install dependencies, configure Postgres, and use the current Django templates frontend.
 Helpful notes:
 - The local Git repository is already initialized and mirrored to `C:\Users\Admin\Documents\GitHub\85NAWFBOUND`.
-- The frontend is now finalized as Django templates, and it includes a live health check for the FastAPI backend.
+- The frontend is now finalized as Django templates, and it includes a live health check plus auth/snapshot/report UI on the dashboard.
 - To run everything locally with Docker Compose:
 
 ```bash

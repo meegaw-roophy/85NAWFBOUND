@@ -5,62 +5,205 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{{ title }}</title>
     <style>
-      body { font-family: Arial, sans-serif; line-height: 1.6; margin: 1.5rem; background: #f6f8fb; color: #1f2937; }
-      .page { max-width: 900px; margin: auto; background: white; border-radius: 16px; padding: 2rem; box-shadow: 0 20px 40px rgba(15,23,42,0.08); }
-      h1 { color: #0f4c81; margin-bottom: 0.25rem; }
-      h2 { color: #1f3f6f; margin-top: 1.5rem; }
+      body { font-family: Inter, Arial, sans-serif; line-height: 1.6; margin: 0; background: #eff2f7; color: #112341; }
+      .page { max-width: 1040px; margin: 2rem auto; background: #ffffff; border-radius: 24px; padding: 2rem 2.5rem; box-shadow: 0 24px 60px rgba(15, 23, 42, 0.12); }
+      h1 { color: #143e6b; margin-bottom: 0.25rem; }
+      h2 { color: #1f4e79; margin-top: 1.75rem; }
       p { margin: 0.8rem 0; }
-      code { background: #eef2ff; padding: 0.15rem 0.35rem; border-radius: 4px; }
-      .status { margin-top: 0.5rem; font-weight: 600; }
-      .api-list { list-style: inside disc; margin-top: 0.5rem; }
-      .card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1rem; margin-top: 1rem; }
-      button { background: #2563eb; color: white; border: none; padding: 0.75rem 1.1rem; border-radius: 10px; cursor: pointer; font-size: 1rem; }
-      button:hover { background: #1d4ed8; }
-      #health-result { margin-top: 1rem; font-family: monospace; white-space: pre-wrap; }
+      code { background: #eef4ff; padding: 0.2rem 0.4rem; border-radius: 6px; }
+      .status { margin-top: 0.75rem; font-weight: 600; }
+      .card { background: #f8fbff; border: 1px solid #dbe7f5; border-radius: 18px; padding: 1.3rem; margin-top: 1rem; }
+      .row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+      .col { min-width: 0; }
+      label { display: block; margin-bottom: 0.35rem; font-size: 0.95rem; }
+      input, textarea, select { width: 100%; padding: 0.8rem 0.85rem; border-radius: 12px; border: 1px solid #d2dae6; font-size: 1rem; }
+      button { background: #1f57c9; color: white; border: none; padding: 0.85rem 1.2rem; border-radius: 12px; cursor: pointer; font-size: 1rem; margin-top: 0.5rem; }
+      button:hover { background: #1748b0; }
+      .section-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1.5rem; }
+      .full-width { grid-column: 1 / -1; }
+      .output { background: #0f172a; color: #e2e8f0; border-radius: 14px; padding: 1rem; white-space: pre-wrap; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace; min-height: 100px; overflow-x: auto; }
+      .small-note { color: #4b5563; font-size: 0.95rem; }
+      .hidden { display: none; }
     </style>
   </head>
   <body>
     <div class="page">
-      <h1>VEKTRA Frontend</h1>
-      <p>Frontend choice: <strong>Django templates</strong>. This is a lightweight, no-Node setup that runs with the current Docker stack.</p>
+      <h1>VEKTRA Dashboard</h1>
+      <p>Use this page to connect to the FastAPI backend and exercise auth, snapshots, and report generation right from the Django frontend.</p>
 
-      <section>
-        <h2>Backend connectivity</h2>
-        <p>Click the button to verify the FastAPI backend is reachable from the frontend.</p>
+      <section class="card">
+        <h2>Backend health</h2>
+        <p>Check that the backend is reachable from the frontend container.</p>
         <button id="check-health">Check backend health</button>
         <div id="health-result" class="status">Backend status will appear here.</div>
       </section>
 
-      <section>
-        <h2>API quick links</h2>
+      <section class="section-grid">
         <div class="card">
-          <p>Test the backend API directly:</p>
-          <ul class="api-list">
-            <li><code>POST /api/v1/auth/register</code></li>
-            <li><code>POST /api/v1/auth/token</code></li>
-            <li><code>GET /api/v1/users/me</code></li>
-            <li><code>POST /api/v1/users/{user_id}/snapshots</code></li>
-            <li><code>POST /api/v1/users/{user_id}/reports/generate</code></li>
-          </ul>
+          <h2>Register</h2>
+          <label for="register-username">Username</label>
+          <input id="register-username" placeholder="user1" />
+          <label for="register-email">Email</label>
+          <input id="register-email" placeholder="me@example.com" />
+          <label for="register-password">Password</label>
+          <input id="register-password" type="password" placeholder="password" />
+          <button id="register">Register</button>
+          <div id="register-result" class="status"></div>
+        </div>
+
+        <div class="card">
+          <h2>Login</h2>
+          <label for="login-username">Username</label>
+          <input id="login-username" placeholder="user1" />
+          <label for="login-password">Password</label>
+          <input id="login-password" type="password" placeholder="password" />
+          <button id="login">Login</button>
+          <div id="login-result" class="status"></div>
         </div>
       </section>
 
-      <section>
-        <h2>Local repo</h2>
-        <p>This project is initialized and mirrored to <code>C:\Users\Admin\Documents\GitHub\85NAWFBOUND</code>.</p>
+      <section class="section-grid">
+        <div class="card">
+          <h2>Create snapshot</h2>
+          <label for="snapshot-user-id">User ID</label>
+          <input id="snapshot-user-id" placeholder="1" />
+          <label for="snapshot-mood">Mood</label>
+          <input id="snapshot-mood" type="number" min="0" max="10" placeholder="7" />
+          <label for="snapshot-income">Income</label>
+          <input id="snapshot-income" type="number" step="0.01" placeholder="100" />
+          <label for="snapshot-expenses">Expenses</label>
+          <input id="snapshot-expenses" type="number" step="0.01" placeholder="20" />
+          <button id="snapshot-create">Save snapshot</button>
+          <div id="snapshot-result" class="status"></div>
+        </div>
+
+        <div class="card">
+          <h2>Generate report</h2>
+          <label for="report-user-id">User ID</label>
+          <input id="report-user-id" placeholder="1" />
+          <button id="report-generate">Generate report</button>
+          <div id="report-result" class="status"></div>
+        </div>
+      </section>
+
+      <section class="card full-width">
+        <h2>API output</h2>
+        <div id="api-output" class="output">API output will appear here.</div>
       </section>
     </div>
 
     <script>
-      document.getElementById('check-health').addEventListener('click', async function () {
+      const backendBase = 'http://localhost:8000';
+      const apiOutput = document.getElementById('api-output');
+      let token = null;
+
+      function logOutput(message) {
+        apiOutput.textContent = message;
+      }
+
+      async function fetchJson(url, options = {}) {
+        const res = await fetch(url, options);
+        const data = await res.json();
+        if (!res.ok) throw new Error(JSON.stringify(data));
+        return data;
+      }
+
+      document.getElementById('check-health').addEventListener('click', async () => {
         const result = document.getElementById('health-result');
         result.textContent = 'Checking...';
         try {
-          const response = await fetch('http://localhost:8000/');
-          const data = await response.json();
-          result.textContent = 'OK: ' + JSON.stringify(data, null, 2);
+          const data = await fetchJson(`${backendBase}/`);
+          result.textContent = 'OK';
+          logOutput(JSON.stringify(data, null, 2));
         } catch (error) {
-          result.textContent = 'Error: ' + error.message;
+          result.textContent = 'Error';
+          logOutput(error.message);
+        }
+      });
+
+      document.getElementById('register').addEventListener('click', async () => {
+        const username = document.getElementById('register-username').value;
+        const email = document.getElementById('register-email').value;
+        const password = document.getElementById('register-password').value;
+        const result = document.getElementById('register-result');
+        result.textContent = 'Registering...';
+        try {
+          const data = await fetchJson(`${backendBase}/api/v1/auth/register`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, email, password }),
+          });
+          result.textContent = 'Registered';
+          logOutput(JSON.stringify(data, null, 2));
+        } catch (error) {
+          result.textContent = 'Error';
+          logOutput(error.message);
+        }
+      });
+
+      document.getElementById('login').addEventListener('click', async () => {
+        const username = document.getElementById('login-username').value;
+        const password = document.getElementById('login-password').value;
+        const result = document.getElementById('login-result');
+        result.textContent = 'Logging in...';
+        try {
+          const data = await fetchJson(`${backendBase}/api/v1/auth/token`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({ username, password }),
+          });
+          token = data.access_token;
+          result.textContent = 'Logged in';
+          logOutput(JSON.stringify(data, null, 2));
+        } catch (error) {
+          result.textContent = 'Error';
+          logOutput(error.message);
+        }
+      });
+
+      document.getElementById('snapshot-create').addEventListener('click', async () => {
+        const userId = document.getElementById('snapshot-user-id').value;
+        const mood = Number(document.getElementById('snapshot-mood').value) || null;
+        const income = Number(document.getElementById('snapshot-income').value) || null;
+        const expenses = Number(document.getElementById('snapshot-expenses').value) || null;
+        const result = document.getElementById('snapshot-result');
+        result.textContent = 'Saving snapshot...';
+        try {
+          const payload = { mood, income, expenses };
+          const data = await fetchJson(`${backendBase}/api/v1/users/${userId}/snapshots`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': token ? `Bearer ${token}` : '',
+            },
+            body: JSON.stringify(payload),
+          });
+          result.textContent = 'Snapshot saved';
+          logOutput(JSON.stringify(data, null, 2));
+        } catch (error) {
+          result.textContent = 'Error';
+          logOutput(error.message);
+        }
+      });
+
+      document.getElementById('report-generate').addEventListener('click', async () => {
+        const userId = document.getElementById('report-user-id').value;
+        const result = document.getElementById('report-result');
+        result.textContent = 'Generating report...';
+        try {
+          const data = await fetchJson(`${backendBase}/api/v1/users/${userId}/reports/generate`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': token ? `Bearer ${token}` : '',
+            },
+            body: JSON.stringify({}),
+          });
+          result.textContent = 'Report generated';
+          logOutput(JSON.stringify(data, null, 2));
+        } catch (error) {
+          result.textContent = 'Error';
+          logOutput(error.message);
         }
       });
     </script>
