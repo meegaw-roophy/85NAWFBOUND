@@ -5,36 +5,64 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{{ title }}</title>
     <style>
-      body { font-family: Arial, sans-serif; line-height: 1.6; margin: 1.5rem; }
-      h1 { color: #1f4e79; }
-      section { margin-bottom: 1.25rem; }
-      code, pre { background: #f4f4f4; padding: 0.2rem 0.4rem; border-radius: 4px; }
-      ul { margin-top: 0.25rem; }
+      body { font-family: Arial, sans-serif; line-height: 1.6; margin: 1.5rem; background: #f6f8fb; color: #1f2937; }
+      .page { max-width: 900px; margin: auto; background: white; border-radius: 16px; padding: 2rem; box-shadow: 0 20px 40px rgba(15,23,42,0.08); }
+      h1 { color: #0f4c81; margin-bottom: 0.25rem; }
+      h2 { color: #1f3f6f; margin-top: 1.5rem; }
+      p { margin: 0.8rem 0; }
+      code { background: #eef2ff; padding: 0.15rem 0.35rem; border-radius: 4px; }
+      .status { margin-top: 0.5rem; font-weight: 600; }
+      .api-list { list-style: inside disc; margin-top: 0.5rem; }
+      .card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1rem; margin-top: 1rem; }
+      button { background: #2563eb; color: white; border: none; padding: 0.75rem 1.1rem; border-radius: 10px; cursor: pointer; font-size: 1rem; }
+      button:hover { background: #1d4ed8; }
+      #health-result { margin-top: 1rem; font-family: monospace; white-space: pre-wrap; }
     </style>
   </head>
   <body>
-    <h1>VEKTRA Dashboard</h1>
-    <p>This Django placeholder is now a working UI surface for the FastAPI backend.</p>
-    <section>
-      <h2>Backend</h2>
-      <p>FastAPI is available at <code>http://localhost:8000</code>.</p>
-      <p>Use these example routes:</p>
-      <ul>
-        <li><code>POST /api/v1/auth/register</code></li>
-        <li><code>POST /api/v1/auth/token</code></li>
-        <li><code>GET /api/v1/users/me</code></li>
-        <li><code>POST /api/v1/users/{user_id}/snapshots</code></li>
-        <li><code>POST /api/v1/users/{user_id}/reports/generate</code></li>
-      </ul>
-    </section>
-    <section>
-      <h2>Frontend</h2>
-      <p>This is a Django templates placeholder. You can keep it or swap it for React/Next.js later.</p>
-      <p>Run the frontend from <code>frontend/django_project</code> with Django's dev server.</p>
-    </section>
-    <section>
-      <h2>Local repo</h2>
-      <p>The project repo is initialized locally and mirrored to <code>C:\Users\Admin\Documents\GitHub\85NAWFBOUND</code>.</p>
-    </section>
+    <div class="page">
+      <h1>VEKTRA Frontend</h1>
+      <p>Frontend choice: <strong>Django templates</strong>. This is a lightweight, no-Node setup that runs with the current Docker stack.</p>
+
+      <section>
+        <h2>Backend connectivity</h2>
+        <p>Click the button to verify the FastAPI backend is reachable from the frontend.</p>
+        <button id="check-health">Check backend health</button>
+        <div id="health-result" class="status">Backend status will appear here.</div>
+      </section>
+
+      <section>
+        <h2>API quick links</h2>
+        <div class="card">
+          <p>Test the backend API directly:</p>
+          <ul class="api-list">
+            <li><code>POST /api/v1/auth/register</code></li>
+            <li><code>POST /api/v1/auth/token</code></li>
+            <li><code>GET /api/v1/users/me</code></li>
+            <li><code>POST /api/v1/users/{user_id}/snapshots</code></li>
+            <li><code>POST /api/v1/users/{user_id}/reports/generate</code></li>
+          </ul>
+        </div>
+      </section>
+
+      <section>
+        <h2>Local repo</h2>
+        <p>This project is initialized and mirrored to <code>C:\Users\Admin\Documents\GitHub\85NAWFBOUND</code>.</p>
+      </section>
+    </div>
+
+    <script>
+      document.getElementById('check-health').addEventListener('click', async function () {
+        const result = document.getElementById('health-result');
+        result.textContent = 'Checking...';
+        try {
+          const response = await fetch('http://localhost:8000/');
+          const data = await response.json();
+          result.textContent = 'OK: ' + JSON.stringify(data, null, 2);
+        } catch (error) {
+          result.textContent = 'Error: ' + error.message;
+        }
+      });
+    </script>
   </body>
 </html>

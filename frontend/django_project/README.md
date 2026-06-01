@@ -12,7 +12,7 @@ pip install -r requirements.txt
 python manage.py runserver 8001
 ```
 
-Decide on your final frontend (Django templates, React, Next.js) before beta; I can scaffold the chosen stack next.
+The chosen frontend is now Django templates, with a simple dashboard page and backend health-check UI. You can keep this setup or migrate to React/Next.js later when Node is available.
 
 The placeholder currently renders a simple dashboard page and is ready to keep as the frontend or replace with React/Next.js later.
 

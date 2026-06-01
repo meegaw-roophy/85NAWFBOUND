@@ -9,16 +9,17 @@ Structure:
 - `ai/` — AI integration notes (Claude)
 - `payments/` — payment integrations (Stripe, M-Pesa)
 
-Next steps: install dependencies, configure Postgres, and choose whether to keep Django or replace it with React/Next.js.
+Next steps: install dependencies, configure Postgres, and use the current Django templates frontend.
 Helpful notes:
 - The local Git repository is already initialized and mirrored to `C:\Users\Admin\Documents\GitHub\85NAWFBOUND`.
+- The frontend is now finalized as Django templates, and it includes a live health check for the FastAPI backend.
 - To run everything locally with Docker Compose:
 
 ```bash
 cd infra
 docker compose up -d
 # backend: http://localhost:8000
-# frontend (Django placeholder): http://localhost:8001
+# frontend: http://localhost:8001
 ```
 
 - If you want to add a remote URL, use:
