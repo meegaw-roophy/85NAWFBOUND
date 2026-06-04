@@ -1,8 +1,10 @@
 import asyncio
 import json
+import logging
 from typing import List, Optional
-
 from app.core.config import settings
+
+logger = logging.getLogger(__name__)
 
 
 class AIClient:
@@ -41,7 +43,8 @@ class AIClient:
                 )
             )
             return response.content[0].text
-        except Exception:
+        except Exception as exc:
+            logger.error("Claude API call failed: %s", exc)
             return self._fallback_summary(snapshots, period_start, period_end)
 
     def _fallback_summary(self, snapshots: List[dict], period_start=None, period_end=None) -> str:

@@ -1,10 +1,21 @@
+import logging
 from passlib.context import CryptContext
 from datetime import datetime, timedelta
-from jose import jwt, JWTError
+from jose import jwt, JWTError, ExpiredSignatureError
 from typing import Optional
 from app.core.config import settings
 
+logger = logging.getLogger(__name__)
+
 pwd_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
+
+
+class TokenExpiredError(Exception):
+    pass
+
+
+class TokenInvalidError(Exception):
+    pass
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
@@ -22,9 +33,13 @@ def create_access_token(subject: str, expires_delta: Optional[timedelta] = None)
     return encoded_jwt
 
 
-def decode_access_token(token: str) -> Optional[dict]:
+def decode_access_token(token: str) -> dict:
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
         return payload
-    except JWTError:
-        return None
+    except ExpiredSignatureError:
+        logger.warning("Expired access token presented")
+        raise TokenExpiredError("Access token has expired")
+    except JWTError as exc:
+        logger.warning("Invalid access token: %s", exc)
+        raise TokenInvalidError("Invalid access token")

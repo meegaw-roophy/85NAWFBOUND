@@ -1,7 +1,15 @@
+import logging
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List, Optional
 from app.db.models import User, Snapshot, Report, Subscription, Goal, GoalStatus
+
+logger = logging.getLogger(__name__)
+
+ALLOWED_SUBSCRIPTION_FIELDS = {
+    "provider", "provider_customer_id", "plan", "active",
+}
 
 
 async def get_user_by_id(db: AsyncSession, user_id: int) -> Optional[User]:
@@ -12,7 +20,16 @@ async def get_user_by_id(db: AsyncSession, user_id: int) -> Optional[User]:
 async def create_snapshot(db: AsyncSession, user_id: int, snapshot_data: dict) -> Snapshot:
     snap = Snapshot(user_id=user_id, **snapshot_data)
     db.add(snap)
-    await db.commit()
+    try:
+        await db.commit()
+    except IntegrityError as exc:
+        await db.rollback()
+        logger.error("Integrity error creating snapshot for user %s: %s", user_id, exc)
+        raise
+    except SQLAlchemyError as exc:
+        await db.rollback()
+        logger.error("Database error creating snapshot for user %s: %s", user_id, exc)
+        raise
     await db.refresh(snap)
     return snap
 
@@ -20,7 +37,16 @@ async def create_snapshot(db: AsyncSession, user_id: int, snapshot_data: dict) -
 async def create_user(db: AsyncSession, username: str, email: str, password_hash: str) -> User:
     user = User(username=username, email=email, password_hash=password_hash)
     db.add(user)
-    await db.commit()
+    try:
+        await db.commit()
+    except IntegrityError as exc:
+        await db.rollback()
+        logger.error("Integrity error creating user %s: %s", username, exc)
+        raise
+    except SQLAlchemyError as exc:
+        await db.rollback()
+        logger.error("Database error creating user %s: %s", username, exc)
+        raise
     await db.refresh(user)
     return user
 
@@ -45,17 +71,29 @@ async def list_reports(db: AsyncSession, user_id: int, limit: int = 100) -> List
     return result.scalars().all()
 
 
-async def create_or_update_subscription(db: AsyncSession, user_id: int, subscription_data: dict) -> 'Subscription':
+async def create_or_update_subscription(db: AsyncSession, user_id: int, subscription_data: dict) -> Subscription:
     existing = await db.execute(select(Subscription).where(Subscription.user_id == user_id).where(Subscription.provider == subscription_data.get('provider', 'stripe')).limit(1))
     subscription = existing.scalars().first()
     if subscription:
         for key, value in subscription_data.items():
+            if key not in ALLOWED_SUBSCRIPTION_FIELDS:
+                logger.warning("Ignoring unknown subscription field: %s", key)
+                continue
             setattr(subscription, key, value)
         db.add(subscription)
     else:
         subscription = Subscription(user_id=user_id, **subscription_data)
         db.add(subscription)
-    await db.commit()
+    try:
+        await db.commit()
+    except IntegrityError as exc:
+        await db.rollback()
+        logger.error("Integrity error upserting subscription for user %s: %s", user_id, exc)
+        raise
+    except SQLAlchemyError as exc:
+        await db.rollback()
+        logger.error("Database error upserting subscription for user %s: %s", user_id, exc)
+        raise
     await db.refresh(subscription)
     return subscription
 
@@ -68,7 +106,16 @@ async def list_subscriptions(db: AsyncSession, user_id: int, limit: int = 50):
 async def create_report(db: AsyncSession, user_id: int, report_payload: dict) -> Report:
     rpt = Report(user_id=user_id, **report_payload)
     db.add(rpt)
-    await db.commit()
+    try:
+        await db.commit()
+    except IntegrityError as exc:
+        await db.rollback()
+        logger.error("Integrity error creating report for user %s: %s", user_id, exc)
+        raise
+    except SQLAlchemyError as exc:
+        await db.rollback()
+        logger.error("Database error creating report for user %s: %s", user_id, exc)
+        raise
     await db.refresh(rpt)
     return rpt
 

@@ -1,8 +1,11 @@
+import logging
 from typing import List, Dict, Any
 from sqlalchemy.ext.asyncio import AsyncSession
 from app import crud
 from app.services.ai_client import ai_client
 import datetime
+
+logger = logging.getLogger(__name__)
 
 
 async def generate_and_store_report(db: AsyncSession, user_id: int, period_start=None, period_end=None):
@@ -44,22 +47,26 @@ async def generate_and_store_report(db: AsyncSession, user_id: int, period_start
     )
 
     if count:
-        ai_summary = await ai_client.summarize_snapshots(
-            [
-                {
-                    "timestamp": s.timestamp.isoformat() if s.timestamp else None,
-                    "mood": s.mood,
-                    "income": s.income,
-                    "expenses": s.expenses,
-                    "focus": s.focus,
-                    "energy": s.energy,
-                }
-                for s in snaps
-            ],
-            period_start=range_start,
-            period_end=range_end,
-        )
-        summary_text = ai_summary or summary_text
+        try:
+            ai_summary = await ai_client.summarize_snapshots(
+                [
+                    {
+                        "timestamp": s.timestamp.isoformat() if s.timestamp else None,
+                        "mood": s.mood,
+                        "income": s.income,
+                        "expenses": s.expenses,
+                        "focus": s.focus,
+                        "energy": s.energy,
+                    }
+                    for s in snaps
+                ],
+                period_start=range_start,
+                period_end=range_end,
+            )
+            if ai_summary:
+                summary_text = ai_summary
+        except Exception as exc:
+            logger.error("AI summary generation failed for user %s: %s", user_id, exc)
 
     report_payload = {
         "period_start": period_start,

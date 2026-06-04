@@ -57,6 +57,11 @@ async def stripe_payment(
     if current_user.id != user_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not allowed")
     result = create_stripe_subscription(payload.customer_id or "", payload.price_id)
+    if result.get("status") == "failed":
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=result.get("reason", "Stripe payment failed"),
+        )
     return result
 
 
@@ -101,4 +106,9 @@ async def mpesa_payment(
     if current_user.id != user_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not allowed")
     result = initiate_mpesa_payment(payload.phone_number, payload.amount)
+    if result.get("status") == "failed":
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=result.get("reason", "M-Pesa payment failed"),
+        )
     return result
