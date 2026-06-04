@@ -7,9 +7,9 @@ import time
 from collections import defaultdict
 from typing import Dict, Tuple
 
-from fastapi import HTTPException, Request, status
+from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
-from starlette.responses import Response
+from starlette.responses import JSONResponse, Response
 
 # (ip, path) -> (request_count, window_start)
 _rate_store: Dict[Tuple[str, str], Tuple[int, float]] = defaultdict(lambda: (0, 0.0))
@@ -36,9 +36,9 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         else:
             count += 1
             if count > MAX_REQUESTS:
-                raise HTTPException(
-                    status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                    detail="Too many requests. Try again later.",
+                return JSONResponse(
+                    status_code=429,
+                    content={"detail": "Too many requests. Try again later."},
                 )
             _rate_store[key] = (count, window_start)
 
