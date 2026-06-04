@@ -5,6 +5,21 @@ from app.services.ai_client import ai_client
 import datetime
 
 
+def _serialize_snapshot(snap, *, include_id: bool = False) -> Dict[str, Any]:
+    """Convert a Snapshot ORM instance to a plain dict."""
+    d: Dict[str, Any] = {
+        "timestamp": snap.timestamp.isoformat() if snap.timestamp else None,
+        "mood": snap.mood,
+        "income": snap.income,
+        "expenses": snap.expenses,
+        "focus": snap.focus,
+        "energy": snap.energy,
+    }
+    if include_id:
+        d["id"] = snap.id
+    return d
+
+
 async def generate_and_store_report(db: AsyncSession, user_id: int, period_start=None, period_end=None):
     snaps = await crud.list_snapshots(db, user_id, limit=200)
     if period_start or period_end:
@@ -25,16 +40,7 @@ async def generate_and_store_report(db: AsyncSession, user_id: int, period_start
     }
 
     content = {
-        "snapshots": [
-            {
-                "id": s.id,
-                "timestamp": s.timestamp.isoformat() if s.timestamp else None,
-                "mood": s.mood,
-                "income": s.income,
-                "expenses": s.expenses,
-            }
-            for s in snaps
-        ],
+        "snapshots": [_serialize_snapshot(s, include_id=True) for s in snaps],
         "summary": summary,
     }
 
@@ -45,17 +51,7 @@ async def generate_and_store_report(db: AsyncSession, user_id: int, period_start
 
     if count:
         ai_summary = await ai_client.summarize_snapshots(
-            [
-                {
-                    "timestamp": s.timestamp.isoformat() if s.timestamp else None,
-                    "mood": s.mood,
-                    "income": s.income,
-                    "expenses": s.expenses,
-                    "focus": s.focus,
-                    "energy": s.energy,
-                }
-                for s in snaps
-            ],
+            [_serialize_snapshot(s) for s in snaps],
             period_start=range_start,
             period_end=range_end,
         )
