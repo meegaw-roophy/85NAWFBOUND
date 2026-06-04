@@ -8,9 +8,7 @@ class TestAIClientNoKey:
     def test_summarize_without_api_key(self):
         client = AIClient.__new__(AIClient)
         client.client = None
-        result = asyncio.get_event_loop().run_until_complete(
-            client.summarize_snapshots([{"mood": 5}])
-        )
+        result = asyncio.run(client.summarize_snapshots([{"mood": 5}]))
         assert "disabled" in result.lower() or "CLAUDE_API_KEY" in result
 
 
