@@ -13,11 +13,11 @@ from app.main import app
 client = TestClient(app)
 
 # register
-resp = client.post('/api/v1/auth/register', json={'username':'smoketest','email':'smoketest@example.com','password':'secret'})
+resp = client.post('/api/v1/auth/register', json={'username':'smoketest','email':'smoketest@example.com','password':'Secret123'})
 print('register', resp.status_code, resp.json() if resp.status_code==200 else resp.text)
 
 # token
-resp2 = client.post('/api/v1/auth/token', data={'username':'smoketest','password':'secret'})
+resp2 = client.post('/api/v1/auth/token', data={'username':'smoketest','password':'Secret123'})
 print('token', resp2.status_code, resp2.json() if resp2.status_code==200 else resp2.text)
 
 if resp2.status_code==200:
