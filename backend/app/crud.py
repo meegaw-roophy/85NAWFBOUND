@@ -1,7 +1,7 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List, Optional
-from app.db.models import User, Snapshot, Report, Subscription
+from app.db.models import User, Snapshot, Report, Subscription, Goal, GoalStatus
 
 
 async def get_user_by_id(db: AsyncSession, user_id: int) -> Optional[User]:
@@ -71,3 +71,45 @@ async def create_report(db: AsyncSession, user_id: int, report_payload: dict) ->
     await db.commit()
     await db.refresh(rpt)
     return rpt
+
+
+# --- Goals ---
+
+async def create_goal(db: AsyncSession, user_id: int, goal_data: dict) -> Goal:
+    goal = Goal(user_id=user_id, **goal_data)
+    db.add(goal)
+    await db.commit()
+    await db.refresh(goal)
+    return goal
+
+
+async def list_goals(db: AsyncSession, user_id: int, status: Optional[str] = None, limit: int = 100) -> List[Goal]:
+    query = select(Goal).where(Goal.user_id == user_id)
+    if status:
+        query = query.where(Goal.status == status)
+    query = query.order_by(Goal.created_at.desc()).limit(limit)
+    result = await db.execute(query)
+    return result.scalars().all()
+
+
+async def get_goal(db: AsyncSession, goal_id: int) -> Optional[Goal]:
+    result = await db.execute(select(Goal).where(Goal.id == goal_id))
+    return result.scalars().first()
+
+
+async def update_goal(db: AsyncSession, goal: Goal, update_data: dict) -> Goal:
+    for key, value in update_data.items():
+        if value is not None:
+            setattr(goal, key, value)
+    # Auto-complete if target reached
+    if goal.target_value and goal.current_value >= goal.target_value:
+        goal.status = GoalStatus.completed
+    db.add(goal)
+    await db.commit()
+    await db.refresh(goal)
+    return goal
+
+
+async def delete_goal(db: AsyncSession, goal: Goal) -> None:
+    await db.delete(goal)
+    await db.commit()

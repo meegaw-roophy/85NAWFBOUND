@@ -1,56 +1,87 @@
 # VEKTRA
 
-VEKTRA — personal and business progress tracking app (backend FastAPI).
+VEKTRA — personal and business progress tracking app with AI-powered insights.
 
-Structure:
-- `backend/` — FastAPI app and infra
-- `frontend/` — frontend app (TBD; Django/React)
-- `infra/` — docker-compose, postgres
-- `ai/` — AI integration notes (Claude)
-- `payments/` — payment integrations (Stripe, M-Pesa)
+## Structure
 
-Next steps: install dependencies, configure Postgres, and use the current Django templates frontend.
-Helpful notes:
-- The local Git repository is already initialized and mirrored to `C:\Users\Admin\Documents\GitHub\85NAWFBOUND`.
-- The frontend is now finalized as Django templates, and it includes a live health check plus auth/snapshot/report UI on the dashboard.
-- To run everything locally with Docker Compose:
+- `backend/` — FastAPI REST API (auth, snapshots, goals, reports, payments, analytics)
+- `frontend/` — Django templates dashboard with Chart.js visualizations
+- `infra/` — Docker Compose (Postgres, backend, frontend)
+- `ai/` — AI integration (Anthropic Claude for report generation)
+- `payments/` — Payment integrations (Stripe subscriptions, M-Pesa STK push)
+
+## Quick Start
 
 ```bash
 cd infra
+cp .env.example .env   # fill in secrets
 docker compose up -d
 # backend: http://localhost:8000
 # frontend: http://localhost:8001
 ```
 
-- If you want to add a remote URL, use:
+## API Routes
 
-```bash
-git remote add origin <REMOTE_URL>
-git branch -M main
-git push -u origin main
-```
-
-Dockerfiles:
-- `backend/Dockerfile` — builds the FastAPI app container used by `infra/docker-compose.yml`.
-- `frontend/django_project/Dockerfile` — builds the Django placeholder container.
-
-API routes available locally:
+### Auth
 - `POST /api/v1/auth/register` — create a new user
 - `POST /api/v1/auth/token` — obtain a Bearer token
-- `GET /api/v1/users/me` — verify the current authenticated user
-- `POST /api/v1/users/{user_id}/snapshots` — add a snapshot
+- `GET /api/v1/users/me` — current authenticated user
+- `PATCH /api/v1/users/me` — update profile (username, email)
+- `POST /api/v1/users/me/password` — change password
+
+### Snapshots
+- `POST /api/v1/users/{user_id}/snapshots` — add a snapshot (mood, energy, focus, income, expenses, savings)
 - `GET /api/v1/users/{user_id}/snapshots` — list user snapshots
+
+### Goals
+- `POST /api/v1/users/{user_id}/goals` — create a goal
+- `GET /api/v1/users/{user_id}/goals` — list goals (filter by `?status=active|completed|paused|cancelled`)
+- `GET /api/v1/users/{user_id}/goals/{goal_id}` — get a single goal
+- `PATCH /api/v1/users/{user_id}/goals/{goal_id}` — update goal progress/status
+- `DELETE /api/v1/users/{user_id}/goals/{goal_id}` — delete a goal
+
+### Reports
 - `POST /api/v1/users/{user_id}/reports` — create a report record
 - `GET /api/v1/users/{user_id}/reports` — list saved reports
-- `POST /api/v1/users/{user_id}/reports/generate` — generate a report from snapshot history
-- `POST /api/v1/users/{user_id}/subscriptions` — create or update a subscription record
-- `GET /api/v1/users/{user_id}/subscriptions` — list user subscriptions
-- `POST /api/v1/users/{user_id}/payments/stripe` — simulate a Stripe payment placeholder
-- `POST /api/v1/users/{user_id}/payments/mpesa` — simulate an M-Pesa payment placeholder
+- `POST /api/v1/users/{user_id}/reports/generate` — generate AI-powered report from snapshot history
 
-The AI report generator will use `CLAUDE_API_KEY` when configured, otherwise it falls back to a structured summary.
+### Analytics
+- `GET /api/v1/users/{user_id}/analytics/summary?days=30` — dashboard analytics (mood trends, finances, goal progress)
 
-Run migrations helper:
+### Payments
+- `POST /api/v1/users/{user_id}/subscriptions` — create/update subscription
+- `GET /api/v1/users/{user_id}/subscriptions` — list subscriptions
+- `POST /api/v1/users/{user_id}/payments/stripe` — Stripe subscription payment
+- `POST /api/v1/users/{user_id}/payments/stripe/checkout` — Stripe Checkout session
+- `POST /api/v1/users/{user_id}/payments/mpesa` — M-Pesa STK push payment
+- `POST /api/v1/webhooks/stripe` — Stripe webhook handler
+
+### System
+- `GET /api/v1/health` — health check
+
+## Features
+
+- **Goal Tracking**: Set financial, wellness, career, education, and fitness goals with progress tracking and auto-completion
+- **Mood & Energy Tracking**: Daily snapshots with 0-10 scales for mood, energy, and focus
+- **Financial Tracking**: Income, expenses, and savings per snapshot with trend analysis
+- **AI Reports**: Claude-powered analysis of your snapshot history with actionable insights
+- **Dashboard Analytics**: Chart.js visualizations — mood trends, income vs expenses, goal progress bars
+- **Stripe Payments**: Subscription management via Stripe Checkout and webhooks
+- **M-Pesa Payments**: Mobile money integration for East African users
+- **Security**: Random JWT secrets, password strength validation, rate limiting, CORS enforcement
+
+## Environment Variables
+
+See `backend/.env.example` and `infra/.env.example` for full list.
+
+Key variables:
+- `SECRET_KEY` — JWT signing key (auto-generated if unset)
+- `DATABASE_URL` — PostgreSQL connection string
+- `CLAUDE_API_KEY` — Anthropic API key for AI reports
+- `STRIPE_API_KEY` — Stripe secret key
+- `STRIPE_WEBHOOK_SECRET` — Stripe webhook signing secret
+
+## Migrations
 
 ```bash
 chmod +x scripts/run_migrations.sh
