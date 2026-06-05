@@ -1,6 +1,7 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, JSON, Float, Boolean
+from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, JSON, Float, Boolean, Enum as SAEnum
 from sqlalchemy.orm import declarative_base, relationship
 import datetime
+import enum
 
 Base = declarative_base()
 
@@ -16,6 +17,7 @@ class User(Base):
     snapshots = relationship('Snapshot', back_populates='user')
     reports = relationship('Report', back_populates='user')
     subscriptions = relationship('Subscription', back_populates='user')
+    goals = relationship('Goal', back_populates='user')
 
 
 class Snapshot(Base):
@@ -60,3 +62,37 @@ class Subscription(Base):
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
     user = relationship('User', back_populates='subscriptions')
+
+
+class GoalCategory(str, enum.Enum):
+    financial = "financial"
+    wellness = "wellness"
+    career = "career"
+    education = "education"
+    fitness = "fitness"
+    custom = "custom"
+
+
+class GoalStatus(str, enum.Enum):
+    active = "active"
+    completed = "completed"
+    paused = "paused"
+    cancelled = "cancelled"
+
+
+class Goal(Base):
+    __tablename__ = 'goals'
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
+    title = Column(String(255), nullable=False)
+    description = Column(String, nullable=True)
+    category = Column(SAEnum(GoalCategory), default=GoalCategory.custom, nullable=False)
+    status = Column(SAEnum(GoalStatus), default=GoalStatus.active, nullable=False)
+    target_value = Column(Float, nullable=True)
+    current_value = Column(Float, default=0.0)
+    unit = Column(String(50), nullable=True)  # e.g., "$", "kg", "hours"
+    deadline = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+
+    user = relationship('User', back_populates='goals')
