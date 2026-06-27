@@ -1,0 +1,438 @@
+<link rel="stylesheet" href="css/style.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<div id="app">
+
+  <!-- SCREEN 1: SPLASH -->
+  <div id="splash">
+    <div class="splash-logo">VEKTRA</div>
+    <div class="splash-tagline">Vector = Magnitude × Direction</div>
+    <div class="splash-loader"></div>
+  </div>
+
+  <!-- SCREEN 2: WELCOME -->
+  <div id="welcome">
+    <div class="welcome-logo">VEKTRA</div>
+    <div class="welcome-subtitle">Vector = Magnitude × Direction</div>
+    <div class="welcome-headline">Know your <span>trajectory.</span> Own your path.</div>
+    <div class="welcome-desc">Track what matters. Measure what moves. Get the harsh truth your progress deserves.</div>
+    <button class="btn-primary" onclick="goTo('register')">Get Started</button>
+    <button class="btn-secondary" onclick="goTo('login')">I already have an account</button>
+  </div>
+
+<!-- SCREEN 3: REGISTER -->
+<div id="register" style="display:none;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:2rem;">
+  
+  <div class="welcome-logo" style="margin-bottom:4px">VEKTRA</div>
+  <div style="font-size:13px;color:var(--text-muted);margin-bottom:36px">Create your account</div>
+
+  <div style="width:100%;max-width:320px">
+    
+    <div style="margin-bottom:16px">
+      <label style="font-size:12px;color:var(--text-secondary);letter-spacing:0.08em;text-transform:uppercase;display:block;margin-bottom:6px">Full Name</label>
+      <input id="reg-name" type="text" placeholder="Elvis Obulemire" style="width:100%;padding:14px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:15px;outline:none;font-family:var(--font)">
+    </div>
+
+    <div style="margin-bottom:16px">
+      <label style="font-size:12px;color:var(--text-secondary);letter-spacing:0.08em;text-transform:uppercase;display:block;margin-bottom:6px">Username</label>
+      <input id="reg-username" type="text" placeholder="roophy" style="width:100%;padding:14px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:15px;outline:none;font-family:var(--font)">
+    </div>
+
+    <div style="margin-bottom:16px">
+      <label style="font-size:12px;color:var(--text-secondary);letter-spacing:0.08em;text-transform:uppercase;display:block;margin-bottom:6px">Email</label>
+      <input id="reg-email" type="email" placeholder="you@email.com" style="width:100%;padding:14px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:15px;outline:none;font-family:var(--font)">
+    </div>
+
+    <div style="margin-bottom:24px">
+      <label style="font-size:12px;color:var(--text-secondary);letter-spacing:0.08em;text-transform:uppercase;display:block;margin-bottom:6px">Password</label>
+      <input id="reg-password" type="password" placeholder="Min 8 chars + symbol" style="width:100%;padding:14px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:15px;outline:none;font-family:var(--font)">
+    </div>
+
+    <div id="reg-error" style="display:none;color:var(--danger);font-size:13px;margin-bottom:16px;text-align:center"></div>
+
+    <button class="btn-primary" onclick="register()">Create Account</button>
+    
+    <div style="text-align:center;margin-top:20px;font-size:14px;color:var(--text-muted)">
+      Already have an account? 
+      <span onclick="goTo('login')" style="color:var(--accent);cursor:pointer">Sign in</span>
+    </div>
+
+  </div>
+</div>
+
+<!-- ONBOARDING STEP 1: NORTH STAR -->
+<div id="onboard-1" style="display:none;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:2rem;">
+  
+  <div style="width:100%;max-width:320px">
+    
+    <div style="text-align:center;margin-bottom:2rem">
+      <div style="font-size:11px;color:var(--text-muted);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:8px">Step 1 of 3</div>
+      <div style="display:flex;gap:6px;justify-content:center;margin-bottom:24px">
+        <div style="height:3px;width:60px;background:var(--accent);border-radius:2px"></div>
+        <div style="height:3px;width:60px;background:var(--border);border-radius:2px"></div>
+        <div style="height:3px;width:60px;background:var(--border);border-radius:2px"></div>
+      </div>
+      <div style="font-size:26px;font-weight:700;margin-bottom:8px">What's your <span style="background:linear-gradient(135deg,#6c63ff,#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">North Star?</span></div>
+      <div style="font-size:14px;color:var(--text-secondary);line-height:1.6">The one thing you're building toward. Be specific. Include a deadline.</div>
+    </div>
+
+    <div class="text-field" style="margin-bottom:16px">
+      <label>Your primary goal</label>
+      <textarea id="ob-goal" placeholder="e.g. Become the youngest black self-made billionaire from Kenya by age 21" style="min-height:100px"></textarea>
+    </div>
+
+    <div class="text-field" style="margin-bottom:24px">
+      <label>Deadline</label>
+      <input type="date" id="ob-deadline" style="width:100%;padding:12px 14px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;font-family:var(--font);outline:none">
+    </div>
+
+    <div id="ob1-error" style="display:none;color:var(--danger);font-size:13px;margin-bottom:12px;text-align:center"></div>
+
+    <button class="btn-primary" onclick="onboardStep1()">Set My North Star →</button>
+    <div style="text-align:center;margin-top:16px">
+      <span onclick="goTo('dashboard')" style="font-size:13px;color:var(--text-muted);cursor:pointer">Skip for now</span>
+    </div>
+  </div>
+</div>
+
+<!-- ONBOARDING STEP 2: FINANCIAL BASELINE -->
+<div id="onboard-2" style="display:none;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:2rem;">
+  
+  <div style="width:100%;max-width:320px">
+    
+    <div style="text-align:center;margin-bottom:2rem">
+      <div style="font-size:11px;color:var(--text-muted);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:8px">Step 2 of 3</div>
+      <div style="display:flex;gap:6px;justify-content:center;margin-bottom:24px">
+        <div style="height:3px;width:60px;background:var(--accent);border-radius:2px"></div>
+        <div style="height:3px;width:60px;background:var(--accent);border-radius:2px"></div>
+        <div style="height:3px;width:60px;background:var(--border);border-radius:2px"></div>
+      </div>
+      <div style="font-size:26px;font-weight:700;margin-bottom:8px">Where are you <span style="background:linear-gradient(135deg,#6c63ff,#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">starting from?</span></div>
+      <div style="font-size:14px;color:var(--text-secondary);line-height:1.6">Your current net worth — everything you own minus everything you owe. Be honest. This is your baseline.</div>
+    </div>
+
+    <div class="number-field" style="margin-bottom:16px">
+      <label>Current net worth</label>
+      <input type="number" id="ob-networth" placeholder="0" style="width:100%;padding:12px 14px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;font-family:var(--font);outline:none">
+    </div>
+
+    <div class="number-field" style="margin-bottom:24px">
+      <label>Liquid capital (cash available now)</label>
+      <input type="number" id="ob-capital" placeholder="0" style="width:100%;padding:12px 14px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;font-family:var(--font);outline:none">
+    </div>
+
+    <div id="ob2-error" style="display:none;color:var(--danger);font-size:13px;margin-bottom:12px;text-align:center"></div>
+
+    <button class="btn-primary" onclick="onboardStep2()">Continue →</button>
+    <div style="text-align:center;margin-top:16px">
+      <span onclick="goTo('onboard-1')" style="font-size:13px;color:var(--text-muted);cursor:pointer">← Back</span>
+    </div>
+  </div>
+</div>
+
+<!-- ONBOARDING STEP 3: PREFERENCES -->
+<div id="onboard-3" style="display:none;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:2rem;">
+  
+  <div style="width:100%;max-width:320px">
+    
+    <div style="text-align:center;margin-bottom:2rem">
+      <div style="font-size:11px;color:var(--text-muted);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:8px">Step 3 of 3</div>
+      <div style="display:flex;gap:6px;justify-content:center;margin-bottom:24px">
+        <div style="height:3px;width:60px;background:var(--accent);border-radius:2px"></div>
+        <div style="height:3px;width:60px;background:var(--accent);border-radius:2px"></div>
+        <div style="height:3px;width:60px;background:var(--accent);border-radius:2px"></div>
+      </div>
+      <div style="font-size:26px;font-weight:700;margin-bottom:8px">How should VEKTRA <span style="background:linear-gradient(135deg,#6c63ff,#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">talk to you?</span></div>
+      <div style="font-size:14px;color:var(--text-secondary);line-height:1.6">Your reports will match your preferred tone. You can change this anytime.</div>
+    </div>
+
+    <div style="margin-bottom:1.5rem">
+      <label style="font-size:12px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.08em;display:block;margin-bottom:10px">Report tone</label>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div id="tone-harsh" onclick="selectTone('Harsh')" style="padding:14px;border:1px solid var(--border);border-radius:var(--radius-sm);cursor:pointer;transition:all .2s">
+          <div style="font-weight:600;font-size:14px">Harsh 🔥</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:2px">Brutally direct. No softening. Call out failures clearly.</div>
+        </div>
+        <div id="tone-balanced" onclick="selectTone('Balanced')" style="padding:14px;border:1px solid var(--accent);border-radius:var(--radius-sm);cursor:pointer;background:rgba(108,99,255,0.1);transition:all .2s">
+          <div style="font-weight:600;font-size:14px">Balanced ⚖️</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:2px">Honest but constructive. Balance wins with areas to improve.</div>
+        </div>
+        <div id="tone-gentle" onclick="selectTone('Gentle')" style="padding:14px;border:1px solid var(--border);border-radius:var(--radius-sm);cursor:pointer;transition:all .2s">
+          <div style="font-weight:600;font-size:14px">Gentle 🌱</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:2px">Encouraging. Frame challenges as opportunities.</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="ob3-error" style="display:none;color:var(--danger);font-size:13px;margin-bottom:12px;text-align:center"></div>
+
+    <button class="btn-primary" onclick="onboardStep3()">Launch VEKTRA 🚀</button>
+    <div style="text-align:center;margin-top:16px">
+      <span onclick="goTo('onboard-2')" style="font-size:13px;color:var(--text-muted);cursor:pointer">← Back</span>
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN: LOGIN -->
+<div id="login" style="display:none;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:2rem;">
+  
+  <div class="welcome-logo" style="margin-bottom:4px">VEKTRA</div>
+  <div style="font-size:13px;color:var(--text-muted);margin-bottom:36px">Welcome back</div>
+
+  <div style="width:100%;max-width:320px">
+
+    <div style="margin-bottom:16px">
+      <label style="font-size:12px;color:var(--text-secondary);letter-spacing:0.08em;text-transform:uppercase;display:block;margin-bottom:6px">Username</label>
+      <input id="login-username" type="text" placeholder="roophy" style="width:100%;padding:14px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:15px;outline:none;font-family:var(--font)">
+    </div>
+
+    <div style="margin-bottom:24px">
+      <label style="font-size:12px;color:var(--text-secondary);letter-spacing:0.08em;text-transform:uppercase;display:block;margin-bottom:6px">Password</label>
+      <input id="login-password" type="password" placeholder="Your password" style="width:100%;padding:14px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:15px;outline:none;font-family:var(--font)">
+    </div>
+
+    <div id="login-error" style="display:none;color:var(--danger);font-size:13px;margin-bottom:16px;text-align:center"></div>
+
+    <button class="btn-primary" onclick="login()">Sign In</button>
+
+    <div style="text-align:center;margin-top:20px;font-size:14px;color:var(--text-muted)">
+      Don't have an account? 
+      <span onclick="goTo('register')" style="color:var(--accent);cursor:pointer">Get Started</span>
+    </div>
+
+  </div>
+</div>
+
+<!-- SCREEN 4: DASHBOARD -->
+<div id="dashboard" style="display:none;flex-direction:column;min-height:100vh;padding:1.5rem;max-width:420px;margin:0 auto">
+  
+  <!-- Header -->
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2rem;padding-top:1rem">
+    <div>
+      <div style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.1em">Good morning</div>
+      <div id="dash-username" style="font-size:20px;font-weight:700">—</div>
+    </div>
+    <div style="font-size:20px;cursor:pointer" onclick="goTo('welcome')">⚙</div>
+  </div>
+
+  <!-- VEKTRA Score Card -->
+  <div style="background:linear-gradient(135deg,#1a1a2e,#16213e);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem;margin-bottom:1rem;text-align:center">
+    <div style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px">VEKTRA Score</div>
+    <div id="dash-score" style="font-size:64px;font-weight:800;background:linear-gradient(135deg,#6c63ff,#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1">—</div>
+    <div style="font-size:12px;color:var(--text-muted);margin-top:4px">out of 100</div>
+    <div id="dash-trajectory" style="margin-top:12px;font-size:13px;color:var(--text-secondary)">Log today to update your score</div>
+  </div>
+
+  <!-- Quick Stats Row -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:1rem">
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:1rem">
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">NET WORTH</div>
+      <div id="dash-networth" style="font-size:18px;font-weight:700">—</div>
+    </div>
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:1rem">
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">RUNWAY</div>
+      <div id="dash-runway" style="font-size:18px;font-weight:700">— days</div>
+    </div>
+  </div>
+
+  <!-- North Star -->
+  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:1rem;margin-bottom:1.5rem">
+    <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px">NORTH STAR</div>
+    <div id="dash-northstar" style="font-size:14px;color:var(--text-secondary);font-style:italic">Not set yet</div>
+  </div>
+
+  <!-- Log Today Button -->
+  <button class="btn-primary" onclick="openDailyLog()">+ Log Today</button>
+
+  <!-- Weekly Report Button -->
+  <button class="btn-secondary" style="margin-top:12px" onclick="generateReport()">View Weekly Report</button>
+
+</div>
+
+<!-- SCREEN 5: DAILY LOG -->
+<div id="daily-log" style="display:none;flex-direction:column;min-height:100vh;padding:1.5rem;max-width:420px;margin:0 auto">
+
+  <!-- Header -->
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;padding-top:1rem">
+    <div>
+      <div style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.1em">Daily Log</div>
+      <div id="log-date" style="font-size:18px;font-weight:700">Today</div>
+    </div>
+    <div onclick="goTo('dashboard')" style="color:var(--text-muted);cursor:pointer;font-size:13px">← Back</div>
+  </div>
+
+  <!-- Progress bar -->
+  <div style="background:var(--bg-card);border-radius:4px;height:4px;margin-bottom:1.5rem;overflow:hidden">
+    <div id="log-progress" style="height:100%;background:linear-gradient(90deg,#6c63ff,#ec4899);width:0%;transition:width .3s"></div>
+  </div>
+
+  <!-- GROUP 1: MENTAL -->
+  <div class="log-group" id="group-mental">
+    <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:1rem">Mental & Emotional</div>
+
+    <div class="slider-field">
+      <div class="slider-label"><span>Mood</span><span id="val-mood">5</span></div>
+      <input type="range" min="1" max="10" value="5" id="inp-mood" oninput="updateSlider('mood')">
+    </div>
+
+    <div class="slider-field">
+      <div class="slider-label"><span>Energy</span><span id="val-energy">5</span></div>
+      <input type="range" min="1" max="10" value="5" id="inp-energy" oninput="updateSlider('energy')">
+    </div>
+
+    <div class="slider-field">
+      <div class="slider-label"><span>Focus Level</span><span id="val-focus">5</span></div>
+      <input type="range" min="1" max="10" value="5" id="inp-focus" oninput="updateSlider('focus')">
+    </div>
+
+    <div class="slider-field">
+      <div class="slider-label"><span>Social Battery</span><span id="val-social">5</span></div>
+      <input type="range" min="1" max="10" value="5" id="inp-social" oninput="updateSlider('social')">
+    </div>
+
+    <div class="slider-field">
+      <div class="slider-label"><span>Health Battery</span><span id="val-health">5</span></div>
+      <input type="range" min="1" max="10" value="5" id="inp-health" oninput="updateSlider('health')">
+    </div>
+
+    <div class="text-field">
+      <label>Uncomfortable moments today</label>
+      <textarea id="inp-uncomfortable" placeholder="What made you uneasy and how did you react?"></textarea>
+    </div>
+  </div>
+
+  <!-- GROUP 2: FINANCE -->
+  <div class="log-group" id="group-finance">
+    <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:1rem">Finance</div>
+
+    <div class="number-field">
+      <label>Daily Income <span style="color:var(--text-muted)">(${currentUser?.currency || 'KES'})</span></label>
+      <input type="number" id="inp-income" placeholder="0" min="0">
+    </div>
+
+    <div class="number-field">
+      <label>Expenses</label>
+      <input type="number" id="inp-expenses" placeholder="0" min="0">
+    </div>
+
+    <div class="number-field">
+      <label>Saved / Invested</label>
+      <input type="number" id="inp-savings" placeholder="0" min="0">
+    </div>
+
+    <div class="text-field">
+      <label>Any emergency? <span style="color:var(--text-muted)">(optional)</span></label>
+      <input type="text" id="inp-emergency" placeholder="Unexpected expense — describe it">
+    </div>
+  </div>
+
+  <!-- GROUP 3: GOALS -->
+  <div class="log-group" id="group-goals">
+    <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:1rem">Goals & Decisions</div>
+
+    <div class="text-field">
+      <label>Tomorrow's main goal</label>
+      <input type="text" id="inp-tomorrow" placeholder="The one thing you must do tomorrow">
+    </div>
+
+    <div style="margin-bottom:1rem">
+      <label style="font-size:13px;color:var(--text-secondary);display:block;margin-bottom:8px">Did you hit yesterday's goal?</label>
+      <div style="display:flex;gap:10px">
+        <button id="btn-hit-yes" onclick="setGoalHit(true)" style="flex:1;padding:10px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;font-family:var(--font);font-size:14px">✓ Yes</button>
+        <button id="btn-hit-no" onclick="setGoalHit(false)" style="flex:1;padding:10px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;font-family:var(--font);font-size:14px">✗ No</button>
+      </div>
+    </div>
+
+    <div class="text-field">
+      <label>Best decision today</label>
+      <input type="text" id="inp-best" placeholder="Best call you made">
+    </div>
+
+    <div class="text-field">
+      <label>Worst decision today</label>
+      <input type="text" id="inp-worst" placeholder="Biggest mistake or regret">
+    </div>
+
+    <div class="text-field">
+      <label>What did you avoid and why?</label>
+      <textarea id="inp-avoided" placeholder="Tasks you dodged + plan to do them"></textarea>
+    </div>
+  </div>
+
+  <!-- GROUP 4: BODY -->
+  <div class="log-group" id="group-body">
+    <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:1rem">Body & Health</div>
+
+    <div class="slider-field">
+      <div class="slider-label"><span>Sleep Hours</span><span id="val-sleep">7</span></div>
+      <input type="range" min="0" max="12" step="0.5" value="7" id="inp-sleep" oninput="updateSlider('sleep')">
+    </div>
+
+    <div class="number-field">
+      <label>Screen Time (hours)</label>
+      <input type="number" id="inp-screen" placeholder="0" min="0" max="24" step="0.5">
+    </div>
+
+    <div class="text-field">
+      <label>Diet / how body felt</label>
+      <textarea id="inp-diet" placeholder="What you ate + how your body felt"></textarea>
+    </div>
+  </div>
+
+  <!-- GROUP 5: GROWTH -->
+  <div class="log-group" id="group-growth">
+    <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:1rem">Learning & Growth</div>
+
+    <div class="text-field">
+      <label>Skills learned today</label>
+      <textarea id="inp-skills" placeholder="New knowledge or skill gained"></textarea>
+    </div>
+
+    <div class="text-field">
+      <label>New ideas / thoughts</label>
+      <textarea id="inp-ideas" placeholder="Capture ideas before they disappear"></textarea>
+    </div>
+
+    <div class="text-field">
+      <label>Gratitude line</label>
+      <input type="text" id="inp-gratitude" placeholder="One thing you're grateful for">
+    </div>
+
+    <div class="text-field">
+      <label>Funny line 😄</label>
+      <input type="text" id="inp-funny" placeholder="Something that made you laugh">
+    </div>
+  </div>
+
+  <!-- GROUP 6: PERFORMANCE -->
+  <div class="log-group" id="group-performance">
+    <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:1rem">Performance & Focus</div>
+
+    <div class="slider-field">
+      <div class="slider-label"><span>Focus Hours (deep work)</span><span id="val-focushours">0</span></div>
+      <input type="range" min="0" max="12" step="0.5" value="0" id="inp-focushours" oninput="updateSlider('focushours')">
+    </div>
+
+    <div class="slider-field">
+      <div class="slider-label"><span>Environment Rating</span><span id="val-env">5</span></div>
+      <input type="range" min="1" max="10" value="5" id="inp-env" oninput="updateSlider('env')">
+    </div>
+
+    <div class="text-field">
+      <label>Focus hours on specific task</label>
+      <input type="number" id="inp-oppcost" placeholder="Hours on low value tasks" min="0" step="0.5">
+    </div>
+  </div>
+
+  <!-- Submit -->
+  <div style="margin-top:1.5rem;margin-bottom:3rem">
+    <div id="log-error" style="display:none;color:var(--danger);font-size:13px;margin-bottom:12px;text-align:center"></div>
+    <button class="btn-primary" onclick="submitLog()">Submit Today's Log 🔥</button>
+  </div>
+
+</div>
+
+</div>
+
+<script src="js/app.js"></script>

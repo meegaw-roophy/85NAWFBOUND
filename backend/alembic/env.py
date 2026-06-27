@@ -11,7 +11,12 @@ config = context.config
 # Interpret the config file for Python logging.
 fileConfig(config.config_file_name)
 
-target_metadata = None
+import sys
+import os
+sys.path.append(os.getcwd())
+
+from app.db.models import Base
+target_metadata = Base.metadata
 
 def run_migrations_offline():
     url = os.getenv('DATABASE_URL') or config.get_main_option('sqlalchemy.url')

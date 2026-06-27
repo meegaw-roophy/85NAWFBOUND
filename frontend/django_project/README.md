@@ -18,6 +18,11 @@ The chosen frontend is now Django templates, with a simple dashboard page and ba
 - report generation
 - live snapshot history
 - live report history
+- subscription management
+- Stripe / M-Pesa payment placeholders
+- payment history tracking
+- simulated payment webhook status updates
+- webhook receiver endpoints for Stripe and M-Pesa
 You can keep this setup or migrate to React/Next.js later when Node is available.
 
 The placeholder currently renders a simple dashboard page and is ready to keep as the frontend or replace with React/Next.js later.

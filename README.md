@@ -30,6 +30,8 @@ git branch -M main
 git push -u origin main
 ```
 
+The frontend dashboard now supports authentication, snapshot creation, report generation, subscription management, payment placeholders for Stripe/M-Pesa, and payment history tracking.
+
 Dockerfiles:
 - `backend/Dockerfile` — builds the FastAPI app container used by `infra/docker-compose.yml`.
 - `frontend/django_project/Dockerfile` — builds the Django placeholder container.
@@ -45,8 +47,13 @@ API routes available locally:
 - `POST /api/v1/users/{user_id}/reports/generate` — generate a report from snapshot history
 - `POST /api/v1/users/{user_id}/subscriptions` — create or update a subscription record
 - `GET /api/v1/users/{user_id}/subscriptions` — list user subscriptions
-- `POST /api/v1/users/{user_id}/payments/stripe` — simulate a Stripe payment placeholder
-- `POST /api/v1/users/{user_id}/payments/mpesa` — simulate an M-Pesa payment placeholder
+- `POST /api/v1/users/{user_id}/payments/stripe` — start a Stripe payment flow
+- `POST /api/v1/users/{user_id}/payments/mpesa` — start an M-Pesa payment flow
+- `GET /api/v1/users/{user_id}/payments` — list payment history for a user
+- `POST /api/v1/webhooks/stripe` — Stripe webhook receiver
+- `POST /api/v1/webhooks/mpesa` — M-Pesa webhook receiver
+
+Set `STRIPE_WEBHOOK_SECRET` in your `.env` to validate Stripe event signatures.
 
 The AI report generator will use `CLAUDE_API_KEY` when configured, otherwise it falls back to a structured summary.
 

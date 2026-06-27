@@ -2,6 +2,7 @@ fastapi
 uvicorn[standard]
 SQLAlchemy
 asyncpg
+aiosqlite
 alembic
 python-dotenv
 httpx

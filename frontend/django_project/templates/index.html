@@ -7,7 +7,7 @@
     <style>
       body { font-family: Inter, Arial, sans-serif; line-height: 1.6; margin: 0; background: #eff2f7; color: #112341; }
       .page { max-width: 1040px; margin: 2rem auto; background: #ffffff; border-radius: 24px; padding: 2rem 2.5rem; box-shadow: 0 24px 60px rgba(15, 23, 42, 0.12); }
-      h1 { color: #143e6b; margin-bottom: 0.25rem; }
+      h1 { color: #15f1d4; margin-bottom: 0.25rem; }
       h2 { color: #1f4e79; margin-top: 1.75rem; }
       p { margin: 0.8rem 0; }
       code { background: #eef4ff; padding: 0.2rem 0.4rem; border-radius: 6px; }
@@ -77,6 +77,10 @@
           <ul id="snapshot-list"><li>No snapshots loaded.</li></ul>
           <h3>Reports</h3>
           <ul id="report-list"><li>No reports loaded.</li></ul>
+          <h3>Subscriptions</h3>
+          <ul id="subscription-list"><li>No subscriptions loaded.</li></ul>
+          <h3>Payments</h3>
+          <ul id="payment-list"><li>No payments loaded.</li></ul>
         </div>
       </section>
 
@@ -104,7 +108,54 @@
         </div>
       </section>
 
-        <section class="card full-width">
+      <section class="section-grid">
+        <div class="card">
+          <h2>Subscription</h2>
+          <label for="subscription-provider">Provider</label>
+          <select id="subscription-provider">
+            <option value="stripe">Stripe</option>
+            <option value="mpesa">M-Pesa</option>
+          </select>
+          <label for="subscription-customer">Customer / Phone</label>
+          <input id="subscription-customer" placeholder="cust_123 or +254700000000" />
+          <label for="subscription-plan">Plan</label>
+          <input id="subscription-plan" placeholder="basic" />
+          <button id="subscription-create">Create / Update subscription</button>
+          <div id="subscription-result" class="status"></div>
+        </div>
+
+        <div class="card">
+          <h2>Payments</h2>
+          <label for="payment-user-id">User ID</label>
+          <input id="payment-user-id" placeholder="1" />
+          <label for="stripe-customer-id">Stripe customer ID</label>
+          <input id="stripe-customer-id" placeholder="cust_123" />
+          <label for="stripe-price-id">Stripe price ID</label>
+          <input id="stripe-price-id" placeholder="price_1" />
+          <button id="stripe-pay">Pay with Stripe</button>
+          <hr />
+          <label for="mpesa-phone">M-Pesa phone</label>
+          <input id="mpesa-phone" placeholder="+254700000000" />
+          <label for="mpesa-amount">M-Pesa amount</label>
+          <input id="mpesa-amount" type="number" step="0.01" placeholder="10.00" />
+          <button id="mpesa-pay">Pay with M-Pesa</button>
+          <hr />
+          <h3>Simulate webhook</h3>
+          <label for="webhook-payment-id">Payment ID</label>
+          <input id="webhook-payment-id" placeholder="123" />
+          <label for="webhook-status">Webhook status</label>
+          <select id="webhook-status">
+            <option value="succeeded">succeeded</option>
+            <option value="failed">failed</option>
+            <option value="pending">pending</option>
+          </select>
+          <button id="webhook-update">Update payment status</button>
+          <div id="webhook-result" class="status"></div>
+          <div id="payment-result" class="status"></div>
+        </div>
+      </section>
+
+      <section class="card full-width">
         <h2>API output</h2>
         <div id="api-output" class="output">API output will appear here.</div>
       </section>
@@ -139,6 +190,7 @@
         if (user) {
           document.getElementById('snapshot-user-id').value = user.id;
           document.getElementById('report-user-id').value = user.id;
+          document.getElementById('payment-user-id').value = user.id;
         }
       }
 
@@ -177,6 +229,115 @@
         }
       }
 
+      async function loadSubscriptions() {
+        const userId = document.getElementById('snapshot-user-id').value;
+        if (!userId) return;
+        try {
+          const data = await fetchJson(`${backendBase}/api/v1/users/${userId}/subscriptions`, { headers: getAuthHeaders() });
+          const list = document.getElementById('subscription-list');
+          list.innerHTML = data.length ? data.map(s => `<li><strong>${s.provider}</strong> plan=${s.plan} status=${s.active ? 'active' : 'inactive'}</li>`).join('') : '<li>No subscriptions yet.</li>';
+        } catch (error) {
+          logOutput(error.message);
+        }
+      }
+
+      async function loadPayments() {
+        const userId = document.getElementById('payment-user-id').value;
+        if (!userId) return;
+        try {
+          const data = await fetchJson(`${backendBase}/api/v1/users/${userId}/payments`, { headers: getAuthHeaders() });
+          const list = document.getElementById('payment-list');
+          list.innerHTML = data.length ? data.map(p => `<li><strong>${p.created_at}</strong> ${p.provider} ${p.status} ${p.provider_customer_id ? '(' + p.provider_customer_id + ')' : ''} amount=${p.amount ?? 'n/a'} ${p.currency || ''}</li>`).join('') : '<li>No payments yet.</li>';
+        } catch (error) {
+          logOutput(error.message);
+        }
+      }
+
+      async function createSubscription() {
+        const userId = document.getElementById('snapshot-user-id').value;
+        const provider = document.getElementById('subscription-provider').value;
+        const customerId = document.getElementById('subscription-customer').value;
+        const plan = document.getElementById('subscription-plan').value;
+        const result = document.getElementById('subscription-result');
+        result.textContent = 'Creating subscription...';
+        try {
+          const data = await fetchJson(`${backendBase}/api/v1/users/${userId}/subscriptions`, {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ provider, provider_customer_id: customerId, plan, active: true }),
+          });
+          result.textContent = 'Subscription saved';
+          await loadSubscriptions();
+          logOutput(JSON.stringify(data, null, 2));
+        } catch (error) {
+          result.textContent = 'Error';
+          logOutput(error.message);
+        }
+      }
+
+      async function stripePay() {
+        const userId = document.getElementById('payment-user-id').value;
+        const customerId = document.getElementById('stripe-customer-id').value;
+        const priceId = document.getElementById('stripe-price-id').value;
+        const result = document.getElementById('payment-result');
+        result.textContent = 'Sending Stripe payment...';
+        try {
+          const data = await fetchJson(`${backendBase}/api/v1/users/${userId}/payments/stripe`, {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ customer_id: customerId, price_id: priceId }),
+          });
+          result.textContent = 'Stripe response received';
+          await loadPayments();
+          logOutput(JSON.stringify(data, null, 2));
+        } catch (error) {
+          result.textContent = 'Error';
+          logOutput(error.message);
+        }
+      }
+
+      async function mpesaPay() {
+        const userId = document.getElementById('payment-user-id').value;
+        const phone = document.getElementById('mpesa-phone').value;
+        const amount = Number(document.getElementById('mpesa-amount').value);
+        const result = document.getElementById('payment-result');
+        result.textContent = 'Sending M-Pesa payment...';
+        try {
+          const data = await fetchJson(`${backendBase}/api/v1/users/${userId}/payments/mpesa`, {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ phone_number: phone, amount }),
+          });
+          result.textContent = 'M-Pesa response received';
+          await loadPayments();
+          logOutput(JSON.stringify(data, null, 2));
+        } catch (error) {
+          result.textContent = 'Error';
+          logOutput(error.message);
+        }
+      }
+
+      async function updatePaymentStatus() {
+        const userId = document.getElementById('payment-user-id').value;
+        const paymentId = document.getElementById('webhook-payment-id').value;
+        const status = document.getElementById('webhook-status').value;
+        const result = document.getElementById('webhook-result');
+        result.textContent = 'Updating payment status...';
+        try {
+          const data = await fetchJson(`${backendBase}/api/v1/users/${userId}/payments/${paymentId}/status`, {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ status, external_response: { simulated_webhook: true } }),
+          });
+          result.textContent = 'Payment status updated';
+          await loadPayments();
+          logOutput(JSON.stringify(data, null, 2));
+        } catch (error) {
+          result.textContent = 'Error';
+          logOutput(error.message);
+        }
+      }
+
       document.getElementById('refresh-user').addEventListener('click', async () => {
         const status = document.getElementById('user-status');
         status.textContent = 'Refreshing...';
@@ -184,6 +345,8 @@
           await loadUserMe();
           await loadSnapshots();
           await loadReports();
+          await loadSubscriptions();
+          await loadPayments();
           status.textContent = 'User refreshed';
         } catch (error) {
           status.textContent = 'Error';
@@ -241,6 +404,8 @@
           await loadUserMe();
           await loadSnapshots();
           await loadReports();
+          await loadSubscriptions();
+          await loadPayments();
           logOutput(JSON.stringify(data, null, 2));
         } catch (error) {
           result.textContent = 'Error';
@@ -288,6 +453,22 @@
           result.textContent = 'Error';
           logOutput(error.message);
         }
+      });
+
+      document.getElementById('subscription-create').addEventListener('click', async () => {
+        await createSubscription();
+      });
+
+      document.getElementById('stripe-pay').addEventListener('click', async () => {
+        await stripePay();
+      });
+
+      document.getElementById('mpesa-pay').addEventListener('click', async () => {
+        await mpesaPay();
+      });
+
+      document.getElementById('webhook-update').addEventListener('click', async () => {
+        await updatePaymentStatus();
       });
     </script>
   </body>
