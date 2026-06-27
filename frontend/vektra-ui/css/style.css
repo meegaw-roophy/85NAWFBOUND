@@ -276,3 +276,107 @@ input[type="range"] {
 .engine-bar {
   margin-bottom: .75rem;
 }
+
+/* ── MOBILE RESPONSIVENESS ── */
+@media (max-width: 480px) {
+  
+  /* Welcome screen */
+  .welcome-headline {
+    font-size: 26px;
+  }
+
+  .welcome-desc {
+    font-size: 14px;
+  }
+
+  /* Dashboard */
+  #dashboard {
+    padding: 1rem;
+  }
+
+  /* Daily log */
+  #daily-log {
+    padding: 1rem;
+  }
+
+  /* Reports */
+  #reports {
+    padding: 1rem;
+  }
+
+  /* Buttons full width on mobile */
+  .btn-primary, .btn-secondary {
+    max-width: 100%;
+  }
+
+  /* Splash logo smaller on mobile */
+  .splash-logo {
+    font-size: 40px;
+  }
+
+  /* Score number smaller on mobile */
+  #dash-score {
+    font-size: 52px;
+  }
+}
+
+/* ── SCROLLING ── */
+#daily-log, #reports, #dashboard {
+  overflow-y: auto;
+  padding-bottom: 2rem;
+}
+
+/* ── INPUT FOCUS STATES ── */
+.text-field input:focus,
+.text-field textarea:focus,
+.number-field input:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+
+/* ── SMOOTH SCREEN TRANSITIONS ── */
+#app > div {
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ── MOBILE LAYOUT FIX ── */
+#app {
+  width: 100%;
+  min-height: 100vh;
+  position: relative;
+}
+
+#app > div {
+  width: 100%;
+}
+
+/* Center content on larger screens, full width on mobile */
+#dashboard,
+#daily-log,
+#reports {
+  max-width: 480px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* Screens that should be full viewport centered */
+#splash,
+#welcome,
+#register,
+#login,
+#onboard-1,
+#onboard-2,
+#onboard-3 {
+  width: 100%;
+  min-height: 100vh;
+}
+
+html, body {
+  width: 100%;
+  overflow-x: hidden;
+}
