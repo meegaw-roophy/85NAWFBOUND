@@ -215,7 +215,7 @@
       <div style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.1em">Good morning</div>
       <div id="dash-username" style="font-size:20px;font-weight:700">—</div>
     </div>
-    <div style="font-size:20px;cursor:pointer" onclick="logout()">⚙ Sign out</div>
+    <div style="font-size:20px;cursor:pointer" onclick="openProfile()">⚙</div>
   </div>
 
   <!-- VEKTRA Score Card -->
@@ -498,6 +498,68 @@
 
   <!-- Regenerate -->
   <button class="btn-secondary" style="margin-bottom:3rem" onclick="loadReport()">↺ Regenerate Report</button>
+
+</div>
+
+<!-- SCREEN: PROFILE -->
+<div id="profile" style="display:none;flex-direction:column;min-height:100vh;padding:1.5rem;max-width:420px;margin:0 auto">
+
+  <!-- Header -->
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;padding-top:1rem">
+    <div>
+      <div style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.1em">Profile</div>
+      <div id="profile-username" style="font-size:18px;font-weight:700">—</div>
+    </div>
+    <div onclick="goTo('dashboard')" style="color:var(--text-muted);cursor:pointer;font-size:13px">← Back</div>
+  </div>
+
+  <!-- Tier Badge -->
+  <div style="background:linear-gradient(135deg,#1a1a2e,#16213e);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem;display:flex;justify-content:space-between;align-items:center">
+    <div>
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">CURRENT PLAN</div>
+      <div id="profile-tier" style="font-size:18px;font-weight:700;color:var(--accent)">Free</div>
+    </div>
+    <button onclick="goTo('welcome')" style="padding:8px 16px;background:linear-gradient(135deg,#6c63ff,#ec4899);border:none;border-radius:var(--radius-sm);color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font)">Upgrade</button>
+  </div>
+
+  <!-- Stats Row -->
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:1rem">
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:.75rem;text-align:center">
+      <div style="font-size:10px;color:var(--text-muted);margin-bottom:4px">STREAK</div>
+      <div id="profile-streak" style="font-size:20px;font-weight:700">—</div>
+    </div>
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:.75rem;text-align:center">
+      <div style="font-size:10px;color:var(--text-muted);margin-bottom:4px">SCORE</div>
+      <div id="profile-score" style="font-size:20px;font-weight:700">—</div>
+    </div>
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:.75rem;text-align:center">
+      <div style="font-size:10px;color:var(--text-muted);margin-bottom:4px">LOGS</div>
+      <div id="profile-logs" style="font-size:20px;font-weight:700">—</div>
+    </div>
+  </div>
+
+  <!-- Update North Star -->
+  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
+    <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">North Star</div>
+    <textarea id="profile-northstar" style="width:100%;padding:12px 14px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;font-family:var(--font);outline:none;resize:vertical;min-height:80px"></textarea>
+  </div>
+
+  <!-- Feedback Tone -->
+  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
+    <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">Report Tone</div>
+    <div style="display:flex;gap:8px">
+      <button id="ptone-harsh" onclick="setProfileTone('Harsh')" style="flex:1;padding:10px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;font-family:var(--font);font-size:13px">🔥 Harsh</button>
+      <button id="ptone-balanced" onclick="setProfileTone('Balanced')" style="flex:1;padding:10px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;font-family:var(--font);font-size:13px">⚖️ Balanced</button>
+      <button id="ptone-gentle" onclick="setProfileTone('Gentle')" style="flex:1;padding:10px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;font-family:var(--font);font-size:13px">🌱 Gentle</button>
+    </div>
+  </div>
+
+  <!-- Save Button -->
+  <div id="profile-success" style="display:none;color:var(--success);font-size:13px;text-align:center;margin-bottom:12px">✓ Profile updated</div>
+  <button class="btn-primary" onclick="saveProfile()">Save Changes</button>
+
+  <!-- Sign Out -->
+  <button class="btn-secondary" style="margin-top:12px" onclick="logout()">Sign Out</button>
 
 </div>
 

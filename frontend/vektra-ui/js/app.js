@@ -520,3 +520,77 @@ function logout() {
   localStorage.removeItem('vektra_token');
   goTo('welcome');
 }
+
+// ── Profile ──
+let profileTone = 'Balanced';
+
+function setProfileTone(tone) {
+  profileTone = tone;
+  ['Harsh','Balanced','Gentle'].forEach(t => {
+    const el = document.getElementById(`ptone-${t.toLowerCase()}`);
+    if (el) {
+      el.style.background = t === tone ? 'rgba(108,99,255,0.2)' : 'transparent';
+      el.style.borderColor = t === tone ? 'var(--accent)' : 'var(--border)';
+      el.style.color = t === tone ? 'var(--text-primary)' : 'var(--text-secondary)';
+    }
+  });
+}
+
+async function openProfile() {
+  goTo('profile');
+
+  if (!currentUser) return;
+
+  document.getElementById('profile-username').textContent = currentUser.username || '—';
+  document.getElementById('profile-tier').textContent = currentUser.tier || 'Free';
+  document.getElementById('profile-northstar').value = currentUser.north_star || '';
+
+  // Set tone
+  profileTone = currentUser.preferred_feedback_tone || 'Balanced';
+  setProfileTone(profileTone);
+
+  // Load stats
+  try {
+    const res = await fetch(`${API}/api/v1/users/${currentUser.id}/snapshots`, {
+      headers: { 'Authorization': `Bearer ${authToken}` }
+    });
+    if (res.ok) {
+      const snapshots = await res.json();
+      const streak = calculateStreak(snapshots);
+      const latest = snapshots[0];
+      document.getElementById('profile-streak').textContent = streak > 0 ? `🔥 ${streak}` : '0';
+      document.getElementById('profile-score').textContent = latest?.vektra_score ? latest.vektra_score.toFixed(0) : '—';
+      document.getElementById('profile-logs').textContent = snapshots.length;
+    }
+  } catch(e) {}
+}
+
+async function saveProfile() {
+  if (!currentUser || !authToken) return;
+
+  const northStar = document.getElementById('profile-northstar').value.trim();
+  const successEl = document.getElementById('profile-success');
+  successEl.style.display = 'none';
+
+  try {
+    const res = await fetch(`${API}/api/v1/users/me`, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `Bearer ${authToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        north_star: northStar,
+        preferred_feedback_tone: profileTone,
+      })
+    });
+
+    if (res.ok) {
+      currentUser = await res.json();
+      successEl.style.display = 'block';
+      setTimeout(() => successEl.style.display = 'none', 3000);
+    }
+  } catch(e) {
+    console.log('Profile save error', e);
+  }
+}
