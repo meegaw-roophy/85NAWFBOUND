@@ -213,7 +213,7 @@
       <div style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.1em">Good morning</div>
       <div id="dash-username" style="font-size:20px;font-weight:700">—</div>
     </div>
-    <div style="font-size:20px;cursor:pointer" onclick="goTo('welcome')">⚙</div>
+    <div style="font-size:20px;cursor:pointer" onclick="logout()">⚙ Sign out</div>
   </div>
 
   <!-- VEKTRA Score Card -->
@@ -430,6 +430,63 @@
     <div id="log-error" style="display:none;color:var(--danger);font-size:13px;margin-bottom:12px;text-align:center"></div>
     <button class="btn-primary" onclick="submitLog()">Submit Today's Log 🔥</button>
   </div>
+
+</div>
+
+<!-- SCREEN: REPORTS -->
+<div id="reports" style="display:none;flex-direction:column;min-height:100vh;padding:1.5rem;max-width:420px;margin:0 auto">
+
+  <!-- Header -->
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;padding-top:1rem">
+    <div>
+      <div style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.1em">Weekly Report</div>
+      <div id="report-period" style="font-size:18px;font-weight:700">This Week</div>
+    </div>
+    <div onclick="goTo('dashboard')" style="color:var(--text-muted);cursor:pointer;font-size:13px">← Back</div>
+  </div>
+
+  <!-- Score Card -->
+  <div style="background:linear-gradient(135deg,#1a1a2e,#16213e);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem;margin-bottom:1rem;text-align:center">
+    <div style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px">Average VEKTRA Score</div>
+    <div id="report-score" style="font-size:56px;font-weight:800;background:linear-gradient(135deg,#6c63ff,#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1">—</div>
+    <div style="font-size:12px;color:var(--text-muted);margin-top:4px">out of 100</div>
+  </div>
+
+  <!-- Quick Stats -->
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:1rem">
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:.75rem;text-align:center">
+      <div style="font-size:10px;color:var(--text-muted);margin-bottom:4px">DAYS LOGGED</div>
+      <div id="report-days" style="font-size:20px;font-weight:700">—</div>
+    </div>
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:.75rem;text-align:center">
+      <div style="font-size:10px;color:var(--text-muted);margin-bottom:4px">CASH FLOW</div>
+      <div id="report-cashflow" style="font-size:16px;font-weight:700">—</div>
+    </div>
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:.75rem;text-align:center">
+      <div style="font-size:10px;color:var(--text-muted);margin-bottom:4px">GOALS HIT</div>
+      <div id="report-goals" style="font-size:20px;font-weight:700">—</div>
+    </div>
+  </div>
+
+  <!-- AI Narrative -->
+  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
+    <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">VEKTRA Analysis</div>
+    <div id="report-narrative" style="font-size:14px;color:var(--text-secondary);line-height:1.8;white-space:pre-wrap">Generating your report...</div>
+  </div>
+
+  <!-- Engine Breakdown -->
+  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
+    <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">Score Breakdown</div>
+    
+    <div class="engine-bar" id="bar-financial" data-label="Financial" data-color="#22c55e"></div>
+    <div class="engine-bar" id="bar-mental" data-label="Mental" data-color="#6c63ff"></div>
+    <div class="engine-bar" id="bar-execution" data-label="Execution" data-color="#ec4899"></div>
+    <div class="engine-bar" id="bar-body" data-label="Body" data-color="#f59e0b"></div>
+    <div class="engine-bar" id="bar-growth" data-label="Growth" data-color="#06b6d4"></div>
+  </div>
+
+  <!-- Regenerate -->
+  <button class="btn-secondary" style="margin-bottom:3rem" onclick="loadReport()">↺ Regenerate Report</button>
 
 </div>
 

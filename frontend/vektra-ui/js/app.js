@@ -5,14 +5,78 @@ function goTo(screen) {
   if (target) target.style.display = 'flex';
 }
 
-// ── Splash → Welcome transition ──
 window.addEventListener('load', () => {
   setTimeout(() => {
     const splash = document.getElementById('splash');
     splash.style.opacity = '0';
-    setTimeout(() => {
+    setTimeout(async () => {
       splash.style.display = 'none';
-      document.getElementById('welcome').style.display = 'flex';
+
+      // ── Check for saved token ──
+      const savedToken = localStorage.getItem('vektra_token');
+console.log('Saved token:', savedToken); // ADD THIS
+if (savedToken) {
+  authToken = savedToken;
+  try {
+    const res = await fetch(`${API}/api/v1/users/me`, {
+      headers: { 'Authorization': `Bearer ${authToken}` }
+    });
+    console.log('Auto-login status:', res.status); // ADD THIS
+    if (res.ok) {
+            currentUser = await res.json();
+            // Token still valid — go straight to dashboard
+            goTo('dashboard');
+            loadDashboard();
+            return;
+          } else {
+            // Token expired — clear it
+            localStorage.removeItem('vektra_token');
+            authToken = null;
+          }
+        } catch(e) {
+          localStorage.removeItem('vektra_token');
+          authToken = null;
+        }
+      }
+
+      window.addEventListener('load', () => {
+  const splash = document.getElementById('splash');
+  
+  setTimeout(() => {
+    splash.style.opacity = '0';
+    
+    setTimeout(async () => {
+      splash.style.display = 'none';
+
+      const savedToken = localStorage.getItem('vektra_token');
+      
+      if (savedToken) {
+        authToken = savedToken;
+        try {
+          const res = await fetch(`${API}/api/v1/users/me`, {
+            headers: { 'Authorization': `Bearer ${authToken}` }
+          });
+          
+          if (res.ok) {
+            currentUser = await res.json();
+            goTo('dashboard');
+            loadDashboard();
+            return; // stops here — welcome never shows
+          }
+        } catch(e) {}
+        
+        // Token invalid — clear it
+        localStorage.removeItem('vektra_token');
+        authToken = null;
+      }
+
+      // No valid session — show welcome
+      goTo('welcome');
+
+    }, 600);
+  }, 2000);
+});
+
     }, 600);
   }, 2000);
 });
@@ -180,25 +244,8 @@ async function loadDashboard() {
   }
 }
 
-// ── Generate report ──
 async function generateReport() {
-  if (!currentUser || !authToken) return;
-  try {
-    const res = await fetch(`${API}/api/v1/users/${currentUser.id}/reports/generate`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${authToken}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({})
-    });
-    if (res.ok) {
-      const report = await res.json();
-      alert('VEKTRA Report:\n\n' + report.summary_text);
-    }
-  } catch(e) {
-    console.log('Report error', e);
-  }
+  loadReport();
 }
 
 // ── Daily log helpers ──
@@ -371,4 +418,87 @@ async function onboardStep3() {
 
   goTo('dashboard');
   loadDashboard();
+}
+
+// ── Load and display report ──
+async function loadReport() {
+  goTo('reports');
+  document.getElementById('report-narrative').textContent = 'Generating your report...';
+
+  if (!currentUser || !authToken) return;
+
+  try {
+    // Generate fresh report
+    const res = await fetch(`${API}/api/v1/users/${currentUser.id}/reports/generate`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${authToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({})
+    });
+
+    if (!res.ok) return;
+    const report = await res.json();
+    const content = report.content || {};
+
+    // Score
+    document.getElementById('report-score').textContent =
+      report.vektra_score ? report.vektra_score.toFixed(0) : '—';
+
+    // Period
+    document.getElementById('report-period').textContent =
+      `${content.days_logged || 0} days logged`;
+
+    // Quick stats
+    document.getElementById('report-days').textContent =
+      `${content.days_logged || 0}/7`;
+    document.getElementById('report-cashflow').textContent =
+      content.net_cash_flow !== undefined ?
+      (content.net_cash_flow >= 0 ? '+' : '') + content.net_cash_flow : '—';
+    document.getElementById('report-goals').textContent =
+      content.goals_set > 0 ?
+      `${content.goals_hit}/${content.goals_set}` : '—';
+
+    // Cash flow color
+    const cfEl = document.getElementById('report-cashflow');
+    cfEl.style.color = content.net_cash_flow >= 0 ?
+      'var(--success)' : 'var(--danger)';
+
+    // Narrative
+    document.getElementById('report-narrative').textContent =
+      report.summary_text || 'No report generated yet.';
+
+    // Engine bars
+    renderEngineBar('bar-financial', 'Financial', content.avg_vektra_score || 50, '#22c55e');
+    renderEngineBar('bar-mental', 'Mental', content.avg_mood ? content.avg_mood * 10 : 50, '#6c63ff');
+    renderEngineBar('bar-execution', 'Execution', content.goal_hit_rate || 0, '#ec4899');
+    renderEngineBar('bar-body', 'Body', content.avg_sleep ? Math.min(100, content.avg_sleep / 9 * 100) : 50, '#f59e0b');
+    renderEngineBar('bar-growth', 'Growth', content.skills_count ? content.skills_count / 7 * 100 : 0, '#06b6d4');
+
+  } catch(e) {
+    document.getElementById('report-narrative').textContent = 'Could not load report. Try again.';
+  }
+}
+
+function renderEngineBar(id, label, score, color) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const pct = Math.round(Math.min(100, Math.max(0, score)));
+  el.innerHTML = `
+    <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-secondary);margin-bottom:4px">
+      <span>${label}</span><span style="font-weight:600;color:${color}">${pct}</span>
+    </div>
+    <div style="background:var(--bg-secondary);border-radius:4px;height:6px;overflow:hidden">
+      <div style="width:${pct}%;height:100%;background:${color};border-radius:4px;transition:width .6s"></div>
+    </div>
+  `;
+}
+
+// ── Logout ──
+function logout() {
+  authToken = null;
+  currentUser = null;
+  localStorage.removeItem('vektra_token');
+  goTo('welcome');
 }

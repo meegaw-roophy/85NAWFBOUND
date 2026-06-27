@@ -271,3 +271,8 @@ input[type="range"] {
   font-family: var(--font);
   outline: none;
 }
+
+/* ── ENGINE BARS ── */
+.engine-bar {
+  margin-bottom: .75rem;
+}
