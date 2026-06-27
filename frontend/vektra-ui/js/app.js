@@ -204,19 +204,36 @@ async function login() {
   }
 }
 
+// ── Calculate streak ──
+function calculateStreak(snapshots) {
+  if (!snapshots || snapshots.length === 0) return 0;
+  let streak = 0;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const loggedDates = snapshots.map(s => {
+    const d = new Date(s.timestamp);
+    d.setHours(0, 0, 0, 0);
+    return d.getTime();
+  });
+  const uniqueDates = [...new Set(loggedDates)].sort((a, b) => b - a);
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  if (uniqueDates[0] !== today.getTime() && uniqueDates[0] !== yesterday.getTime()) return 0;
+  let checkDate = uniqueDates[0];
+  for (let i = 0; i < uniqueDates.length; i++) {
+    if (uniqueDates[i] === checkDate) { streak++; checkDate -= 86400000; }
+    else break;
+  }
+  return streak;
+}
+
 // ── Load dashboard ──
 async function loadDashboard() {
   if (!currentUser) return;
 
-  // Set username
-  document.getElementById('dash-username').textContent = 
-    currentUser.username || 'User';
+  document.getElementById('dash-username').textContent = currentUser.username || 'User';
+  document.getElementById('dash-northstar').textContent = currentUser.north_star || 'Not set yet — update in profile';
 
-  // Set north star
-  document.getElementById('dash-northstar').textContent = 
-    currentUser.north_star || 'Not set yet — update in profile';
-
-  // Pull latest snapshot for score
   try {
     const res = await fetch(`${API}/api/v1/users/${currentUser.id}/snapshots`, {
       headers: { 'Authorization': `Bearer ${authToken}` }
@@ -225,18 +242,19 @@ async function loadDashboard() {
       const snapshots = await res.json();
       if (snapshots.length > 0) {
         const latest = snapshots[0];
+
+        const streak = calculateStreak(snapshots);
+        document.getElementById('dash-streak').textContent =
+          streak > 0 ? `🔥 ${streak} day${streak > 1 ? 's' : ''}` : '— Start your streak';
+
         const score = latest.vektra_score;
-        document.getElementById('dash-score').textContent = 
-          score ? score.toFixed(0) : '—';
-        document.getElementById('dash-runway').textContent = 
-          latest.survival_runway ? latest.survival_runway + ' days' : '— days';
-        document.getElementById('dash-networth').textContent = 
-          latest.current_net_worth ? 
+        document.getElementById('dash-score').textContent = score ? score.toFixed(0) : '—';
+        document.getElementById('dash-runway').textContent = latest.survival_runway ? latest.survival_runway + ' days' : '— days';
+        document.getElementById('dash-networth').textContent = latest.current_net_worth ?
           currentUser.currency + ' ' + latest.current_net_worth.toLocaleString() : '—';
-        document.getElementById('dash-trajectory').textContent = 
-          score >= 70 ? '🔥 Rising trajectory' : 
-          score >= 50 ? '→ Steady — push harder' : 
-          '⚠ Trajectory dropping';
+        document.getElementById('dash-trajectory').textContent =
+          score >= 70 ? '🔥 Rising trajectory' :
+          score >= 50 ? '→ Steady — push harder' : '⚠ Trajectory dropping';
       }
     }
   } catch(e) {
