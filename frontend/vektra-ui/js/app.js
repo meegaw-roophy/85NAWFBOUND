@@ -484,8 +484,15 @@ async function loadReport() {
       'var(--success)' : 'var(--danger)';
 
     // Narrative
-    document.getElementById('report-narrative').textContent =
-      report.summary_text || 'No report generated yet.';
+    // Format report narrative properly
+const raw = report.summary_text || 'No report generated yet.';
+const formatted = raw
+  .replace(/={3,}/g, '')  // remove === separators
+  .replace(/VEKTRA WEEKLY REPORT/g, '')  // remove title (already shown)
+  .replace(/\[Note:.*?\]/g, '')  // remove API note
+  .trim();
+
+document.getElementById('report-narrative').innerHTML = formatted.replace(/\n/g, '<br>');
 
     // Engine bars
     renderEngineBar('bar-financial', 'Financial', content.avg_vektra_score || 50, '#22c55e');
@@ -603,3 +610,17 @@ if ('serviceWorker' in navigator) {
       .catch(e => console.log('SW error', e));
   });
 }
+
+const raw = report.summary_text || 'No report generated yet.';
+const formatted = raw
+  .replace(/={3,}/g, '')
+  .replace(/VEKTRA WEEKLY REPORT/g, '')
+  .replace(/\[Note:.*?\]/g, '')
+  .replace(/TRAJECTORY STATUS:/g, '\n🎯 TRAJECTORY STATUS:')
+  .replace(/YOUR WINS THIS WEEK:/g, '\n\n🏆 YOUR WINS THIS WEEK:')
+  .replace(/SILENT KILLERS:/g, '\n\n⚠️ SILENT KILLERS:')
+  .replace(/THE NUMBERS DON\'T LIE:/g, '\n\n📊 THE NUMBERS DON\'T LIE:')
+  .replace(/NEXT WEEK DIRECTIVE:/g, '\n\n🔥 NEXT WEEK DIRECTIVE:')
+  .trim();
+
+document.getElementById('report-narrative').innerHTML = formatted.replace(/\n/g, '<br>');

@@ -380,3 +380,9 @@ html, body {
   width: 100%;
   overflow-x: hidden;
 }
+
+#report-narrative {
+  white-space: pre-wrap;
+  line-height: 1.9;
+  font-size: 14px;
+}
