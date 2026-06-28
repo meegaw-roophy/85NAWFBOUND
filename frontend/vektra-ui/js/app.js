@@ -594,3 +594,12 @@ async function saveProfile() {
     console.log('Profile save error', e);
   }
 }
+
+// ── Register service worker ──
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then(() => console.log('VEKTRA SW registered'))
+      .catch(e => console.log('SW error', e));
+  });
+}
