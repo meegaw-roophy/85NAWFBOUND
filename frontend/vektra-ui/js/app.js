@@ -1,3 +1,10 @@
+// ── API base URL ──
+const API = 'http://127.0.0.1:8000';
+
+// ── Token storage ──
+let authToken = null;
+let currentUser = null;
+
 // ── Screen navigation ──
 function goTo(screen) {
   document.querySelectorAll('#app > div').forEach(s => s.style.display = 'none');
@@ -5,88 +12,64 @@ function goTo(screen) {
   if (target) target.style.display = 'flex';
 }
 
+// ── Auto-login on page load ──
 window.addEventListener('load', () => {
+  const splash = document.getElementById('splash');
   setTimeout(() => {
-    const splash = document.getElementById('splash');
     splash.style.opacity = '0';
     setTimeout(async () => {
       splash.style.display = 'none';
-
-      // ── Check for saved token ──
       const savedToken = localStorage.getItem('vektra_token');
-console.log('Saved token:', savedToken); // ADD THIS
+console.log('Saved token:', savedToken);
+
 if (savedToken) {
   authToken = savedToken;
+
   try {
     const res = await fetch(`${API}/api/v1/users/me`, {
-      headers: { 'Authorization': `Bearer ${authToken}` }
-    });
-    console.log('Auto-login status:', res.status); // ADD THIS
-    if (res.ok) {
-            currentUser = await res.json();
-            // Token still valid — go straight to dashboard
-            goTo('dashboard');
-            loadDashboard();
-            return;
-          } else {
-            // Token expired — clear it
-            localStorage.removeItem('vektra_token');
-            authToken = null;
-          }
-        } catch(e) {
-          localStorage.removeItem('vektra_token');
-          authToken = null;
-        }
+      headers: {
+        'Authorization': `Bearer ${authToken}`
       }
+    });
 
-      window.addEventListener('load', () => {
-  const splash = document.getElementById('splash');
-  
-  setTimeout(() => {
-    splash.style.opacity = '0';
-    
-    setTimeout(async () => {
-      splash.style.display = 'none';
+    console.log('Auto-login status:', res.status);
 
-      const savedToken = localStorage.getItem('vektra_token');
-      
-      if (savedToken) {
-        authToken = savedToken;
-        try {
-          const res = await fetch(`${API}/api/v1/users/me`, {
-            headers: { 'Authorization': `Bearer ${authToken}` }
-          });
-          
-          if (res.ok) {
-            currentUser = await res.json();
-            goTo('dashboard');
-            loadDashboard();
-            return; // stops here — welcome never shows
-          }
-        } catch(e) {}
-        
-        // Token invalid — clear it
+    if (res.ok) {
+  currentUser = await res.json();
+  console.log('Auto-login user:', currentUser);
+
+  console.log('Going to dashboard...');
+  goTo('dashboard');
+
+  try {
+    console.log('Before loadDashboard');
+    await loadDashboard();
+    console.log('After loadDashboard');
+  } catch (e) {
+    console.error('Dashboard crashed:', e);
+  }
+
+  return;
+}
+  } catch (e) {
+    console.log('Auto-login error:', e);
+  }
         localStorage.removeItem('vektra_token');
         authToken = null;
       }
-
-      // No valid session — show welcome
       goTo('welcome');
-
     }, 600);
   }, 2000);
 });
 
-    }, 600);
-  }, 2000);
-});
-
-// ── API base URL ──
-const API = 'http://127.0.0.1:8000';
-
-// ── Token storage ──
-let authToken = null;
-let currentUser = null;
+// ── Register service worker ──
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js')
+      .then(() => console.log('VEKTRA SW registered'))
+      .catch(e => console.log('SW error', e));
+  });
+}
 
 // ── Register ──
 async function register() {
@@ -103,24 +86,21 @@ async function register() {
     errEl.style.display = 'block';
     return;
   }
-
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-  errEl.textContent = 'Please enter a valid email address.';
-  errEl.style.display = 'block';
-  return;
- }
-
+    errEl.textContent = 'Please enter a valid email address.';
+    errEl.style.display = 'block';
+    return;
+  }
   if (password.length < 8) {
     errEl.textContent = 'Password must be at least 8 characters.';
     errEl.style.display = 'block';
     return;
   }
-
   if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
-  errEl.textContent = 'Password must contain at least one symbol (e.g. !, @, #)';
-  errEl.style.display = 'block';
-  return;
-}
+    errEl.textContent = 'Password must contain at least one symbol (e.g. !, @, #)';
+    errEl.style.display = 'block';
+    return;
+  }
 
   try {
     const res = await fetch(`${API}/api/v1/auth/register`, {
@@ -128,18 +108,13 @@ async function register() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, email, password })
     });
-
     const data = await res.json();
-
     if (!res.ok) {
       errEl.textContent = data.detail || 'Registration failed. Try again.';
       errEl.style.display = 'block';
       return;
     }
-
-    // Registration success — auto login
     await loginWithCredentials(username, password);
-
   } catch (err) {
     errEl.textContent = 'Could not connect to server. Is the backend running?';
     errEl.style.display = 'block';
@@ -149,32 +124,27 @@ async function register() {
 // ── Login with credentials ──
 async function loginWithCredentials(username, password) {
   const body = new URLSearchParams({ username, password });
-
   const res = await fetch(`${API}/api/v1/auth/token`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body
   });
-
   const data = await res.json();
-
   if (res.ok) {
     authToken = data.access_token;
-    // Fetch current user details
-const userRes = await fetch(`${API}/api/v1/users/me`, {
-  headers: { 'Authorization': `Bearer ${authToken}` }
-});
-if (userRes.ok) {
-  currentUser = await userRes.json();
-}
+    const userRes = await fetch(`${API}/api/v1/users/me`, {
+      headers: { 'Authorization': `Bearer ${authToken}` }
+    });
+    if (userRes.ok) {
+      currentUser = await userRes.json();
+    }
     localStorage.setItem('vektra_token', authToken);
-    // New users go through onboarding, returning users go to dashboard
-if (!currentUser.north_star) {
-  goTo('onboard-1');
-} else {
-  goTo('dashboard');
-  loadDashboard();
-}
+    if (!currentUser.north_star) {
+      goTo('onboard-1');
+    } else {
+      goTo('dashboard');
+      loadDashboard();
+    }
   }
 }
 
@@ -183,15 +153,12 @@ async function login() {
   const username = document.getElementById('login-username').value.trim();
   const password = document.getElementById('login-password').value;
   const errEl    = document.getElementById('login-error');
-
   errEl.style.display = 'none';
-
   if (!username || !password) {
     errEl.textContent = 'Please enter your username and password.';
     errEl.style.display = 'block';
     return;
   }
-
   try {
     await loginWithCredentials(username, password);
     if (!authToken) {
@@ -202,6 +169,14 @@ async function login() {
     errEl.textContent = 'Could not connect to server.';
     errEl.style.display = 'block';
   }
+}
+
+// ── Logout ──
+function logout() {
+  authToken = null;
+  currentUser = null;
+  localStorage.removeItem('vektra_token');
+  goTo('welcome');
 }
 
 // ── Calculate streak ──
@@ -229,41 +204,82 @@ function calculateStreak(snapshots) {
 
 // ── Load dashboard ──
 async function loadDashboard() {
-  if (!currentUser) return;
+  console.log('loadDashboard started');
 
-  document.getElementById('dash-username').textContent = currentUser.username || 'User';
-  document.getElementById('dash-northstar').textContent = currentUser.north_star || 'Not set yet — update in profile';
+  if (!currentUser) {
+    console.log('No currentUser');
+    return;
+  }
+
+  console.log('currentUser =', currentUser);
+
+  document.getElementById('dash-username').textContent =
+    currentUser.username || 'User';
+
+  document.getElementById('dash-northstar').textContent =
+    currentUser.north_star || 'Not set yet — update in profile';
 
   try {
-    const res = await fetch(`${API}/api/v1/users/${currentUser.id}/snapshots`, {
-      headers: { 'Authorization': `Bearer ${authToken}` }
-    });
+    const res = await fetch(
+      `${API}/api/v1/users/${currentUser.id}/snapshots`,
+      {
+        headers: {
+          'Authorization': `Bearer ${authToken}`
+        }
+      }
+    );
+
+    console.log('Snapshots status:', res.status);
+
     if (res.ok) {
       const snapshots = await res.json();
+      console.log('snapshots =', snapshots);
+
       if (snapshots.length > 0) {
         const latest = snapshots[0];
+        console.log('latest =', latest);
 
         const streak = calculateStreak(snapshots);
+
         document.getElementById('dash-streak').textContent =
-          streak > 0 ? `🔥 ${streak} day${streak > 1 ? 's' : ''}` : '— Start your streak';
+          streak > 0
+            ? `🔥 ${streak} day${streak > 1 ? 's' : ''}`
+            : '— Start your streak';
 
         const score = latest.vektra_score;
-        document.getElementById('dash-score').textContent = score ? score.toFixed(0) : '—';
-        document.getElementById('dash-runway').textContent = latest.survival_runway ? latest.survival_runway + ' days' : '— days';
-        document.getElementById('dash-networth').textContent = latest.current_net_worth ?
-          currentUser.currency + ' ' + latest.current_net_worth.toLocaleString() : '—';
-        document.getElementById('dash-trajectory').textContent =
-          score >= 70 ? '🔥 Rising trajectory' :
-          score >= 50 ? '→ Steady — push harder' : '⚠ Trajectory dropping';
-      }
-    }
-  } catch(e) {
-    console.log('Could not load snapshots', e);
-  }
-}
 
-async function generateReport() {
-  loadReport();
+        document.getElementById('dash-score').textContent =
+          score ? score.toFixed(0) : '—';
+
+        document.getElementById('dash-runway').textContent =
+          latest.survival_runway
+            ? latest.survival_runway + ' days'
+            : '— days';
+
+        document.getElementById('dash-networth').textContent =
+          latest.current_net_worth
+            ? (currentUser.currency || '') +
+              ' ' +
+              latest.current_net_worth.toLocaleString()
+            : '—';
+
+        document.getElementById('dash-trajectory').textContent =
+          score >= 70
+            ? '🔥 Rising trajectory'
+            : score >= 50
+            ? '→ Steady — push harder'
+            : '⚠ Trajectory dropping';
+
+        console.log('Dashboard updated successfully');
+      } else {
+        console.log('No snapshots yet.');
+      }
+    } else {
+      console.log('Snapshots request failed:', res.status);
+    }
+  } catch (e) {
+    console.error('Could not load snapshots:', e);
+  }
 }
 
 // ── Daily log helpers ──
@@ -295,7 +311,6 @@ function updateProgress() {
 }
 
 function openDailyLog() {
-  // Set today's date
   const today = new Date().toLocaleDateString('en-US', {weekday:'long', month:'long', day:'numeric'});
   document.getElementById('log-date').textContent = today;
   goTo('daily-log');
@@ -304,54 +319,45 @@ function openDailyLog() {
 // ── Submit daily log ──
 async function submitLog() {
   if (!currentUser || !authToken) return;
-
   const errEl = document.getElementById('log-error');
   errEl.style.display = 'none';
-
   const payload = {
-    mood_score:           parseInt(document.getElementById('inp-mood').value),
-    energy_level:         parseInt(document.getElementById('inp-energy').value),
-    focus_level:          parseInt(document.getElementById('inp-focus').value),
-    social_battery:       parseInt(document.getElementById('inp-social').value),
-    health_battery:       parseInt(document.getElementById('inp-health').value),
+    mood_score:            parseInt(document.getElementById('inp-mood').value),
+    energy_level:          parseInt(document.getElementById('inp-energy').value),
+    focus_level:           parseInt(document.getElementById('inp-focus').value),
+    social_battery:        parseInt(document.getElementById('inp-social').value),
+    health_battery:        parseInt(document.getElementById('inp-health').value),
     uncomfortable_moments: document.getElementById('inp-uncomfortable').value || null,
-    daily_income:         parseFloat(document.getElementById('inp-income').value) || null,
-    expenses:             parseFloat(document.getElementById('inp-expenses').value) || null,
-    savings_investments:  parseFloat(document.getElementById('inp-savings').value) || null,
-    any_emergency:        document.getElementById('inp-emergency').value || null,
-    tomorrow_goal:        document.getElementById('inp-tomorrow').value || null,
-    target_hit_bool:      goalHit,
-    best_decision:        document.getElementById('inp-best').value || null,
-    worst_decision:       document.getElementById('inp-worst').value || null,
-    what_i_avoided:       document.getElementById('inp-avoided').value || null,
-    sleep_hours:          parseFloat(document.getElementById('inp-sleep').value),
-    screen_time:          parseFloat(document.getElementById('inp-screen').value) || null,
-    diet_taken:           document.getElementById('inp-diet').value || null,
-    skills_learned:       document.getElementById('inp-skills').value || null,
-    new_ideas:            document.getElementById('inp-ideas').value || null,
-    gratitude_line:       document.getElementById('inp-gratitude').value || null,
-    funny_line:           document.getElementById('inp-funny').value || null,
-    focus_hours:          parseFloat(document.getElementById('inp-focushours').value) || null,
-    environment_rating:   parseInt(document.getElementById('inp-env').value),
-    opportunity_cost:     parseFloat(document.getElementById('inp-oppcost').value) || null,
+    daily_income:          parseFloat(document.getElementById('inp-income').value) || null,
+    expenses:              parseFloat(document.getElementById('inp-expenses').value) || null,
+    savings_investments:   parseFloat(document.getElementById('inp-savings').value) || null,
+    any_emergency:         document.getElementById('inp-emergency').value || null,
+    tomorrow_goal:         document.getElementById('inp-tomorrow').value || null,
+    target_hit_bool:       goalHit,
+    best_decision:         document.getElementById('inp-best').value || null,
+    worst_decision:        document.getElementById('inp-worst').value || null,
+    what_i_avoided:        document.getElementById('inp-avoided').value || null,
+    sleep_hours:           parseFloat(document.getElementById('inp-sleep').value),
+    screen_time:           parseFloat(document.getElementById('inp-screen').value) || null,
+    diet_taken:            document.getElementById('inp-diet').value || null,
+    skills_learned:        document.getElementById('inp-skills').value || null,
+    new_ideas:             document.getElementById('inp-ideas').value || null,
+    gratitude_line:        document.getElementById('inp-gratitude').value || null,
+    funny_line:            document.getElementById('inp-funny').value || null,
+    focus_hours:           parseFloat(document.getElementById('inp-focushours').value) || null,
+    environment_rating:    parseInt(document.getElementById('inp-env').value),
+    opportunity_cost:      parseFloat(document.getElementById('inp-oppcost').value) || null,
   };
-
   try {
     const res = await fetch(`${API}/api/v1/users/${currentUser.id}/snapshots`, {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${authToken}`,
-        'Content-Type': 'application/json'
-      },
+      headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
-
     if (res.ok) {
       const snap = await res.json();
-      // Go back to dashboard and refresh score
       goTo('dashboard');
       loadDashboard();
-      // Show score update
       setTimeout(() => {
         alert(`🔥 Log submitted!\n\nYour VEKTRA Score: ${snap.vektra_score}/100\nSurvival Runway: ${snap.survival_runway || '—'} days`);
       }, 500);
@@ -374,8 +380,10 @@ function selectTone(tone) {
   selectedTone = tone;
   ['Harsh','Balanced','Gentle'].forEach(t => {
     const el = document.getElementById(`tone-${t.toLowerCase()}`);
-    el.style.border = t === tone ? '1px solid var(--accent)' : '1px solid var(--border)';
-    el.style.background = t === tone ? 'rgba(108,99,255,0.1)' : 'transparent';
+    if (el) {
+      el.style.border = t === tone ? '1px solid var(--accent)' : '1px solid var(--border)';
+      el.style.background = t === tone ? 'rgba(108,99,255,0.1)' : 'transparent';
+    }
   });
 }
 
@@ -384,13 +392,11 @@ function onboardStep1() {
   const deadline = document.getElementById('ob-deadline').value;
   const errEl = document.getElementById('ob1-error');
   errEl.style.display = 'none';
-
   if (!goal) {
     errEl.textContent = 'Please enter your north star goal.';
     errEl.style.display = 'block';
     return;
   }
-
   onboardData.primary_goal = goal;
   onboardData.north_star = deadline ? `${goal} — by ${deadline}` : goal;
   onboardData.north_star_deadline = deadline || null;
@@ -398,11 +404,8 @@ function onboardStep1() {
 }
 
 function onboardStep2() {
-  const networth = parseFloat(document.getElementById('ob-networth').value) || 0;
-  const capital = parseFloat(document.getElementById('ob-capital').value) || 0;
-
-  onboardData.initial_net_worth = networth;
-  onboardData.current_capital = capital;
+  onboardData.initial_net_worth = parseFloat(document.getElementById('ob-networth').value) || 0;
+  onboardData.current_capital = parseFloat(document.getElementById('ob-capital').value) || 0;
   goTo('onboard-3');
 }
 
@@ -410,14 +413,10 @@ async function onboardStep3() {
   const errEl = document.getElementById('ob3-error');
   errEl.style.display = 'none';
   onboardData.preferred_feedback_tone = selectedTone;
-
   try {
     const res = await fetch(`${API}/api/v1/users/me`, {
       method: 'PATCH',
-      headers: {
-        'Authorization': `Bearer ${authToken}`,
-        'Content-Type': 'application/json'
-      },
+      headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
         primary_goal: onboardData.primary_goal,
         north_star: onboardData.north_star,
@@ -426,14 +425,10 @@ async function onboardStep3() {
         preferred_feedback_tone: selectedTone,
       })
     });
-
-    if (res.ok) {
-      currentUser = await res.json();
-    }
+    if (res.ok) currentUser = await res.json();
   } catch(e) {
     console.log('Could not save onboarding data', e);
   }
-
   goTo('dashboard');
   loadDashboard();
 }
@@ -442,59 +437,46 @@ async function onboardStep3() {
 async function loadReport() {
   goTo('reports');
   document.getElementById('report-narrative').textContent = 'Generating your report...';
-
   if (!currentUser || !authToken) return;
-
   try {
-    // Generate fresh report
     const res = await fetch(`${API}/api/v1/users/${currentUser.id}/reports/generate`, {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${authToken}`,
-        'Content-Type': 'application/json'
-      },
+      headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({})
     });
-
     if (!res.ok) return;
     const report = await res.json();
     const content = report.content || {};
 
-    // Score
     document.getElementById('report-score').textContent =
       report.vektra_score ? report.vektra_score.toFixed(0) : '—';
-
-    // Period
     document.getElementById('report-period').textContent =
       `${content.days_logged || 0} days logged`;
-
-    // Quick stats
     document.getElementById('report-days').textContent =
       `${content.days_logged || 0}/7`;
     document.getElementById('report-cashflow').textContent =
       content.net_cash_flow !== undefined ?
       (content.net_cash_flow >= 0 ? '+' : '') + content.net_cash_flow : '—';
     document.getElementById('report-goals').textContent =
-      content.goals_set > 0 ?
-      `${content.goals_hit}/${content.goals_set}` : '—';
+      content.goals_set > 0 ? `${content.goals_hit}/${content.goals_set}` : '—';
 
-    // Cash flow color
     const cfEl = document.getElementById('report-cashflow');
-    cfEl.style.color = content.net_cash_flow >= 0 ?
-      'var(--success)' : 'var(--danger)';
+    cfEl.style.color = content.net_cash_flow >= 0 ? 'var(--success)' : 'var(--danger)';
 
-    // Narrative
-    // Format report narrative properly
-const raw = report.summary_text || 'No report generated yet.';
-const formatted = raw
-  .replace(/={3,}/g, '')  // remove === separators
-  .replace(/VEKTRA WEEKLY REPORT/g, '')  // remove title (already shown)
-  .replace(/\[Note:.*?\]/g, '')  // remove API note
-  .trim();
+    // Format narrative
+    const raw = report.summary_text || 'No report generated yet.';
+    const formatted = raw
+      .replace(/={3,}/g, '')
+      .replace(/VEKTRA WEEKLY REPORT/g, '')
+      .replace(/\[Note:.*?\]/g, '')
+      .replace(/TRAJECTORY STATUS:/g, '\n🎯 TRAJECTORY STATUS:')
+      .replace(/YOUR WINS THIS WEEK:/g, '\n\n🏆 YOUR WINS THIS WEEK:')
+      .replace(/SILENT KILLERS:/g, '\n\n⚠️ SILENT KILLERS:')
+      .replace(/THE NUMBERS DON'T LIE:/g, '\n\n📊 THE NUMBERS DON\'T LIE:')
+      .replace(/NEXT WEEK DIRECTIVE:/g, '\n\n🔥 NEXT WEEK DIRECTIVE:')
+      .trim();
+    document.getElementById('report-narrative').innerHTML = formatted.replace(/\n/g, '<br>');
 
-document.getElementById('report-narrative').innerHTML = formatted.replace(/\n/g, '<br>');
-
-    // Engine bars
     renderEngineBar('bar-financial', 'Financial', content.avg_vektra_score || 50, '#22c55e');
     renderEngineBar('bar-mental', 'Mental', content.avg_mood ? content.avg_mood * 10 : 50, '#6c63ff');
     renderEngineBar('bar-execution', 'Execution', content.goal_hit_rate || 0, '#ec4899');
@@ -506,6 +488,11 @@ document.getElementById('report-narrative').innerHTML = formatted.replace(/\n/g,
   }
 }
 
+async function generateReport() {
+  loadReport();
+}
+
+// ── Render engine bar ──
 function renderEngineBar(id, label, score, color) {
   const el = document.getElementById(id);
   if (!el) return;
@@ -518,14 +505,6 @@ function renderEngineBar(id, label, score, color) {
       <div style="width:${pct}%;height:100%;background:${color};border-radius:4px;transition:width .6s"></div>
     </div>
   `;
-}
-
-// ── Logout ──
-function logout() {
-  authToken = null;
-  currentUser = null;
-  localStorage.removeItem('vektra_token');
-  goTo('welcome');
 }
 
 // ── Profile ──
@@ -545,18 +524,16 @@ function setProfileTone(tone) {
 
 async function openProfile() {
   goTo('profile');
-
   if (!currentUser) return;
-
   document.getElementById('profile-username').textContent = currentUser.username || '—';
   document.getElementById('profile-tier').textContent = currentUser.tier || 'Free';
   document.getElementById('profile-northstar').value = currentUser.north_star || '';
-
-  // Set tone
   profileTone = currentUser.preferred_feedback_tone || 'Balanced';
   setProfileTone(profileTone);
-
-  // Load stats
+  const code = currentUser.username?.toUpperCase() || '—';
+  document.getElementById('referral-code').textContent = code;
+  document.getElementById('vek-credits').textContent = '0';
+  document.getElementById('referral-count').textContent = '0';
   try {
     const res = await fetch(`${API}/api/v1/users/${currentUser.id}/snapshots`, {
       headers: { 'Authorization': `Bearer ${authToken}` }
@@ -574,24 +551,15 @@ async function openProfile() {
 
 async function saveProfile() {
   if (!currentUser || !authToken) return;
-
   const northStar = document.getElementById('profile-northstar').value.trim();
   const successEl = document.getElementById('profile-success');
   successEl.style.display = 'none';
-
   try {
     const res = await fetch(`${API}/api/v1/users/me`, {
       method: 'PATCH',
-      headers: {
-        'Authorization': `Bearer ${authToken}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        north_star: northStar,
-        preferred_feedback_tone: profileTone,
-      })
+      headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ north_star: northStar, preferred_feedback_tone: profileTone })
     });
-
     if (res.ok) {
       currentUser = await res.json();
       successEl.style.display = 'block';
@@ -602,25 +570,43 @@ async function saveProfile() {
   }
 }
 
-// ── Register service worker ──
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js')
-      .then(() => console.log('VEKTRA SW registered'))
-      .catch(e => console.log('SW error', e));
+// ── Referral system ──
+function copyReferral() {
+  const code = document.getElementById('referral-code').textContent;
+  navigator.clipboard.writeText(code).then(() => {
+    const btn = event.target;
+    btn.textContent = 'Copied!';
+    btn.style.background = 'rgba(34,197,94,0.2)';
+    btn.style.borderColor = 'var(--success)';
+    btn.style.color = 'var(--success)';
+    setTimeout(() => {
+      btn.textContent = 'Copy';
+      btn.style.background = 'rgba(108,99,255,0.2)';
+      btn.style.borderColor = 'var(--accent)';
+      btn.style.color = 'var(--accent)';
+    }, 2000);
   });
 }
 
-const raw = report.summary_text || 'No report generated yet.';
-const formatted = raw
-  .replace(/={3,}/g, '')
-  .replace(/VEKTRA WEEKLY REPORT/g, '')
-  .replace(/\[Note:.*?\]/g, '')
-  .replace(/TRAJECTORY STATUS:/g, '\n🎯 TRAJECTORY STATUS:')
-  .replace(/YOUR WINS THIS WEEK:/g, '\n\n🏆 YOUR WINS THIS WEEK:')
-  .replace(/SILENT KILLERS:/g, '\n\n⚠️ SILENT KILLERS:')
-  .replace(/THE NUMBERS DON\'T LIE:/g, '\n\n📊 THE NUMBERS DON\'T LIE:')
-  .replace(/NEXT WEEK DIRECTIVE:/g, '\n\n🔥 NEXT WEEK DIRECTIVE:')
-  .trim();
-
-document.getElementById('report-narrative').innerHTML = formatted.replace(/\n/g, '<br>');
+function shareReferral() {
+  const code = currentUser?.username?.toUpperCase() || 'VEKTRA';
+  const message = `I've been tracking my trajectory with VEKTRA — the AI-powered self-tracking app that gives you harsh truths about your progress.\n\nUse my code ${code} to get started:\nhttps://vektra.app\n\nVector = Magnitude × Direction 🔥`;
+  
+  // Always use clipboard on desktop, share sheet on mobile
+  const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  
+  if (isMobile && navigator.share) {
+    navigator.share({ title: 'Join me on VEKTRA', text: message });
+  } else {
+    navigator.clipboard.writeText(message).then(() => {
+      const btn = event.target;
+      const original = btn.textContent;
+      btn.textContent = '✓ Copied to clipboard!';
+      btn.style.background = 'var(--success)';
+      setTimeout(() => {
+        btn.textContent = original;
+        btn.style.background = 'linear-gradient(135deg,#6c63ff,#ec4899)';
+      }, 2500);
+    });
+  }
+}

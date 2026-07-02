@@ -565,6 +565,23 @@
 
 </div>
 
+<!-- Referral Code -->
+<div style="background:linear-gradient(135deg,#1a1a2e,#16213e);border:1px solid var(--accent);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
+  <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">Your Referral Code</div>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem">
+    <div id="referral-code" style="font-size:22px;font-weight:800;letter-spacing:0.1em;background:linear-gradient(135deg,#6c63ff,#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">—</div>
+    <button onclick="copyReferral()" style="padding:8px 14px;background:rgba(108,99,255,0.2);border:1px solid var(--accent);border-radius:var(--radius-sm);color:var(--accent);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font)">Copy</button>
+  </div>
+  <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-muted);margin-bottom:.75rem">
+    <span>Friends joined</span>
+    <span id="referral-count" style="color:var(--text-primary);font-weight:600">0</span>
+  </div>
+  <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-muted);margin-bottom:.75rem">
+    <span>VEK Credits earned</span>
+    <span id="vek-credits" style="color:var(--gold);font-weight:600">0</span>
+  </div>
+  <button onclick="shareReferral()" style="width:100%;padding:10px;background:linear-gradient(135deg,#6c63ff,#ec4899);border:none;border-radius:var(--radius-sm);color:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:var(--font)">Share VEKTRA 🔥</button>
 </div>
 
+</div>
 <script src="js/app.js"></script>

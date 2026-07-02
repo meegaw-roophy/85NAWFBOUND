@@ -11,7 +11,7 @@
   --text-muted: #444460;
   --success: #22c55e;
   --warning: #f59e0b;
-  --danger: #ef4444;
+  --danger: #da0e0e;
   --border: rgba(255,255,255,0.06);
   --font: 'Inter', -apple-system, sans-serif;
   --radius: 16px;
@@ -267,7 +267,7 @@ input[type="range"] {
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   color: var(--text-primary);
-  font-size: 14px;
+  font-size: 16px;
   font-family: var(--font);
   outline: none;
 }
@@ -321,9 +321,12 @@ input[type="range"] {
 }
 
 /* ── SCROLLING ── */
-#daily-log, #reports, #dashboard {
+#daily-log,
+#reports,
+#dashboard {
   overflow-y: auto;
   padding-bottom: 2rem;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* ── INPUT FOCUS STATES ── */
@@ -336,7 +339,11 @@ input[type="range"] {
 
 /* ── SMOOTH SCREEN TRANSITIONS ── */
 #app > div {
-  animation: fadeIn 0.3s ease;
+  width: 100%;
+}
+
+#app > div[style*="display: flex"] {
+  animation: fadeIn .3s ease;
 }
 
 @keyframes fadeIn {
@@ -358,7 +365,8 @@ input[type="range"] {
 /* Center content on larger screens, full width on mobile */
 #dashboard,
 #daily-log,
-#reports {
+#reports,
+#profile {
   max-width: 480px;
   margin: 0 auto;
   width: 100%;
@@ -385,4 +393,29 @@ html, body {
   white-space: pre-wrap;
   line-height: 1.9;
   font-size: 14px;
+}
+
+.btn-primary,
+.btn-secondary {
+  touch-action: manipulation;
+}
+
+.text-field input,
+.text-field textarea,
+.number-field input {
+  transition: border-color .2s ease,
+              box-shadow .2s ease;
+}
+
+.text-field input:focus,
+.text-field textarea:focus,
+.number-field input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+html,
+body,
+#app {
+  height: 100%;
 }
