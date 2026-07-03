@@ -7,6 +7,11 @@ class UserCreate(BaseModel):
     username: str
     email: EmailStr
     password: str
+    full_name: Optional[str] = None
+    dob: Optional[date] = None
+    current_location: Optional[str] = None
+    language: Optional[str] = None
+    primary_goal: Optional[str] = None
 
 
 class UserOut(BaseModel):

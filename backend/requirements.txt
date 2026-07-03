@@ -16,3 +16,7 @@ bcrypt
 pydantic-settings
 email-validator
 python-multipart
+reportlab
+Pillow
+openai
+matplotlib

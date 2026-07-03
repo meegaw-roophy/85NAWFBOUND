@@ -21,7 +21,7 @@ async def register(payload: UserCreate, db: AsyncSession = Depends(get_session))
     if existing_e:
         raise HTTPException(status_code=400, detail="Email already registered")
     pw_hash = get_password_hash(payload.password)
-    user = await crud.create_user(db, username=payload.username, email=payload.email, password_hash=pw_hash)
+    user = await crud.create_user(db, username=payload.username, email=payload.email, password_hash=pw_hash, full_name=payload.full_name, dob=payload.dob, current_location=payload.current_location, language=payload.language, primary_goal=payload.primary_goal)
     return user
 
 

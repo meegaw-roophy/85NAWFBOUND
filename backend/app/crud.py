@@ -48,8 +48,8 @@ async def create_snapshot(db: AsyncSession, user_id: int, snapshot_data: dict) -
     return snap
 
 
-async def create_user(db: AsyncSession, username: str, email: str, password_hash: str) -> User:
-    user = User(username=username, email=email, password_hash=password_hash)
+async def create_user(db: AsyncSession, username: str, email: str, password_hash: str, full_name: Optional[str] = None, dob: Optional[date] = None, current_location: Optional[str] = None, language: Optional[str] = None, primary_goal: Optional[str] = None) -> User:
+    user = User(username=username, email=email, password_hash=password_hash, full_name=full_name, dob=dob, current_location=current_location, language=language, primary_goal=primary_goal)
     db.add(user)
     await db.commit()
     await db.refresh(user)

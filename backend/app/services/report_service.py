@@ -6,6 +6,7 @@ Pulls snapshots, computes summaries, calls AI, stores report.
 """
 
 import datetime
+import os
 from typing import Optional, List
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -167,6 +168,24 @@ async def generate_weekly_report(
     # ── Calculate average vektra score ───────
     avg_score = summary.get('avg_vektra_score')
 
+    # ── Generate visual content ─────────────────
+    pdf_bytes = visual_generator.generate_pdf_report(
+        summary_text=summary_text,
+        summary_data=summary,
+        user_name=user.full_name if user else None,
+        report_type='weekly'
+    )
+    
+    # Generate net worth chart if we have history
+    net_worth_chart = None
+    if summary.get('total_income') or summary.get('current_net_worth'):
+        # Mock net worth history for now - in production, pull from snapshots
+        net_worth_history = [
+            (period_start - datetime.timedelta(days=i), summary.get('current_net_worth', 0) or 1000)
+            for i in range(7, 0, -1)
+        ]
+        net_worth_chart = visual_generator.generate_net_worth_chart(net_worth_history)
+    
     # ── Store report ──────────────────────────
     report_payload = {
         'period_start':  period_start,
@@ -181,6 +200,17 @@ async def generate_weekly_report(
     }
 
     report = await crud.create_report(db, user_id, report_payload)
+    
+    # In production, store PDF and images in S3/cloud storage
+    # For now, we'll store as base64 in the content field
+    report.content = {
+        **summary,
+        'pdf_base64': visual_generator.encode_image_to_base64(pdf_bytes),
+        'chart_base64': visual_generator.encode_image_to_base64(net_worth_chart) if net_worth_chart else None,
+    }
+    await db.commit()
+    await db.refresh(report)
+    
     return report
 
 

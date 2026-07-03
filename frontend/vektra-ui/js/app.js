@@ -5,6 +5,64 @@ const API = 'http://127.0.0.1:8000';
 let authToken = null;
 let currentUser = null;
 
+// ── Toast notifications ──
+function showToast(message, type = 'info', duration = 3000) {
+  const container = document.getElementById('toast-container');
+  const icons = { success: '✓', error: '✕', warning: '⚠', info: 'ℹ' };
+  
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.innerHTML = `<span>${icons[type]}</span><span>${message}</span>`;
+  toast.onclick = () => removeToast(toast);
+  
+  container.appendChild(toast);
+  
+  setTimeout(() => removeToast(toast), duration);
+}
+
+function removeToast(toast) {
+  toast.classList.add('hiding');
+  setTimeout(() => toast.remove(), 300);
+}
+
+// ── Loading spinner ──
+function showLoader(text = 'Loading...') {
+  document.getElementById('loader-text').textContent = text;
+  document.getElementById('global-loader').classList.add('active');
+}
+
+function hideLoader() {
+  document.getElementById('global-loader').classList.remove('active');
+}// ── Toast notifications ──
+function showToast(message, type = 'info', duration = 3000) {
+  const container = document.getElementById('toast-container');
+  const icons = { success: '✓', error: '✕', warning: '⚠', info: 'ℹ' };
+  
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.innerHTML = `<span>${icons[type]}</span><span>${message}</span>`;
+  toast.onclick = () => removeToast(toast);
+  
+  container.appendChild(toast);
+  
+  setTimeout(() => removeToast(toast), duration);
+}
+
+function removeToast(toast) {
+  toast.classList.add('hiding');
+  setTimeout(() => toast.remove(), 300);
+}
+
+// ── Loading spinner ──
+function showLoader(text = 'Loading...') {
+  document.getElementById('loader-text').textContent = text;
+  document.getElementById('global-loader').classList.add('active');
+}
+
+function hideLoader() {
+  document.getElementById('global-loader').classList.remove('active');
+}
+
 // ── Screen navigation ──
 function goTo(screen) {
   document.querySelectorAll('#app > div').forEach(s => s.style.display = 'none');
@@ -359,7 +417,7 @@ async function submitLog() {
       goTo('dashboard');
       loadDashboard();
       setTimeout(() => {
-        alert(`🔥 Log submitted!\n\nYour VEKTRA Score: ${snap.vektra_score}/100\nSurvival Runway: ${snap.survival_runway || '—'} days`);
+        showToast(`🔥 VEKTRA Score: ${snap.vektra_score}/100`, 'success', 4000);
       }, 500);
     } else {
       const data = await res.json();
@@ -436,8 +494,11 @@ async function onboardStep3() {
 // ── Load and display report ──
 async function loadReport() {
   goTo('reports');
-  document.getElementById('report-narrative').textContent = 'Generating your report...';
-  if (!currentUser || !authToken) return;
+  showLoader('Generating your report...');
+  document.getElementById('report-narrative').textContent = 'Generating...';
+  
+  if (!currentUser || !authToken) { hideLoader(); return; }
+  
   try {
     const res = await fetch(`${API}/api/v1/users/${currentUser.id}/reports/generate`, {
       method: 'POST',
