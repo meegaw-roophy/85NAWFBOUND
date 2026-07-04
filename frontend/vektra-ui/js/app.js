@@ -268,13 +268,6 @@ async function loadDashboard() {
     console.log('No currentUser');
     return;
   }
-
-  if (!snapshots || snapshots.length === 0) {
-    document.getElementById('dash-score').textContent = '—';
-    document.getElementById('dash-streak').textContent = 'Log your first day 🚀';
-    document.getElementById('dash-trajectory').textContent = 'Start logging to see your trajectory';
-    return;
-  }
   
   console.log('currentUser =', currentUser);
 
@@ -299,6 +292,15 @@ async function loadDashboard() {
     if (res.ok) {
       const snapshots = await res.json();
       console.log('snapshots =', snapshots);
+
+      if (!snapshots || snapshots.length === 0) {
+        document.getElementById('dash-score').textContent = '—';
+        document.getElementById('dash-streak').textContent = 'Log your first day 🚀';
+        document.getElementById('dash-trajectory').textContent = 'Start logging to see your trajectory';
+        document.getElementById('first-log-prompt').style.display = 'block';
+        document.getElementById('first-log-prompt').style.display = 'none';
+        return;
+      }
 
       if (snapshots.length > 0) {
         const latest = snapshots[0];
