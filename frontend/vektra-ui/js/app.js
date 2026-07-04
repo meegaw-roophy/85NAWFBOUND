@@ -269,6 +269,13 @@ async function loadDashboard() {
     return;
   }
 
+  if (!snapshots || snapshots.length === 0) {
+    document.getElementById('dash-score').textContent = '—';
+    document.getElementById('dash-streak').textContent = 'Log your first day 🚀';
+    document.getElementById('dash-trajectory').textContent = 'Start logging to see your trajectory';
+    return;
+  }
+  
   console.log('currentUser =', currentUser);
 
   document.getElementById('dash-username').textContent =
@@ -406,6 +413,10 @@ async function submitLog() {
     environment_rating:    parseInt(document.getElementById('inp-env').value),
     opportunity_cost:      parseFloat(document.getElementById('inp-oppcost').value) || null,
   };
+  if (!payload.mood_score || !payload.sleep_hours) {
+    showToast('Please fill in at least mood and sleep hours', 'warning');
+    return;
+  }
   try {
     const res = await fetch(`${API}/api/v1/users/${currentUser.id}/snapshots`, {
       method: 'POST',
@@ -471,8 +482,9 @@ async function onboardStep3() {
   const errEl = document.getElementById('ob3-error');
   errEl.style.display = 'none';
   onboardData.preferred_feedback_tone = selectedTone;
+  
   try {
-    const res = await fetch(`${API}/api/v1/users/me`, {
+    await fetch(`${API}/api/v1/users/me`, {
       method: 'PATCH',
       headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -483,10 +495,17 @@ async function onboardStep3() {
         preferred_feedback_tone: selectedTone,
       })
     });
-    if (res.ok) currentUser = await res.json();
+
+    // Force fresh user fetch ──
+    const userRes = await fetch(`${API}/api/v1/users/me`, {
+      headers: { 'Authorization': `Bearer ${authToken}` }
+    });
+    if (userRes.ok) currentUser = await userRes.json();
+
   } catch(e) {
     console.log('Could not save onboarding data', e);
   }
+
   goTo('dashboard');
   loadDashboard();
 }
@@ -543,8 +562,10 @@ async function loadReport() {
     renderEngineBar('bar-execution', 'Execution', content.goal_hit_rate || 0, '#ec4899');
     renderEngineBar('bar-body', 'Body', content.avg_sleep ? Math.min(100, content.avg_sleep / 9 * 100) : 50, '#f59e0b');
     renderEngineBar('bar-growth', 'Growth', content.skills_count ? content.skills_count / 7 * 100 : 0, '#06b6d4');
+    hideLoader();
 
   } catch(e) {
+    hideLoader();
     document.getElementById('report-narrative').textContent = 'Could not load report. Try again.';
   }
 }
