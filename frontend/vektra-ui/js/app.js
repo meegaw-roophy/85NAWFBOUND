@@ -381,6 +381,13 @@ function openDailyLog() {
   const today = new Date().toLocaleDateString('en-US', {weekday:'long', month:'long', day:'numeric'});
   document.getElementById('log-date').textContent = today;
   goTo('daily-log');
+  restoreDraft();
+  // Auto-save every 30 seconds when on daily log screen
+  setInterval(() => {
+    if (document.getElementById('daily-log').style.display !== 'none') {
+      saveDraft();
+    }
+  }, 30000);
 }
 
 // ── Submit daily log ──
@@ -441,6 +448,7 @@ async function submitLog() {
     errEl.textContent = 'Could not connect to server.';
     errEl.style.display = 'block';
   }
+  clearDraft();
 }
 
 // ── Onboarding ──
@@ -693,4 +701,77 @@ function shareReferral() {
       }, 2500);
     });
   }
+}
+
+// ── Auto-save draft ──
+function saveDraft() {
+  const draft = {
+    mood: document.getElementById('inp-mood')?.value,
+    energy: document.getElementById('inp-energy')?.value,
+    focus: document.getElementById('inp-focus')?.value,
+    social: document.getElementById('inp-social')?.value,
+    health: document.getElementById('inp-health')?.value,
+    income: document.getElementById('inp-income')?.value,
+    expenses: document.getElementById('inp-expenses')?.value,
+    savings: document.getElementById('inp-savings')?.value,
+    emergency: document.getElementById('inp-emergency')?.value,
+    tomorrow: document.getElementById('inp-tomorrow')?.value,
+    best: document.getElementById('inp-best')?.value,
+    worst: document.getElementById('inp-worst')?.value,
+    avoided: document.getElementById('inp-avoided')?.value,
+    sleep: document.getElementById('inp-sleep')?.value,
+    screen: document.getElementById('inp-screen')?.value,
+    diet: document.getElementById('inp-diet')?.value,
+    skills: document.getElementById('inp-skills')?.value,
+    ideas: document.getElementById('inp-ideas')?.value,
+    gratitude: document.getElementById('inp-gratitude')?.value,
+    funny: document.getElementById('inp-funny')?.value,
+    focushours: document.getElementById('inp-focushours')?.value,
+    env: document.getElementById('inp-env')?.value,
+    oppcost: document.getElementById('inp-oppcost')?.value,
+    goalHit: goalHit,
+    savedAt: new Date().toISOString()
+  };
+  localStorage.setItem('vektra_draft', JSON.stringify(draft));
+}
+
+function restoreDraft() {
+  const saved = localStorage.getItem('vektra_draft');
+  if (!saved) return;
+  
+  const draft = JSON.parse(saved);
+  
+  // Only restore if draft is from today
+  const savedDate = new Date(draft.savedAt).toDateString();
+  const today = new Date().toDateString();
+  if (savedDate !== today) {
+    localStorage.removeItem('vektra_draft');
+    return;
+  }
+
+  // Restore all fields
+  const fields = ['mood','energy','focus','social','health','sleep','focushours','env'];
+  fields.forEach(f => {
+    const el = document.getElementById(`inp-${f}`);
+    if (el && draft[f]) {
+      el.value = draft[f];
+      updateSlider(f);
+    }
+  });
+
+  const textFields = ['income','expenses','savings','emergency','tomorrow','best','worst','avoided','screen','diet','skills','ideas','gratitude','funny','oppcost'];
+  textFields.forEach(f => {
+    const el = document.getElementById(`inp-${f}`);
+    if (el && draft[f]) el.value = draft[f];
+  });
+
+  if (draft.goalHit !== null && draft.goalHit !== undefined) {
+    setGoalHit(draft.goalHit);
+  }
+
+  showToast('Draft restored from earlier today 📝', 'info');
+}
+
+function clearDraft() {
+  localStorage.removeItem('vektra_draft');
 }

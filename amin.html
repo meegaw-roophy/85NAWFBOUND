@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VEKTRA // SECURE ROOT AUTH</title>
+    <script src="https://tailwindcss.com"></script>
+    <style>
+        body { background-color: #050508; font-family: 'Courier New', Courier, monospace; }
+        .cyber-panel { background: rgba(13, 13, 18, 0.95); border: 1px solid #1f1f2e; box-shadow: 0 0 30px rgba(0, 255, 204, 0.03); }
+        .neon-glow:focus { box-shadow: 0 0 15px rgba(0, 255, 204, 0.3); border-color: #00FFCC; }
+    </style>
+</head>
+<body class="text-white min-h-screen flex items-center justify-center p-4">
+
+    <!-- Cryptographic Auth Panel -->
+    <div class="cyber-panel w-full max-w-md rounded-xl p-8 transition duration-300">
+        
+        <!-- Header Indicators -->
+        <div class="text-center mb-8">
+            <div class="inline-block px-3 py-1 bg-emerald-950 border border-emerald-500/30 text-emerald-400 text-3xs font-bold tracking-widest rounded-full mb-3">
+                SYSTEM OPERATIONAL // GHOST CONFIG
+            </div>
+            <h1 class="text-xl font-bold tracking-widest text-white">VEKTRA ROOT CONTROL</h1>
+            <p class="text-xs text-zinc-500 mt-1">ENTER AUTHORIZATION CRITERIA TO UNLOCK CORE MISSON CONTROL</p>
+        </div>
+
+        <!-- Interactive Form Layer -->
+        <form id="auth-gate-form" class="space-y-6">
+            <div>
+                <label class="block text-3xs font-bold tracking-wider text-zinc-400 uppercase mb-2">FOUNDER IDENTIFIER</label>
+                <input type="text" id="root-id" autocomplete="off" required 
+                       class="w-full bg-zinc-950 border border-zinc-800 rounded px-4 py-3 text-sm text-white font-mono outline-none neon-glow transition duration-200" 
+                       placeholder="elvis_root">
+            </div>
+
+            <div>
+                <label class="block text-3xs font-bold tracking-wider text-zinc-400 uppercase mb-2">CRYPTOGRAPHIC PASSPHRASE</label>
+                <input type="password" id="secret-key" required 
+                       class="w-full bg-zinc-950 border border-zinc-800 rounded px-4 py-3 text-sm text-white font-mono outline-none neon-glow transition duration-200" 
+                       placeholder="••••••••••••">
+            </div>
+
+            <!-- Error Notification Banner -->
+            <div id="auth-error-banner" class="hidden bg-red-950/40 border border-red-500/30 text-red-400 text-xs rounded p-3 font-mono text-center animate-pulse">
+                ACCESS DENIED: SEGMENTATION FAULT SEED INVALID.
+            </div>
+
+            <button type="submit" 
+                    class="w-full bg-emerald-500/10 hover:bg-emerald-500 text-emerald-400 hover:text-white border border-emerald-500/30 py-3 rounded text-xs font-bold tracking-widest uppercase font-mono transition duration-300">
+                EXECUTE HANDSHAKE
+            </button>
+        </form>
+
+    </div>
+
+    <!-- Interface Linkage Logic -->
+    <script>
+        document.getElementById('auth-gate-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const rootId = document.getElementById('root-id').value;
+            const secretKey = document.getElementById('secret-key').value;
+            const errorBanner = document.getElementById('auth-error-banner');
+            
+            errorBanner.classList.add('hidden');
+
+            try {
+                // Fetch direct handshake validation from your asynchronous FastAPI endpoint
+                const response = await fetch('/v1/secure-dashboard/authorize', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ root_id: rootId, secret_key: secretKey })
+                });
+
+                if (!response.ok) {
+                    throw new Error("UNAUTHORIZED_NODE");
+                }
+
+                const data = await response.json();
+                
+                if (data.status === "AUTHORIZED") {
+                    // Cache the administrative hex token securely in session memory
+                    localStorage.setItem('vektra_admin_auth_token', data.admin_hex_token);
+                    // Clear the entry path directly to your penthouse metrics control panel
+                    window.location.href = '/admin-mission-control.html';
+                }
+
+            } catch (err) {
+                errorBanner.classList.remove('hidden');
+                document.getElementById('secret-key').value = '';
+            }
+        });
+    </script>
+</body>
+</html>
