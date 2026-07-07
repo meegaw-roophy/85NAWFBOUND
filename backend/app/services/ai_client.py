@@ -65,6 +65,8 @@ class AIClient:
 
         north_star = user_data.get('north_star', 'Not set')
         primary_goal = user_data.get('primary_goal', 'Not set')
+        unique_days = summary.get('unique_days_logged', summary.get('days_logged', 0))
+        report_countdown = summary.get('report_countdown', max(0, 7 - unique_days))
         tone_instruction = {
             'Harsh': 'Be brutally direct. No softening. Call out failures clearly.',
             'Balanced': 'Be honest but constructive. Balance wins with areas to improve.',
@@ -78,7 +80,8 @@ TONE INSTRUCTION: {tone_instruction}
 USER CONTEXT:
 - North Star: {north_star}
 - Primary Goal: {primary_goal}
-- Days logged this week: {summary.get('days_logged', 0)}/7
+- Days logged this week: {unique_days}/7
+- Weekly countdown: {report_countdown}/7
 
 WEEKLY AVERAGES:
 - VEKTRA Score: {summary.get('avg_vektra_score', 'N/A')}/100
@@ -127,40 +130,52 @@ Keep it under 400 words. Make every sentence earn its place."""
         Structured mock report when Claude API key not configured.
         Used during development before API key is added.
         """
-        score = summary.get('avg_vektra_score', 50)
+        score = summary.get('report_score', summary.get('avg_vektra_score', 50))
         days = summary.get('days_logged', 0)
         cash_flow = summary.get('net_cash_flow', 0)
         goals_hit = summary.get('goals_hit', 0)
         goals_set = summary.get('goals_set', 0)
         sleep = summary.get('avg_sleep', 0)
+        unique_days = summary.get('unique_days_logged', summary.get('days_logged', 0))
+        report_countdown = summary.get('report_countdown', max(0, 7 - unique_days))
+        goal_rate = round(goals_hit / goals_set * 100, 1) if goals_set > 0 else None
 
         trajectory = "RISING" if score >= 65 else "FLAT" if score >= 45 else "DECLINING"
+        momentum_line = (
+            'Strong momentum — keep the system running.'
+            if score >= 65 else
+            'Momentum is stalling. The gap between what you plan and what you execute is the problem.'
+            if score >= 45 else
+            'The trajectory is pointing down. Something needs to change this week, not next week.'
+        )
+        consistency_line = '- You showed up and logged data — consistency is the foundation.' if unique_days >= 4 else '- You logged some data — now build the habit of daily logging.'
 
         return f"""VEKTRA WEEKLY REPORT
 {'='*40}
 
 TRAJECTORY STATUS: {trajectory}
-Your average VEKTRA score this week was {score}/100 across {days} days logged.
-{'Strong momentum — keep the system running.' if score >= 65 else 'Momentum is stalling. The gap between what you plan and what you execute is the problem.' if score >= 45 else 'The trajectory is pointing down. Something needs to change this week, not next week.'}
+Your composite VEKTRA score this week was {score}/100 across {unique_days} unique days logged.
+{momentum_line}
 
 YOUR WINS THIS WEEK:
-{'- You showed up and logged data — consistency is the foundation.' if days >= 4 else '- You logged some data — now build the habit of daily logging.'}
+{consistency_line}
 {'- Cash flow was positive this week.' if cash_flow > 0 else ''}
 {'- Sleep averaged above the optimal threshold.' if sleep and sleep >= 7 else ''}
 
 SILENT KILLERS:
-{'- Only logged ' + str(days) + '/7 days — missing days = missing data = weak reports.' if days < 7 else ''}
+{'- Only logged ' + str(unique_days) + '/7 days — missing days = missing data = weak reports.' if unique_days < 7 else ''}
 {'- Cash flow negative this week — expenses exceeding income.' if cash_flow < 0 else ''}
-{'- Goal hit rate: ' + str(goals_hit) + '/' + str(goals_set) + ' — execution gap needs attention.' if goals_set > 0 and goals_hit < goals_set else ''}
+{'- Goal hit rate: ' + str(goals_hit) + '/' + str(goals_set) + ' — execution needs tightening.' if goals_set > 0 and goal_rate is not None and goal_rate < 60 else ''}
 
 THE NUMBERS DON'T LIE:
 - Net cash flow: {cash_flow}
 - Goals completed: {goals_hit}/{goals_set}
-- Days logged: {days}/7
+- Days logged: {unique_days}/7
+- Weekly countdown: {report_countdown}/7
 - Average sleep: {sleep} hours
 
 NEXT WEEK DIRECTIVE:
-{'Log every single day this week. No exceptions. Incomplete data produces weak reports and weak insights.' if days < 7 else 'Push your VEKTRA score above ' + str(min(100, int(score) + 10)) + ' — identify which sub-engine is dragging you and attack it specifically.'}
+{'Log every single day this week. No exceptions. Incomplete data produces weak reports and weak insights.' if unique_days < 7 else 'Push your VEKTRA score above ' + str(min(100, int(score) + 10)) + ' — identify which sub-engine is dragging you and attack it specifically.'}
 
 [Note: Connect your CLAUDE_API_KEY in .env to unlock full AI-powered narrative reports]
 {'='*40}"""

@@ -33,34 +33,6 @@ function showLoader(text = 'Loading...') {
 
 function hideLoader() {
   document.getElementById('global-loader').classList.remove('active');
-}// ── Toast notifications ──
-function showToast(message, type = 'info', duration = 3000) {
-  const container = document.getElementById('toast-container');
-  const icons = { success: '✓', error: '✕', warning: '⚠', info: 'ℹ' };
-  
-  const toast = document.createElement('div');
-  toast.className = `toast ${type}`;
-  toast.innerHTML = `<span>${icons[type]}</span><span>${message}</span>`;
-  toast.onclick = () => removeToast(toast);
-  
-  container.appendChild(toast);
-  
-  setTimeout(() => removeToast(toast), duration);
-}
-
-function removeToast(toast) {
-  toast.classList.add('hiding');
-  setTimeout(() => toast.remove(), 300);
-}
-
-// ── Loading spinner ──
-function showLoader(text = 'Loading...') {
-  document.getElementById('loader-text').textContent = text;
-  document.getElementById('global-loader').classList.add('active');
-}
-
-function hideLoader() {
-  document.getElementById('global-loader').classList.remove('active');
 }
 
 // ── Screen navigation ──
@@ -136,6 +108,7 @@ async function register() {
   const email    = document.getElementById('reg-email').value.trim();
   const password = document.getElementById('reg-password').value;
   const errEl    = document.getElementById('reg-error');
+  const btnEl    = document.getElementById('reg-btn');
 
   errEl.style.display = 'none';
 
@@ -160,6 +133,11 @@ async function register() {
     return;
   }
 
+  if (btnEl) {
+    btnEl.disabled = true;
+    btnEl.textContent = 'Creating account...';
+  }
+
   try {
     const res = await fetch(`${API}/api/v1/auth/register`, {
       method: 'POST',
@@ -176,6 +154,11 @@ async function register() {
   } catch (err) {
     errEl.textContent = 'Could not connect to server. Is the backend running?';
     errEl.style.display = 'block';
+  } finally {
+    if (btnEl) {
+      btnEl.disabled = false;
+      btnEl.textContent = 'Sign Up';
+    }
   }
 }
 
@@ -211,11 +194,16 @@ async function login() {
   const username = document.getElementById('login-username').value.trim();
   const password = document.getElementById('login-password').value;
   const errEl    = document.getElementById('login-error');
+  const btnEl    = document.getElementById('login-btn');
   errEl.style.display = 'none';
   if (!username || !password) {
     errEl.textContent = 'Please enter your username and password.';
     errEl.style.display = 'block';
     return;
+  }
+  if (btnEl) {
+    btnEl.disabled = true;
+    btnEl.textContent = 'Signing in...';
   }
   try {
     await loginWithCredentials(username, password);
@@ -226,6 +214,11 @@ async function login() {
   } catch (err) {
     errEl.textContent = 'Could not connect to server.';
     errEl.style.display = 'block';
+  } finally {
+    if (btnEl) {
+      btnEl.disabled = false;
+      btnEl.textContent = 'Sign In';
+    }
   }
 }
 
@@ -260,6 +253,13 @@ function calculateStreak(snapshots) {
   return streak;
 }
 
+function getGreeting() {
+  const hour = new Date().getHours();
+  if (hour < 12) return 'Good morning';
+  if (hour < 17) return 'Good afternoon';
+  return 'Good evening';
+}
+
 // ── Load dashboard ──
 async function loadDashboard() {
   console.log('loadDashboard started');
@@ -271,6 +271,7 @@ async function loadDashboard() {
   
   console.log('currentUser =', currentUser);
 
+  document.getElementById('dash-greeting').textContent = getGreeting();
   document.getElementById('dash-username').textContent =
     currentUser.username || 'User';
 
@@ -289,29 +290,72 @@ async function loadDashboard() {
 
     console.log('Snapshots status:', res.status);
 
-    if (res.ok) {
-      const snapshots = await res.json();
-      console.log('snapshots =', snapshots);
+    if (!res.ok) {
+      console.error('Failed to load snapshots:', res.status);
+      showToast('Could not load your data. Please refresh.', 'error');
+      return;
+    }
 
-      if (!snapshots || snapshots.length === 0) {
-        document.getElementById('dash-score').textContent = '—';
-        document.getElementById('dash-streak').textContent = 'Log your first day 🚀';
-        document.getElementById('dash-trajectory').textContent = 'Start logging to see your trajectory';
-        document.getElementById('first-log-prompt').style.display = 'block';
-        document.getElementById('first-log-prompt').style.display = 'none';
-        return;
-      }
+    const snapshots = await res.json();
+    console.log('snapshots =', snapshots);
 
-      if (snapshots.length > 0) {
-        const latest = snapshots[0];
-        console.log('latest =', latest);
+    if (!snapshots || snapshots.length === 0) {
+      document.getElementById('dash-score').textContent = '—';
+      document.getElementById('dash-streak').textContent = 'Log your first day 🚀';
+      document.getElementById('dash-trajectory').textContent = 'Start logging to see your trajectory';
+      document.getElementById('dash-lastlog').textContent = 'No logs yet';
+      document.getElementById('dash-status').textContent = 'Start logging to build momentum';
+      document.getElementById('dash-week-summary').textContent = '0 logs • 0 unique days';
+      document.getElementById('dash-week-status').textContent = 'Keep logging to unlock richer weekly insights';
+      document.getElementById('first-log-prompt').style.display = 'block';
+      return;
+    }
 
-        const streak = calculateStreak(snapshots);
+    document.getElementById('first-log-prompt').style.display = 'none';
 
-        document.getElementById('dash-streak').textContent =
-          streak > 0
-            ? `🔥 ${streak} day${streak > 1 ? 's' : ''}`
-            : '— Start your streak';
+    if (snapshots.length > 0) {
+      const latest = snapshots[0];
+      console.log('latest =', latest);
+
+      const streak = calculateStreak(snapshots);
+
+      document.getElementById('dash-streak').textContent =
+        streak > 0
+          ? `🔥 ${streak} day${streak > 1 ? 's' : ''}`
+          : '— Start your streak';
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const weekStart = new Date(today);
+        weekStart.setDate(today.getDate() - 6);
+        const weekSnapshots = snapshots.filter(snapshot => {
+          const snapshotDate = new Date(snapshot.timestamp || snapshot.log_date || today);
+          snapshotDate.setHours(0, 0, 0, 0);
+          return snapshotDate >= weekStart && snapshotDate <= today;
+        });
+        const uniqueWeekDays = new Set(weekSnapshots.map(snapshot => {
+          const snapshotDate = new Date(snapshot.timestamp || snapshot.log_date || today);
+          snapshotDate.setHours(0, 0, 0, 0);
+          return snapshotDate.toDateString();
+        })).size;
+        document.getElementById('dash-week-summary').textContent = `${weekSnapshots.length} log${weekSnapshots.length === 1 ? '' : 's'} • ${uniqueWeekDays} unique day${uniqueWeekDays === 1 ? '' : 's'}`;
+        document.getElementById('dash-week-status').textContent = weekSnapshots.length >= 3
+          ? 'Enough data for a meaningful weekly readout'
+          : 'Keep logging to unlock richer weekly insights';
+
+        const latestDate = latest.timestamp ? new Date(latest.timestamp) : null;
+        const latestDay = latestDate ? new Date(latestDate) : null;
+        if (latestDay) {
+          latestDay.setHours(0, 0, 0, 0);
+        }
+        const loggedToday = latestDay && latestDay.getTime() === today.getTime();
+
+        document.getElementById('dash-lastlog').textContent = latestDate
+          ? `Last log: ${latestDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
+          : 'No logs yet';
+        document.getElementById('dash-status').textContent = loggedToday
+          ? 'Today’s log is already in place'
+          : 'A log is still needed today';
 
         const score = latest.vektra_score;
 
@@ -341,11 +385,9 @@ async function loadDashboard() {
       } else {
         console.log('No snapshots yet.');
       }
-    } else {
-      console.log('Snapshots request failed:', res.status);
-    }
   } catch (e) {
     console.error('Could not load snapshots:', e);
+    showToast('Could not load your data. Please refresh.', 'error');
   }
 }
 
@@ -367,6 +409,8 @@ function setGoalHit(hit) {
   document.getElementById('btn-hit-no').style.color = !hit ? '#fff' : 'var(--text-secondary)';
 }
 
+let dailyLogLocked = false;
+
 function updateProgress() {
   const fields = ['inp-mood','inp-energy','inp-focus','inp-income','inp-tomorrow','inp-sleep','inp-skills'];
   const filled = fields.filter(id => {
@@ -377,11 +421,43 @@ function updateProgress() {
   document.getElementById('log-progress').style.width = pct + '%';
 }
 
+function setDailyLogReadOnly(readonly, message = '') {
+  const statusEl = document.getElementById('daily-log-status');
+  const controls = document.querySelectorAll('#daily-log input, #daily-log textarea, #daily-log button');
+  controls.forEach(control => {
+    control.disabled = readonly;
+  });
+  dailyLogLocked = readonly;
+  if (statusEl) {
+    statusEl.textContent = message;
+    statusEl.style.display = message ? 'block' : 'none';
+  }
+}
+
+async function checkTodayLogStatus() {
+  if (!currentUser || !authToken) return;
+  try {
+    const res = await fetch(`${API}/api/v1/users/${currentUser.id}/snapshots/today`, {
+      headers: { 'Authorization': `Bearer ${authToken}` }
+    });
+    if (!res.ok) return;
+    const data = await res.json();
+    if (data.logged) {
+      setDailyLogReadOnly(true, 'A log for today is already saved. You can review your dashboard or come back tomorrow.');
+    } else {
+      setDailyLogReadOnly(false, '');
+    }
+  } catch (e) {
+    setDailyLogReadOnly(false, '');
+  }
+}
+
 function openDailyLog() {
   const today = new Date().toLocaleDateString('en-US', {weekday:'long', month:'long', day:'numeric'});
   document.getElementById('log-date').textContent = today;
   goTo('daily-log');
   restoreDraft();
+  checkTodayLogStatus();
   // Auto-save every 30 seconds when on daily log screen
   setInterval(() => {
     if (document.getElementById('daily-log').style.display !== 'none') {
@@ -393,14 +469,73 @@ function openDailyLog() {
 // ── Submit daily log ──
 async function submitLog() {
   if (!currentUser || !authToken) return;
+  if (dailyLogLocked) {
+    showToast('Today’s log is already saved. Nothing new was submitted.', 'info', 3000);
+    return;
+  }
   const errEl = document.getElementById('log-error');
+  const submitBtn = document.querySelector('.btn-primary[onclick="submitLog()"]');
   errEl.style.display = 'none';
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Saving...';
+  }
+  const moodVal = document.getElementById('inp-mood').value;
+  const sleepVal = document.getElementById('inp-sleep').value;
+  const incomeVal = document.getElementById('inp-income').value;
+  const expenseVal = document.getElementById('inp-expenses').value;
+  
+  if (!moodVal || moodVal === '5') {
+    showToast('Please select your mood', 'warning');
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Submit Today's Log 🔥";
+    }
+    return;
+  }
+  if (!sleepVal || sleepVal === '7') {
+    showToast('Please enter your sleep hours', 'warning');
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Submit Today's Log 🔥";
+    }
+    return;
+  }
+  
+  const sleepHours = parseFloat(sleepVal);
+  if (isNaN(sleepHours) || sleepHours < 0 || sleepHours > 24) {
+    showToast('Sleep hours must be between 0 and 24', 'warning');
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Submit Today's Log 🔥";
+    }
+    return;
+  }
+
+  if (incomeVal && (isNaN(parseFloat(incomeVal)) || parseFloat(incomeVal) < 0)) {
+    showToast('Income must be a positive number', 'warning');
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Submit Today's Log 🔥";
+    }
+    return;
+  }
+
+  if (expenseVal && (isNaN(parseFloat(expenseVal)) || parseFloat(expenseVal) < 0)) {
+    showToast('Expenses must be a positive number', 'warning');
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Submit Today's Log 🔥";
+    }
+    return;
+  }
+
   const payload = {
-    mood_score:            parseInt(document.getElementById('inp-mood').value),
-    energy_level:          parseInt(document.getElementById('inp-energy').value),
-    focus_level:           parseInt(document.getElementById('inp-focus').value),
-    social_battery:        parseInt(document.getElementById('inp-social').value),
-    health_battery:        parseInt(document.getElementById('inp-health').value),
+    mood_score:            parseInt(moodVal),
+    energy_level:          parseInt(document.getElementById('inp-energy').value) || null,
+    focus_level:           parseInt(document.getElementById('inp-focus').value) || null,
+    social_battery:        parseInt(document.getElementById('inp-social').value) || null,
+    health_battery:        parseInt(document.getElementById('inp-health').value) || null,
     uncomfortable_moments: document.getElementById('inp-uncomfortable').value || null,
     daily_income:          parseFloat(document.getElementById('inp-income').value) || null,
     expenses:              parseFloat(document.getElementById('inp-expenses').value) || null,
@@ -411,7 +546,7 @@ async function submitLog() {
     best_decision:         document.getElementById('inp-best').value || null,
     worst_decision:        document.getElementById('inp-worst').value || null,
     what_i_avoided:        document.getElementById('inp-avoided').value || null,
-    sleep_hours:           parseFloat(document.getElementById('inp-sleep').value),
+    sleep_hours:           sleepHours,
     screen_time:           parseFloat(document.getElementById('inp-screen').value) || null,
     diet_taken:            document.getElementById('inp-diet').value || null,
     skills_learned:        document.getElementById('inp-skills').value || null,
@@ -419,13 +554,9 @@ async function submitLog() {
     gratitude_line:        document.getElementById('inp-gratitude').value || null,
     funny_line:            document.getElementById('inp-funny').value || null,
     focus_hours:           parseFloat(document.getElementById('inp-focushours').value) || null,
-    environment_rating:    parseInt(document.getElementById('inp-env').value),
+    environment_rating:    parseInt(document.getElementById('inp-env').value) || null,
     opportunity_cost:      parseFloat(document.getElementById('inp-oppcost').value) || null,
   };
-  if (!payload.mood_score || !payload.sleep_hours) {
-    showToast('Please fill in at least mood and sleep hours', 'warning');
-    return;
-  }
   try {
     const res = await fetch(`${API}/api/v1/users/${currentUser.id}/snapshots`, {
       method: 'POST',
@@ -437,7 +568,11 @@ async function submitLog() {
       goTo('dashboard');
       loadDashboard();
       setTimeout(() => {
-        showToast(`🔥 VEKTRA Score: ${snap.vektra_score}/100`, 'success', 4000);
+        if (snap.is_duplicate) {
+          showToast('Today’s log was already saved. We kept your existing entry.', 'info', 4000);
+        } else {
+          showToast(`🔥 VEKTRA Score: ${snap.vektra_score}/100`, 'success', 4000);
+        }
       }, 500);
     } else {
       const data = await res.json();
@@ -447,6 +582,11 @@ async function submitLog() {
   } catch(e) {
     errEl.textContent = 'Could not connect to server.';
     errEl.style.display = 'block';
+  } finally {
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Submit Today's Log 🔥";
+    }
   }
   clearDraft();
 }
@@ -470,31 +610,59 @@ function onboardStep1() {
   const goal = document.getElementById('ob-goal').value.trim();
   const deadline = document.getElementById('ob-deadline').value;
   const errEl = document.getElementById('ob1-error');
+  const btnEl = document.getElementById('ob1-btn');
   errEl.style.display = 'none';
   if (!goal) {
     errEl.textContent = 'Please enter your north star goal.';
     errEl.style.display = 'block';
     return;
   }
+  if (btnEl) {
+    btnEl.disabled = true;
+    btnEl.textContent = 'Saving...';
+  }
   onboardData.primary_goal = goal;
   onboardData.north_star = deadline ? `${goal} — by ${deadline}` : goal;
   onboardData.north_star_deadline = deadline || null;
-  goTo('onboard-2');
+  setTimeout(() => {
+    if (btnEl) {
+      btnEl.disabled = false;
+      btnEl.textContent = 'Set My North Star →';
+    }
+    goTo('onboard-2');
+  }, 300);
 }
 
 function onboardStep2() {
+  const btnEl = document.getElementById('ob2-btn');
+  if (btnEl) {
+    btnEl.disabled = true;
+    btnEl.textContent = 'Saving...';
+  }
   onboardData.initial_net_worth = parseFloat(document.getElementById('ob-networth').value) || 0;
   onboardData.current_capital = parseFloat(document.getElementById('ob-capital').value) || 0;
-  goTo('onboard-3');
+  setTimeout(() => {
+    if (btnEl) {
+      btnEl.disabled = false;
+      btnEl.textContent = 'Continue →';
+    }
+    goTo('onboard-3');
+  }, 300);
 }
 
 async function onboardStep3() {
   const errEl = document.getElementById('ob3-error');
+  const btnEl = document.getElementById('ob3-btn');
   errEl.style.display = 'none';
   onboardData.preferred_feedback_tone = selectedTone;
   
+  if (btnEl) {
+    btnEl.disabled = true;
+    btnEl.textContent = 'Launching...';
+  }
+  
   try {
-    await fetch(`${API}/api/v1/users/me`, {
+    const res = await fetch(`${API}/api/v1/users/me`, {
       method: 'PATCH',
       headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -506,6 +674,17 @@ async function onboardStep3() {
       })
     });
 
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      errEl.textContent = data.detail || 'Could not save your preferences.';
+      errEl.style.display = 'block';
+      if (btnEl) {
+        btnEl.disabled = false;
+        btnEl.textContent = 'Launch VEKTRA 🚀';
+      }
+      return;
+    }
+
     // Force fresh user fetch ──
     const userRes = await fetch(`${API}/api/v1/users/me`, {
       headers: { 'Authorization': `Bearer ${authToken}` }
@@ -514,6 +693,13 @@ async function onboardStep3() {
 
   } catch(e) {
     console.log('Could not save onboarding data', e);
+    errEl.textContent = 'Could not connect to server. Please try again.';
+    errEl.style.display = 'block';
+    if (btnEl) {
+      btnEl.disabled = false;
+      btnEl.textContent = 'Launch VEKTRA 🚀';
+    }
+    return;
   }
 
   goTo('dashboard');
@@ -526,7 +712,11 @@ async function loadReport() {
   showLoader('Generating your report...');
   document.getElementById('report-narrative').textContent = 'Generating...';
   
-  if (!currentUser || !authToken) { hideLoader(); return; }
+  if (!currentUser || !authToken) { 
+    hideLoader();
+    showToast('Please log in to view your report', 'error');
+    return;
+  }
   
   try {
     const res = await fetch(`${API}/api/v1/users/${currentUser.id}/reports/generate`, {
@@ -534,16 +724,31 @@ async function loadReport() {
       headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({})
     });
-    if (!res.ok) return;
+    
+    if (!res.ok) {
+      hideLoader();
+      const data = await res.json().catch(() => ({}));
+      showToast(data.detail || 'Could not generate report. Try again.', 'error');
+      document.getElementById('report-narrative').textContent = 'Could not load report. Try again.';
+      return;
+    }
+    
     const report = await res.json();
     const content = report.content || {};
+    const uniqueDays = content.unique_days_logged ?? content.days_logged ?? 0;
+    const reportCountdown = content.report_countdown ?? Math.max(0, 7 - uniqueDays);
+    const signalScores = content.signal_scores || {};
+    const reportReady = content.report_ready ?? uniqueDays >= 3;
+    const readinessMessage = content.report_readiness_message || (reportReady ? 'Your weekly report is ready.' : 'Log a few more days to unlock a richer weekly report.');
 
     document.getElementById('report-score').textContent =
       report.vektra_score ? report.vektra_score.toFixed(0) : '—';
     document.getElementById('report-period').textContent =
-      `${content.days_logged || 0} days logged`;
+      uniqueDays > 0 ? `${uniqueDays} unique day${uniqueDays === 1 ? '' : 's'} logged` : 'No week data yet';
     document.getElementById('report-days').textContent =
-      `${content.days_logged || 0}/7`;
+      `${uniqueDays}/7`;
+    document.getElementById('report-timer').textContent =
+      `${reportCountdown}/7`;
     document.getElementById('report-cashflow').textContent =
       content.net_cash_flow !== undefined ?
       (content.net_cash_flow >= 0 ? '+' : '') + content.net_cash_flow : '—';
@@ -552,6 +757,27 @@ async function loadReport() {
 
     const cfEl = document.getElementById('report-cashflow');
     cfEl.style.color = content.net_cash_flow >= 0 ? 'var(--success)' : 'var(--danger)';
+
+    const readinessEl = document.getElementById('report-readiness');
+    if (readinessEl) {
+      readinessEl.textContent = readinessMessage;
+      readinessEl.style.display = 'block';
+      readinessEl.style.borderColor = reportReady ? 'rgba(34,197,94,0.3)' : 'rgba(236,72,153,0.3)';
+      readinessEl.style.background = reportReady ? 'rgba(34,197,94,0.08)' : 'rgba(236,72,153,0.08)';
+    }
+
+    // Show/hide empty state based on report readiness
+    const emptyEl = document.getElementById('report-empty');
+    const narrativeEl = document.getElementById('report-narrative');
+    if (emptyEl && narrativeEl) {
+      if (!reportReady) {
+        emptyEl.style.display = 'block';
+        narrativeEl.style.display = 'none';
+      } else {
+        emptyEl.style.display = 'none';
+        narrativeEl.style.display = 'block';
+      }
+    }
 
     // Format narrative
     const raw = report.summary_text || 'No report generated yet.';
@@ -567,15 +793,17 @@ async function loadReport() {
       .trim();
     document.getElementById('report-narrative').innerHTML = formatted.replace(/\n/g, '<br>');
 
-    renderEngineBar('bar-financial', 'Financial', content.avg_vektra_score || 50, '#22c55e');
-    renderEngineBar('bar-mental', 'Mental', content.avg_mood ? content.avg_mood * 10 : 50, '#6c63ff');
-    renderEngineBar('bar-execution', 'Execution', content.goal_hit_rate || 0, '#ec4899');
-    renderEngineBar('bar-body', 'Body', content.avg_sleep ? Math.min(100, content.avg_sleep / 9 * 100) : 50, '#f59e0b');
-    renderEngineBar('bar-growth', 'Growth', content.skills_count ? content.skills_count / 7 * 100 : 0, '#06b6d4');
+    renderEngineBar('bar-financial', 'Financial', signalScores.Financial ?? 0, '#22c55e', 100);
+    renderEngineBar('bar-mental', 'Mental', signalScores.Mental ?? 0, '#6c63ff', 100);
+    renderEngineBar('bar-execution', 'Execution', signalScores.Execution ?? 0, '#ec4899', 100);
+    renderEngineBar('bar-body', 'Body', signalScores.Body ?? 0, '#f59e0b', 100);
+    renderEngineBar('bar-growth', 'Growth', signalScores.Growth ?? 0, '#06b6d4', 100);
     hideLoader();
 
   } catch(e) {
     hideLoader();
+    console.error('Report generation error:', e);
+    showToast('Could not load report. Please try again.', 'error');
     document.getElementById('report-narrative').textContent = 'Could not load report. Try again.';
   }
 }
@@ -585,13 +813,13 @@ async function generateReport() {
 }
 
 // ── Render engine bar ──
-function renderEngineBar(id, label, score, color) {
+function renderEngineBar(id, label, score, color, maxScore = 100) {
   const el = document.getElementById(id);
   if (!el) return;
-  const pct = Math.round(Math.min(100, Math.max(0, score)));
+  const pct = Math.round(Math.min(100, Math.max(0, (score / maxScore) * 100)));
   el.innerHTML = `
     <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-secondary);margin-bottom:4px">
-      <span>${label}</span><span style="font-weight:600;color:${color}">${pct}</span>
+      <span>${label}</span><span style="font-weight:600;color:${color}">${Number(score).toFixed(1)}</span>
     </div>
     <div style="background:var(--bg-secondary);border-radius:4px;height:6px;overflow:hidden">
       <div style="width:${pct}%;height:100%;background:${color};border-radius:4px;transition:width .6s"></div>
@@ -637,15 +865,31 @@ async function openProfile() {
       document.getElementById('profile-streak').textContent = streak > 0 ? `🔥 ${streak}` : '0';
       document.getElementById('profile-score').textContent = latest?.vektra_score ? latest.vektra_score.toFixed(0) : '—';
       document.getElementById('profile-logs').textContent = snapshots.length;
+    } else {
+      console.error('Failed to load profile data:', res.status);
     }
-  } catch(e) {}
+  } catch(e) {
+    console.error('Profile data load error:', e);
+  }
 }
 
 async function saveProfile() {
   if (!currentUser || !authToken) return;
   const northStar = document.getElementById('profile-northstar').value.trim();
   const successEl = document.getElementById('profile-success');
+  const errorEl = document.getElementById('profile-error');
+  const saveBtn = document.getElementById('profile-save-btn');
   successEl.style.display = 'none';
+  errorEl.style.display = 'none';
+  if (!northStar) {
+    errorEl.textContent = 'Please add a north star before saving.';
+    errorEl.style.display = 'block';
+    return;
+  }
+  if (saveBtn) {
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Saving...';
+  }
   try {
     const res = await fetch(`${API}/api/v1/users/me`, {
       method: 'PATCH',
@@ -654,11 +898,24 @@ async function saveProfile() {
     });
     if (res.ok) {
       currentUser = await res.json();
+      document.getElementById('dash-northstar').textContent = currentUser.north_star || 'Not set yet — update in profile';
+      successEl.textContent = '✓ Profile updated';
       successEl.style.display = 'block';
+      showToast('Profile updated', 'success', 2500);
       setTimeout(() => successEl.style.display = 'none', 3000);
+    } else {
+      const data = await res.json().catch(() => ({}));
+      errorEl.textContent = data.detail || 'Could not save your profile.';
+      errorEl.style.display = 'block';
     }
   } catch(e) {
-    console.log('Profile save error', e);
+    errorEl.textContent = 'Could not connect to server.';
+    errorEl.style.display = 'block';
+  } finally {
+    if (saveBtn) {
+      saveBtn.disabled = false;
+      saveBtn.textContent = 'Save Changes';
+    }
   }
 }
 

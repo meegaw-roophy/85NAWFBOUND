@@ -95,6 +95,10 @@ class SnapshotCreate(BaseModel):
     data: Optional[Any] = None
 
 
+class SnapshotStatusOut(BaseModel):
+    logged: bool
+
+
 class SnapshotOut(SnapshotCreate):
     id: int
     user_id: int
@@ -111,6 +115,7 @@ class SnapshotOut(SnapshotCreate):
     goal_completion_pct: Optional[float] = None
     opportunity_cost_score: Optional[float] = None
     vektra_score: Optional[float] = None
+    is_duplicate: Optional[bool] = None
 
     model_config = ConfigDict(from_attributes=True)
 

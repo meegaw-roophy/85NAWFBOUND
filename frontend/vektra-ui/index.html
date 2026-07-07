@@ -64,7 +64,7 @@
 
     <div id="reg-error" style="display:none;color:var(--danger);font-size:13px;margin-bottom:16px;text-align:center"></div>
 
-    <button class="btn-primary" onclick="register()">Create Account</button>
+    <button id="reg-btn" class="btn-primary" onclick="register()">Create Account</button>
     
     <div style="text-align:center;margin-top:20px;font-size:14px;color:var(--text-muted)">
       Already have an account? 
@@ -102,7 +102,7 @@
 
     <div id="ob1-error" style="display:none;color:var(--danger);font-size:13px;margin-bottom:12px;text-align:center"></div>
 
-    <button class="btn-primary" onclick="onboardStep1()">Set My North Star →</button>
+    <button id="ob1-btn" class="btn-primary" onclick="onboardStep1()">Set My North Star →</button>
     <div style="text-align:center;margin-top:16px">
       <span onclick="goTo('dashboard')" style="font-size:13px;color:var(--text-muted);cursor:pointer">Skip for now</span>
     </div>
@@ -137,7 +137,7 @@
 
     <div id="ob2-error" style="display:none;color:var(--danger);font-size:13px;margin-bottom:12px;text-align:center"></div>
 
-    <button class="btn-primary" onclick="onboardStep2()">Continue →</button>
+    <button id="ob2-btn" class="btn-primary" onclick="onboardStep2()">Continue →</button>
     <div style="text-align:center;margin-top:16px">
       <span onclick="goTo('onboard-1')" style="font-size:13px;color:var(--text-muted);cursor:pointer">← Back</span>
     </div>
@@ -180,7 +180,7 @@
 
     <div id="ob3-error" style="display:none;color:var(--danger);font-size:13px;margin-bottom:12px;text-align:center"></div>
 
-    <button class="btn-primary" onclick="onboardStep3()">Launch VEKTRA 🚀</button>
+    <button id="ob3-btn" class="btn-primary" onclick="onboardStep3()">Launch VEKTRA 🚀</button>
     <div style="text-align:center;margin-top:16px">
       <span onclick="goTo('onboard-2')" style="font-size:13px;color:var(--text-muted);cursor:pointer">← Back</span>
     </div>
@@ -207,7 +207,7 @@
 
     <div id="login-error" style="display:none;color:var(--danger);font-size:13px;margin-bottom:16px;text-align:center"></div>
 
-    <button class="btn-primary" onclick="login()">Sign In</button>
+    <button id="login-btn" class="btn-primary" onclick="login()">Sign In</button>
 
     <div style="text-align:center;margin-top:20px;font-size:14px;color:var(--text-muted)">
       Don't have an account? 
@@ -223,7 +223,7 @@
   <!-- Header -->
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2rem;padding-top:1rem">
     <div>
-      <div style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.1em">Good morning</div>
+      <div id="dash-greeting" style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.1em">Good morning</div>
       <div id="dash-username" style="font-size:20px;font-weight:700">—</div>
     </div>
     <div style="font-size:20px;cursor:pointer" onclick="openProfile()">⚙</div>
@@ -258,6 +258,18 @@
   <div style="font-size:11px;color:var(--text-muted);text-align:right">Log daily<br>to keep it alive</div>
 </div>
 
+  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:1rem;margin-bottom:1rem">
+    <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.08em">This week</div>
+    <div id="dash-week-summary" style="font-size:16px;font-weight:700;color:var(--text-primary)">0 logs • 0 unique days</div>
+    <div id="dash-week-status" style="font-size:13px;color:var(--text-secondary);margin-top:4px">Keep logging to unlock richer weekly insights</div>
+  </div>
+
+  <div style="background:linear-gradient(135deg,rgba(108,99,255,0.12),rgba(236,72,153,0.12));border:1px solid var(--border);border-radius:var(--radius-sm);padding:1rem;margin-bottom:1rem">
+    <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.08em">Today’s pulse</div>
+    <div id="dash-lastlog" style="font-size:14px;font-weight:600;color:var(--text-primary)">No logs yet</div>
+    <div id="dash-status" style="font-size:13px;color:var(--text-secondary);margin-top:4px">Start logging to build momentum</div>
+  </div>
+
   <!-- North Star -->
   <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:1rem;margin-bottom:1.5rem">
     <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px">NORTH STAR</div>
@@ -268,7 +280,8 @@
   <div id="first-log-prompt" style="display:none;background:linear-gradient(135deg,rgba(108,99,255,0.15),rgba(236,72,153,0.15));border:1px solid var(--accent);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem;text-align:center">
     <div style="font-size:24px;margin-bottom:8px">🚀</div>
     <div style="font-weight:700;margin-bottom:6px">Your vector is set.</div>
-    <div style="font-size:13px;color:var(--text-secondary);margin-bottom:0">Log your first day to activate your VEKTRA score.</div>
+    <div style="font-size:13px;color:var(--text-secondary);margin-bottom:12px">Log your first day to activate your VEKTRA score.</div>
+    <button class="btn-primary" onclick="openDailyLog()" style="width:100%">Log Your First Day</button>
   </div>
 
   <!-- Log Today Button -->
@@ -292,9 +305,11 @@
   </div>
 
   <!-- Progress bar -->
-  <div style="background:var(--bg-card);border-radius:4px;height:4px;margin-bottom:1.5rem;overflow:hidden">
+  <div style="background:var(--bg-card);border-radius:4px;height:4px;margin-bottom:1rem;overflow:hidden">
     <div id="log-progress" style="height:100%;background:linear-gradient(90deg,#6c63ff,#ec4899);width:0%;transition:width .3s"></div>
   </div>
+
+  <div id="daily-log-status" style="display:none;background:rgba(108,99,255,0.1);border:1px solid rgba(108,99,255,0.3);border-radius:var(--radius-sm);padding:.75rem;margin-bottom:1rem;font-size:13px;color:var(--text-secondary);text-align:center"></div>
 
   <!-- GROUP 1: MENTAL -->
   <div class="log-group" id="group-mental">
@@ -460,6 +475,14 @@
     <button class="btn-primary" onclick="submitLog()">Submit Today's Log 🔥</button>
   </div>
 
+  <!-- Empty State (shown when no data) -->
+  <div id="daily-log-empty" style="display:none;text-align:center;padding:3rem 1.5rem">
+    <div style="font-size:48px;margin-bottom:1rem">📝</div>
+    <div style="font-size:16px;font-weight:600;color:var(--text-primary);margin-bottom:8px">Start your first daily log</div>
+    <div style="font-size:13px;color:var(--text-muted);margin-bottom:1.5rem">Track your mood, sleep, and progress to build your trajectory</div>
+    <button class="btn-primary" onclick="document.getElementById('daily-log-empty').style.display='none';document.querySelector('#daily-log > div:not(#daily-log-empty)').style.display='block'">Begin Logging →</button>
+  </div>
+
 </div>
 
 <!-- SCREEN: REPORTS -->
@@ -476,16 +499,20 @@
 
   <!-- Score Card -->
   <div style="background:linear-gradient(135deg,#1a1a2e,#16213e);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem;margin-bottom:1rem;text-align:center">
-    <div style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px">Average VEKTRA Score</div>
+    <div style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px">Composite VEKTRA Score</div>
     <div id="report-score" style="font-size:56px;font-weight:800;background:linear-gradient(135deg,#6c63ff,#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1">—</div>
     <div style="font-size:12px;color:var(--text-muted);margin-top:4px">out of 100</div>
   </div>
 
   <!-- Quick Stats -->
-  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:1rem">
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:1rem">
     <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:.75rem;text-align:center">
-      <div style="font-size:10px;color:var(--text-muted);margin-bottom:4px">DAYS LOGGED</div>
+      <div style="font-size:10px;color:var(--text-muted);margin-bottom:4px">UNIQUE DAYS</div>
       <div id="report-days" style="font-size:20px;font-weight:700">—</div>
+    </div>
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:.75rem;text-align:center">
+      <div style="font-size:10px;color:var(--text-muted);margin-bottom:4px">REPORT TIMER</div>
+      <div id="report-timer" style="font-size:20px;font-weight:700">—</div>
     </div>
     <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:.75rem;text-align:center">
       <div style="font-size:10px;color:var(--text-muted);margin-bottom:4px">CASH FLOW</div>
@@ -497,15 +524,22 @@
     </div>
   </div>
 
+  <div id="report-readiness" style="display:block;background:rgba(236,72,153,0.08);border:1px solid rgba(236,72,153,0.3);border-radius:var(--radius-sm);padding:.85rem;margin-bottom:1rem;font-size:13px;color:var(--text-secondary)"></div>
+
   <!-- AI Narrative -->
   <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
     <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">VEKTRA Analysis</div>
     <div id="report-narrative" style="font-size:14px;color:var(--text-secondary);line-height:1.8;white-space:pre-wrap">Generating your report...</div>
+    <div id="report-empty" style="display:none;text-align:center;padding:2rem">
+      <div style="font-size:48px;margin-bottom:1rem">📊</div>
+      <div style="font-size:16px;font-weight:600;color:var(--text-primary);margin-bottom:8px">Not enough data yet</div>
+      <div style="font-size:13px;color:var(--text-muted)">Log at least 3 days to unlock your first weekly report</div>
+    </div>
   </div>
 
   <!-- Engine Breakdown -->
   <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
-    <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">Score Breakdown</div>
+    <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">Signal Breakdown</div>
     
     <div class="engine-bar" id="bar-financial" data-label="Financial" data-color="#22c55e"></div>
     <div class="engine-bar" id="bar-mental" data-label="Mental" data-color="#6c63ff"></div>
@@ -573,8 +607,9 @@
   </div>
 
   <!-- Save Button -->
+  <div id="profile-error" style="display:none;color:var(--danger);font-size:13px;text-align:center;margin-bottom:8px"></div>
   <div id="profile-success" style="display:none;color:var(--success);font-size:13px;text-align:center;margin-bottom:12px">✓ Profile updated</div>
-  <button class="btn-primary" onclick="saveProfile()">Save Changes</button>
+  <button id="profile-save-btn" class="btn-primary" onclick="saveProfile()">Save Changes</button>
 
   <!-- Sign Out -->
   <button class="btn-secondary" style="margin-top:12px" onclick="logout()">Sign Out</button>

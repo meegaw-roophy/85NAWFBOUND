@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List, Optional
@@ -10,6 +11,31 @@ async def get_user_by_id(db: AsyncSession, user_id: int) -> Optional[User]:
 
 
 async def create_snapshot(db: AsyncSession, user_id: int, snapshot_data: dict) -> Snapshot:
+    # ── Avoid duplicate entries for the same day ──
+    target_date = None
+    if snapshot_data.get('log_date') is not None:
+        target_date = snapshot_data['log_date']
+    elif snapshot_data.get('timestamp') is not None:
+        target_date = snapshot_data['timestamp'].date()
+    else:
+        target_date = datetime.utcnow().date()
+
+    if target_date is not None:
+        start_of_day = datetime.combine(target_date, datetime.min.time())
+        end_of_day = start_of_day + timedelta(days=1)
+        existing_result = await db.execute(
+            select(Snapshot)
+            .where(Snapshot.user_id == user_id)
+            .where(Snapshot.timestamp >= start_of_day)
+            .where(Snapshot.timestamp < end_of_day)
+            .order_by(Snapshot.timestamp.desc())
+            .limit(1)
+        )
+        existing = existing_result.scalars().first()
+        if existing:
+            existing.is_duplicate = True
+            return existing
+
     # ── Get previous snapshot for variance calculations ──
     prev_result = await db.execute(
         select(Snapshot)
@@ -42,6 +68,7 @@ async def create_snapshot(db: AsyncSession, user_id: int, snapshot_data: dict) -
 
     # ── Save to database ──
     snap = Snapshot(user_id=user_id, **snapshot_data)
+    snap.is_duplicate = False
     db.add(snap)
     await db.commit()
     await db.refresh(snap)
@@ -64,6 +91,22 @@ async def get_user_by_username(db: AsyncSession, username: str) -> Optional[User
 async def get_user_by_email(db: AsyncSession, email: str) -> Optional[User]:
     result = await db.execute(select(User).where(User.email == email))
     return result.scalars().first()
+
+
+async def has_snapshot_for_date(db: AsyncSession, user_id: int, target_date: Optional[datetime.date] = None) -> bool:
+    if target_date is None:
+        target_date = datetime.utcnow().date()
+
+    start_of_day = datetime.combine(target_date, datetime.min.time())
+    end_of_day = start_of_day + timedelta(days=1)
+    result = await db.execute(
+        select(Snapshot.id)
+        .where(Snapshot.user_id == user_id)
+        .where(Snapshot.timestamp >= start_of_day)
+        .where(Snapshot.timestamp < end_of_day)
+        .limit(1)
+    )
+    return result.scalar_one_or_none() is not None
 
 
 async def list_snapshots(db: AsyncSession, user_id: int, limit: int = 100) -> List[Snapshot]:

@@ -502,10 +502,114 @@ body,
 }
 
 .loader-text {
-  font-size: 14px;
   color: var(--text-secondary);
+  font-size: 14px;
+  letter-spacing: 0.05em;
 }
 
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+
+/* ── MOBILE RESPONSIVENESS ── */
+@media (max-width: 480px) {
+  #toast-container {
+    top: 10px;
+    right: 10px;
+    left: 10px;
+    width: calc(100% - 20px);
+    max-width: none;
+  }
+  
+  .toast {
+    font-size: 13px;
+    padding: 12px 14px;
+  }
+  
+  .splash-logo {
+    font-size: 42px;
+  }
+  
+  .welcome-headline {
+    font-size: 24px;
+  }
+  
+  .welcome-desc {
+    font-size: 14px;
+  }
+  
+  .btn-primary,
+  .btn-secondary {
+    padding: 14px 20px;
+    font-size: 15px;
+  }
+  
+  /* Adjust dashboard cards for mobile */
+  #dashboard > div[style*="grid"] {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px;
+  }
+  
+  /* Adjust report stats grid */
+  #reports > div[style*="grid-template-columns:repeat(4,1fr)"] {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  
+  /* Adjust profile stats grid */
+  #profile > div[style*="grid-template-columns:repeat(3,1fr)"] {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+  }
+  
+  /* Smaller padding on mobile */
+  #dashboard,
+  #reports,
+  #profile,
+  #daily-log {
+    padding: 1rem !important;
+  }
+  
+  /* Adjust log groups for mobile */
+  .log-group {
+    padding: 1rem;
+  }
+  
+  /* Smaller text on mobile */
+  .slider-label,
+  .text-field label,
+  .number-field label {
+    font-size: 11px;
+  }
+  
+  /* Adjust input sizes */
+  input[type="range"] {
+    height: 32px;
+  }
+  
+  textarea {
+    font-size: 14px !important;
+  }
+}
+
+@media (max-width: 360px) {
+  .splash-logo {
+    font-size: 36px;
+  }
+  
+  .welcome-headline {
+    font-size: 20px;
+  }
+  
+  /* Single column for very small screens */
+  #dashboard > div[style*="grid"] {
+    grid-template-columns: 1fr !important;
+  }
+  
+  #reports > div[style*="grid-template-columns:repeat(2,1fr)"] {
+    grid-template-columns: 1fr !important;
+  }
+  
+  #profile > div[style*="grid-template-columns:repeat(3,1fr)"] {
+    grid-template-columns: 1fr !important;
+  }
 }

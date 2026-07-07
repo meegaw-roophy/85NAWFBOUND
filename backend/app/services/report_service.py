@@ -66,6 +66,7 @@ async def build_weekly_summary(snapshots: List[Snapshot]) -> dict:
     # ── Execution stats ──────────────────────
     goals_set        = sum(1 for s in snapshots if s.tomorrow_goal)
     goals_hit        = sum(1 for s in snapshots if s.target_hit_bool is True)
+    goal_hit_rate    = round(goals_hit / goals_set * 100, 1) if goals_set > 0 else None
     procrast_days    = sum(1 for s in snapshots if s.procrastination_delta and s.procrastination_delta > 0)
 
     # ── Survival runway (latest snapshot) ────
@@ -83,8 +84,52 @@ async def build_weekly_summary(snapshots: List[Snapshot]) -> dict:
     avoided_items    = _safe_list([s.what_i_avoided for s in snapshots])
     funny_lines      = _safe_list([s.funny_line for s in snapshots])
 
+    snapshot_dates = {
+        s.timestamp.date() for s in snapshots if getattr(s, 'timestamp', None) is not None
+    }
+    unique_days_logged = len(snapshot_dates) or len(snapshots)
+    minimum_days_for_report = 3
+    report_ready = unique_days_logged >= minimum_days_for_report
+    report_countdown = max(0, 7 - unique_days_logged)
+    days_needed = max(0, minimum_days_for_report - unique_days_logged)
+    report_readiness_message = (
+        'Enough data for a meaningful weekly report.'
+        if report_ready
+        else f'Need {days_needed} more day{"s" if days_needed != 1 else ""} to reach 3 logged days for a richer weekly report.'
+    )
+    component_scores = {
+        'Financial': round(min(100, max(0, avg_vektra_score or 50))),
+        'Mental': round(min(100, max(0, (avg_mood or 0) * 10))),
+        'Execution': round(min(100, max(0, goal_hit_rate or 0))),
+        'Body': round(min(100, max(0, (avg_sleep and avg_sleep / 9 * 100) or 0))),
+        'Growth': round(min(100, max(0, (skills_count / 7) * 100 if skills_count else 0))),
+    }
+    signal_scores = {
+        'Financial': component_scores['Financial'],
+        'Mental': component_scores['Mental'],
+        'Execution': component_scores['Execution'],
+        'Body': component_scores['Body'],
+        'Growth': component_scores['Growth'],
+    }
+    report_score = round(
+        (
+            signal_scores['Financial'] * 0.25
+            + signal_scores['Mental'] * 0.2
+            + signal_scores['Execution'] * 0.2
+            + signal_scores['Body'] * 0.2
+            + signal_scores['Growth'] * 0.15
+        ),
+        1,
+    )
+
     return {
         'days_logged':          len(snapshots),
+        'unique_days_logged':   unique_days_logged,
+        'report_ready':         report_ready,
+        'report_readiness_message': report_readiness_message,
+        'report_countdown':     report_countdown,
+        'signal_scores':        signal_scores,
+        'report_score':         report_score,
         'avg_vektra_score':     avg_vektra_score,
         'avg_mood':             avg_mood,
         'avg_energy':           avg_energy,
@@ -165,8 +210,8 @@ async def generate_weekly_report(
         feedback_tone=user_data.get('feedback_tone', 'Balanced'),
     )
 
-    # ── Calculate average vektra score ───────
-    avg_score = summary.get('avg_vektra_score')
+    # ── Calculate headline report score ─────
+    avg_score = summary.get('report_score', summary.get('avg_vektra_score'))
 
     # ── Store report ──────────────────────────
     report_payload = {

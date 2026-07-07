@@ -350,42 +350,74 @@
 <script>
   let waitlistCount = 0;
 
-  function joinWaitlist() {
-    const email = document.getElementById('email-input').value.trim();
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      document.getElementById('email-input').style.borderColor = '#ef4444';
-      return;
-    }
-    waitlistCount++;
-    document.getElementById('waitlist-count').textContent = `Join ${waitlistCount} others on the waitlist`;
-    document.getElementById('waitlist-success').style.display = 'block';
-    document.getElementById('email-input').value = '';
-    document.getElementById('email-input').style.borderColor = '';
-    // Store email locally for now
-    const emails = JSON.parse(localStorage.getItem('vektra_waitlist') || '[]');
-    emails.push({email, date: new Date().toISOString()});
-    localStorage.setItem('vektra_waitlist', JSON.stringify(emails));
-    console.log('Waitlist emails:', emails);
+async function joinWaitlist() {
+  const email = document.getElementById('email-input').value.trim();
+  const btn = document.querySelector('.waitlist-btn');
+  
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    document.getElementById('email-input').style.borderColor = '#ef4444';
+    return;
   }
 
-  function joinWaitlist2() {
-    const email = document.getElementById('email-input-2').value.trim();
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      document.getElementById('email-input-2').style.borderColor = '#ef4444';
-      return;
+  btn.textContent = 'Joining...';
+  btn.disabled = true;
+
+  try {
+    const res = await fetch('https://formspree.io/f/xeebwojj', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, source: 'landing_page', date: new Date().toISOString() })
+    });
+
+    if (res.ok) {
+      waitlistCount++;
+      document.getElementById('waitlist-count').textContent = `Join ${waitlistCount} others on the waitlist`;
+      document.getElementById('waitlist-success').style.display = 'block';
+      document.getElementById('email-input').value = '';
+      document.getElementById('email-input').style.borderColor = '';
+      btn.textContent = '✓ You\'re in!';
+    } else {
+      btn.textContent = 'Try again';
+      btn.disabled = false;
     }
-    document.getElementById('waitlist-success-2').style.display = 'block';
-    document.getElementById('email-input-2').value = '';
-    const emails = JSON.parse(localStorage.getItem('vektra_waitlist') || '[]');
-    emails.push({email, date: new Date().toISOString()});
-    localStorage.setItem('vektra_waitlist', JSON.stringify(emails));
+  } catch(e) {
+    btn.textContent = 'Try again';
+    btn.disabled = false;
+  }
+}
+
+async function joinWaitlist2() {
+  const email = document.getElementById('email-input-2').value.trim();
+  const btn = document.querySelectorAll('.waitlist-btn')[1];
+
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    document.getElementById('email-input-2').style.borderColor = '#ef4444';
+    return;
   }
 
-  // Smooth scroll for nav CTA
-  document.querySelector('a[href="#waitlist"]').addEventListener('click', e => {
-    e.preventDefault();
-    document.getElementById('waitlist').scrollIntoView({behavior:'smooth'});
-  });
+  btn.textContent = 'Joining...';
+  btn.disabled = true;
+
+  try {
+    const res = await fetch('https://formspree.io/f/xeebwojj', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, source: 'landing_page_bottom', date: new Date().toISOString() })
+    });
+
+    if (res.ok) {
+      document.getElementById('waitlist-success-2').style.display = 'block';
+      document.getElementById('email-input-2').value = '';
+      btn.textContent = '✓ You\'re in!';
+    } else {
+      btn.textContent = 'Try again';
+      btn.disabled = false;
+    }
+  } catch(e) {
+    btn.textContent = 'Try again';
+    btn.disabled = false;
+  }
+}
 </script>
 
 </body>
