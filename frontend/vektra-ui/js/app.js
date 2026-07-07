@@ -315,8 +315,8 @@ async function loadDashboard() {
 
         const score = latest.vektra_score;
 
-        document.getElementById('dash-score').textContent =
-          score ? score.toFixed(0) : '—';
+        if (score) animateScore(score);
+          else document.getElementById('dash-score').textContent = '—';
 
         document.getElementById('dash-runway').textContent =
           latest.survival_runway
@@ -774,4 +774,25 @@ function restoreDraft() {
 
 function clearDraft() {
   localStorage.removeItem('vektra_draft');
+}
+
+// ── Animate score counter ──
+function animateScore(targetScore) {
+  const el = document.getElementById('dash-score');
+  if (!el || !targetScore) return;
+  
+  const duration = 1500;
+  const start = performance.now();
+  const startVal = 0;
+  
+  function update(currentTime) {
+    const elapsed = currentTime - start;
+    const progress = Math.min(elapsed / duration, 1);
+    // Ease out cubic
+    const eased = 1 - Math.pow(1 - progress, 3);
+    const current = Math.round(startVal + (targetScore - startVal) * eased);
+    el.textContent = current;
+    if (progress < 1) requestAnimationFrame(update);
+  }
+  requestAnimationFrame(update);
 }
