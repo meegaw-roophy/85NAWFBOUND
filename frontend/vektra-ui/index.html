@@ -226,15 +226,24 @@
       <div id="dash-greeting" style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.1em">Good morning</div>
       <div id="dash-username" style="font-size:20px;font-weight:700">—</div>
     </div>
-    <div style="font-size:20px;cursor:pointer" onclick="openProfile()">⚙</div>
+    <div style="display:flex;gap:12px;align-items:center">
+      <div style="font-size:20px;cursor:pointer" onclick="goTo('analytics')" title="Analytics">📊</div>
+      <div style="font-size:20px;cursor:pointer" onclick="openProfile()" title="Profile">⚙</div>
+    </div>
   </div>
 
   <!-- VEKTRA Score Card -->
-  <div style="background:linear-gradient(135deg,#1a1a2e,#16213e);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem;margin-bottom:1rem;text-align:center">
+  <div id="smart-score-card" style="background:linear-gradient(135deg,#1a1a2e,#16213e);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem;margin-bottom:1rem;text-align:center">
     <div style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px">VEKTRA Score</div>
     <div id="dash-score" style="font-size:64px;font-weight:800;background:linear-gradient(135deg,#6c63ff,#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1">—</div>
     <div style="font-size:12px;color:var(--text-muted);margin-top:4px">out of 100</div>
     <div id="dash-trajectory" style="margin-top:12px;font-size:13px;color:var(--text-secondary)">Log today to update your score</div>
+  </div>
+
+  <!-- Smart Insight Card -->
+  <div id="smart-insight-card" style="background:linear-gradient(135deg,rgba(108,99,255,0.12),rgba(236,72,153,0.12));border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
+    <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">Today's Insight</div>
+    <div id="smart-insight" style="font-size:14px;color:var(--text-primary);line-height:1.5">Log your first snapshot to unlock personalized insights</div>
   </div>
 
   <!-- Quick Stats Row -->
@@ -494,7 +503,18 @@
       <div style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.1em">Weekly Report</div>
       <div id="report-period" style="font-size:18px;font-weight:700">This Week</div>
     </div>
-    <div onclick="goTo('dashboard')" style="color:var(--text-muted);cursor:pointer;font-size:13px">← Back</div>
+    <div style="display:flex;gap:12px;align-items:center">
+      <div style="font-size:20px;cursor:pointer" onclick="goTo('history')" title="History">📜</div>
+      <div onclick="goTo('dashboard')" style="color:var(--text-muted);cursor:pointer;font-size:13px">← Back</div>
+    </div>
+  </div>
+
+  <!-- Weekly Comparison -->
+  <div id="weekly-comparison" style="background:linear-gradient(135deg,#1a1a2e,#16213e);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
+    <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">vs Last Week</div>
+    <div id="comparison-metrics" style="display:flex;flex-direction:column;gap:8px">
+      <div style="display:flex;align-items:center;justify-content:center;height:40px;color:var(--text-muted);font-size:13px">Loading comparison...</div>
+    </div>
   </div>
 
   <!-- Score Card -->
@@ -596,6 +616,28 @@
     <textarea id="profile-northstar" style="width:100%;padding:12px 14px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;font-family:var(--font);outline:none;resize:vertical;min-height:80px"></textarea>
   </div>
 
+  <!-- Goal Progress -->
+  <div style="background:linear-gradient(135deg,#1a1a2e,#16213e);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
+    <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">North Star Progress</div>
+    <div style="margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+        <span style="font-size:13px;color:var(--text-secondary)">Overall Progress</span>
+        <span id="goal-progress-pct" style="font-size:13px;font-weight:700;color:var(--accent)">0%</span>
+      </div>
+      <div style="height:8px;background:var(--bg-secondary);border-radius:4px;overflow:hidden">
+        <div id="goal-progress-bar" style="height:100%;background:linear-gradient(90deg,#6c63ff,#ec4899);width:0%;transition:width 0.5s ease"></div>
+      </div>
+    </div>
+    <div id="next-milestone" style="font-size:13px;color:var(--text-muted)">No milestones set yet</div>
+    <button onclick="goTo('goals')" style="margin-top:12px;padding:8px 16px;background:rgba(108,99,255,0.2);border:1px solid var(--accent);border-radius:var(--radius-sm);color:var(--accent);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font)">Manage Milestones →</button>
+  </div>
+
+  <!-- Goal Prediction -->
+  <div id="goal-prediction-card" style="background:linear-gradient(135deg,rgba(108,99,255,0.12),rgba(236,72,153,0.12));border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
+    <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">Goal Prediction</div>
+    <div id="prediction-content" style="font-size:13px;color:var(--text-primary);line-height:1.5">Loading prediction...</div>
+  </div>
+
   <!-- Feedback Tone -->
   <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
     <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">Report Tone</div>
@@ -604,6 +646,20 @@
       <button id="ptone-balanced" onclick="setProfileTone('Balanced')" style="flex:1;padding:10px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;font-family:var(--font);font-size:13px">⚖️ Balanced</button>
       <button id="ptone-gentle" onclick="setProfileTone('Gentle')" style="flex:1;padding:10px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;font-family:var(--font);font-size:13px">🌱 Gentle</button>
     </div>
+  </div>
+
+  <!-- Daily Reminder -->
+  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
+    <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">Daily Reminder</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <span style="font-size:13px;color:var(--text-secondary)">Enable notifications</span>
+      <button id="notification-toggle" onclick="toggleNotifications()" style="padding:8px 16px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;font-size:13px;font-family:var(--font)">Enable</button>
+    </div>
+    <div id="reminder-time-container" style="display:none">
+      <label style="font-size:12px;color:var(--text-muted);margin-bottom:6px;display:block">Reminder time</label>
+      <input type="time" id="reminder-time" value="20:00" style="width:100%;padding:10px 12px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;font-family:var(--font);outline:none">
+    </div>
+    <div id="notification-status" style="font-size:12px;color:var(--text-muted);margin-top:8px">Notifications not enabled</div>
   </div>
 
   <!-- Save Button -->
@@ -634,5 +690,173 @@
   <button onclick="shareReferral()" style="width:100%;padding:10px;background:linear-gradient(135deg,#6c63ff,#ec4899);border:none;border-radius:var(--radius-sm);color:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:var(--font)">Share VEKTRA 🔥</button>
 </div>
 
+<!-- SCREEN: GOALS / MILESTONES -->
+<div id="goals" style="display:none;flex-direction:column;min-height:100vh;padding:1.5rem;max-width:420px;margin:0 auto">
+
+  <!-- Header -->
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;padding-top:1rem">
+    <div>
+      <div style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.1em">Milestones</div>
+      <div style="font-size:18px;font-weight:700">North Star Breakdown</div>
+    </div>
+    <div onclick="goTo('profile')" style="color:var(--text-muted);cursor:pointer;font-size:13px">← Back</div>
+  </div>
+
+  <!-- Progress Overview -->
+  <div style="background:linear-gradient(135deg,#1a1a2e,#16213e);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
+    <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">Overall Progress</div>
+    <div style="margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+        <span style="font-size:13px;color:var(--text-secondary)">Milestones Completed</span>
+        <span id="goals-completed" style="font-size:13px;font-weight:700;color:var(--accent)">0/0</span>
+      </div>
+      <div style="height:8px;background:var(--bg-secondary);border-radius:4px;overflow:hidden">
+        <div id="goals-progress-bar" style="height:100%;background:linear-gradient(90deg,#6c63ff,#ec4899);width:0%;transition:width 0.5s ease"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add New Milestone -->
+  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
+    <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">Add New Milestone</div>
+    <div class="text-field" style="margin-bottom:12px">
+      <label>Milestone Title</label>
+      <input type="text" id="goal-title" placeholder="e.g. Launch MVP product" style="width:100%;padding:12px 14px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;font-family:var(--font);outline:none">
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+      <div class="number-field">
+        <label>Intensity (1-10)</label>
+        <input type="number" id="goal-intensity" placeholder="5" min="1" max="10" style="width:100%;padding:12px 14px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;font-family:var(--font);outline:none">
+      </div>
+      <div class="number-field">
+        <label>Effort (1-10)</label>
+        <input type="number" id="goal-effort" placeholder="5" min="1" max="10" style="width:100%;padding:12px 14px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;font-family:var(--font);outline:none">
+      </div>
+    </div>
+    <div class="text-field" style="margin-bottom:12px">
+      <label>Target Date</label>
+      <input type="date" id="goal-deadline" style="width:100%;padding:12px 14px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;font-family:var(--font);outline:none">
+    </div>
+    <div id="goal-error" style="display:none;color:var(--danger);font-size:13px;margin-bottom:8px;text-align:center"></div>
+    <button id="goal-add-btn" class="btn-primary" onclick="addGoal()">Add Milestone</button>
+  </div>
+
+  <!-- Milestones List -->
+  <div id="goals-list" style="display:flex;flex-direction:column;gap:12px">
+    <!-- Goals will be rendered here -->
+  </div>
+
+  <!-- Empty State -->
+  <div id="goals-empty" style="display:none;text-align:center;padding:3rem 1.5rem">
+    <div style="font-size:48px;margin-bottom:1rem">🎯</div>
+    <div style="font-size:16px;font-weight:600;color:var(--text-primary);margin-bottom:8px">No milestones yet</div>
+    <div style="font-size:13px;color:var(--text-muted);margin-bottom:1.5rem">Break your North Star into smaller achievable steps</div>
+  </div>
+
 </div>
+
+<!-- SCREEN: ANALYTICS -->
+<div id="analytics" style="display:none;flex-direction:column;min-height:100vh;padding:1.5rem;max-width:420px;margin:0 auto">
+
+  <!-- Header -->
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;padding-top:1rem">
+    <div>
+      <div style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.1em">Analytics</div>
+      <div style="font-size:18px;font-weight:700">Historical Trends</div>
+    </div>
+    <div onclick="goTo('dashboard')" style="color:var(--text-muted);cursor:pointer;font-size:13px">← Back</div>
+  </div>
+
+  <!-- Period Selector -->
+  <div style="display:flex;gap:8px;margin-bottom:1.5rem">
+    <button onclick="loadAnalytics('7d')" id="period-7d" class="period-btn" style="flex:1;padding:10px;border-radius:var(--radius-sm);border:1px solid var(--accent);background:rgba(108,99,255,0.2);color:var(--accent);cursor:pointer;font-size:13px;font-family:var(--font)">7D</button>
+    <button onclick="loadAnalytics('30d')" id="period-30d" class="period-btn" style="flex:1;padding:10px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;font-size:13px;font-family:var(--font)">30D</button>
+    <button onclick="loadAnalytics('90d')" id="period-90d" class="period-btn" style="flex:1;padding:10px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;font-size:13px;font-family:var(--font)">90D</button>
+    <button onclick="loadAnalytics('1y')" id="period-1y" class="period-btn" style="flex:1;padding:10px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;font-size:13px;font-family:var(--font)">1Y</button>
+  </div>
+
+  <!-- VEKTRA Score Chart -->
+  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
+    <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">VEKTRA Score</div>
+    <div id="chart-vektra" style="height:150px;position:relative">
+      <div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-muted);font-size:13px">Loading...</div>
+    </div>
+  </div>
+
+  <!-- Net Worth Chart -->
+  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
+    <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">Net Worth</div>
+    <div id="chart-networth" style="height:150px;position:relative">
+      <div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-muted);font-size:13px">Loading...</div>
+    </div>
+  </div>
+
+  <!-- Sleep Chart -->
+  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
+    <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">Sleep Hours</div>
+    <div id="chart-sleep" style="height:150px;position:relative">
+      <div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-muted);font-size:13px">Loading...</div>
+    </div>
+  </div>
+
+  <!-- Mood Chart -->
+  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
+    <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">Mood</div>
+    <div id="chart-mood" style="height:150px;position:relative">
+      <div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-muted);font-size:13px">Loading...</div>
+    </div>
+  </div>
+
+  <!-- Focus Chart -->
+  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
+    <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">Focus Hours</div>
+    <div id="chart-focus" style="height:150px;position:relative">
+      <div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-muted);font-size:13px">Loading...</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- SCREEN: TRAJECTORY HISTORY -->
+<div id="history" style="display:none;flex-direction:column;min-height:100vh;padding:1.5rem;max-width:420px;margin:0 auto">
+
+  <!-- Header -->
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;padding-top:1rem">
+    <div>
+      <div style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.1em">History</div>
+      <div style="font-size:18px;font-weight:700">Trajectory Reports</div>
+    </div>
+    <div onclick="goTo('reports')" style="color:var(--text-muted);cursor:pointer;font-size:13px">← Back</div>
+  </div>
+
+  <!-- Filter Tabs -->
+  <div style="display:flex;gap:8px;margin-bottom:1.5rem">
+    <button onclick="filterHistory('all')" id="hist-filter-all" class="hist-filter-btn" style="flex:1;padding:10px;border-radius:var(--radius-sm);border:1px solid var(--accent);background:rgba(108,99,255,0.2);color:var(--accent);cursor:pointer;font-size:13px;font-family:var(--font)">All</button>
+    <button onclick="filterHistory('weekly')" id="hist-filter-weekly" class="hist-filter-btn" style="flex:1;padding:10px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;font-size:13px;font-family:var(--font)">Weekly</button>
+    <button onclick="filterHistory('monthly')" id="hist-filter-monthly" class="hist-filter-btn" style="flex:1;padding:10px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;font-size:13px;font-family:var(--font)">Monthly</button>
+  </div>
+
+  <!-- Reports List -->
+  <div id="history-list" style="display:flex;flex-direction:column;gap:12px">
+    <!-- Reports will be rendered here -->
+  </div>
+
+  <!-- Empty State -->
+  <div id="history-empty" style="display:none;text-align:center;padding:3rem 1.5rem">
+    <div style="font-size:48px;margin-bottom:1rem">📜</div>
+    <div style="font-size:16px;font-weight:600;color:var(--text-primary);margin-bottom:8px">No reports yet</div>
+    <div style="font-size:13px;color:var(--text-muted);margin-bottom:1.5rem">Your trajectory history will appear here</div>
+  </div>
+
+    <!-- SCORE REVEAL -->
+  <div id="score-reveal" style="display:none;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;text-align:center;padding:2rem">
+    <div style="font-size:14px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.15em;margin-bottom:1rem">Today's VEKTRA Score</div>
+    <div id="reveal-score" style="font-size:96px;font-weight:900;background:linear-gradient(135deg,#6c63ff,#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1">0</div>
+    <div id="reveal-message" style="font-size:16px;color:var(--text-secondary);margin-top:1rem;max-width:280px;line-height:1.6"></div>
+    <div id="reveal-metrics" style="display:flex;gap:1.5rem;margin-top:2rem;flex-wrap:wrap;justify-content:center"></div>
+    <button class="btn-primary" style="margin-top:2.5rem;max-width:280px" onclick="goTo('dashboard');loadDashboard()">View Dashboard →</button>
+  </div>
+
+</div>
+
 <script src="js/app.js"></script>

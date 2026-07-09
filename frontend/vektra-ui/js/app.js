@@ -381,6 +381,10 @@ async function loadDashboard() {
             ? '→ Steady — push harder'
             : '⚠ Trajectory dropping';
 
+        // Generate smart insight
+        const smartInsight = generateSmartInsight(snapshots, latest);
+        document.getElementById('smart-insight').textContent = smartInsight;
+
         console.log('Dashboard updated successfully');
       } else {
         console.log('No snapshots yet.');
@@ -565,15 +569,8 @@ async function submitLog() {
     });
     if (res.ok) {
       const snap = await res.json();
-      goTo('dashboard');
-      loadDashboard();
-      setTimeout(() => {
-        if (snap.is_duplicate) {
-          showToast('Today’s log was already saved. We kept your existing entry.', 'info', 4000);
-        } else {
-          showToast(`🔥 VEKTRA Score: ${snap.vektra_score}/100`, 'success', 4000);
-        }
-      }, 500);
+      showScoreReveal(snap);
+      clearDraft();
     } else {
       const data = await res.json();
       errEl.textContent = data.detail || 'Failed to submit. Try again.';
@@ -798,6 +795,10 @@ async function loadReport() {
     renderEngineBar('bar-execution', 'Execution', signalScores.Execution ?? 0, '#ec4899', 100);
     renderEngineBar('bar-body', 'Body', signalScores.Body ?? 0, '#f59e0b', 100);
     renderEngineBar('bar-growth', 'Growth', signalScores.Growth ?? 0, '#06b6d4', 100);
+    
+    // Load weekly comparison
+    loadWeeklyComparison();
+    
     hideLoader();
 
   } catch(e) {
@@ -871,6 +872,12 @@ async function openProfile() {
   } catch(e) {
     console.error('Profile data load error:', e);
   }
+  
+  // Load goal progress
+  loadGoalProgress();
+  
+  // Load goal prediction
+  loadGoalPrediction();
 }
 
 async function saveProfile() {
@@ -1052,4 +1059,791 @@ function animateScore(targetScore) {
     if (progress < 1) requestAnimationFrame(update);
   }
   requestAnimationFrame(update);
+}
+
+// ── GOALS / MILESTONES ──
+async function loadGoals() {
+  if (!currentUser || !authToken) return;
+  
+  try {
+    const res = await fetch(`${API}/api/v1/goals`, {
+      headers: { 'Authorization': `Bearer ${authToken}` }
+    });
+    
+    if (res.ok) {
+      const goals = await res.json();
+      renderGoals(goals);
+    } else {
+      console.error('Failed to load goals');
+    }
+  } catch (e) {
+    console.error('Error loading goals:', e);
+  }
+}
+
+async function loadGoalProgress() {
+  if (!currentUser || !authToken) return;
+  
+  try {
+    const res = await fetch(`${API}/api/v1/goals/progress`, {
+      headers: { 'Authorization': `Bearer ${authToken}` }
+    });
+    
+    if (res.ok) {
+      const progress = await res.json();
+      updateGoalProgressUI(progress);
+    }
+  } catch (e) {
+    console.error('Error loading goal progress:', e);
+  }
+}
+
+function updateGoalProgressUI(progress) {
+  const pctEl = document.getElementById('goal-progress-pct');
+  const barEl = document.getElementById('goal-progress-bar');
+  const nextEl = document.getElementById('next-milestone');
+  const completedEl = document.getElementById('goals-completed');
+  const goalsBarEl = document.getElementById('goals-progress-bar');
+  
+  if (pctEl) pctEl.textContent = `${Math.round(progress.progress_pct)}%`;
+  if (barEl) barEl.style.width = `${progress.progress_pct}%`;
+  if (completedEl) completedEl.textContent = `${progress.completed_goals}/${progress.total_goals}`;
+  if (goalsBarEl) goalsBarEl.style.width = `${progress.progress_pct}%`;
+  if (nextEl) {
+    if (progress.next_milestone) {
+      nextEl.textContent = `Next: ${progress.next_milestone}`;
+    } else if (progress.total_goals === 0) {
+      nextEl.textContent = 'No milestones set yet';
+    } else {
+      nextEl.textContent = 'All milestones completed! 🎉';
+    }
+  }
+}
+
+function renderGoals(goals) {
+  const listEl = document.getElementById('goals-list');
+  const emptyEl = document.getElementById('goals-empty');
+  
+  if (!listEl) return;
+  
+  if (!goals || goals.length === 0) {
+    listEl.style.display = 'none';
+    if (emptyEl) emptyEl.style.display = 'block';
+    return;
+  }
+  
+  listEl.style.display = 'flex';
+  if (emptyEl) emptyEl.style.display = 'none';
+  
+  listEl.innerHTML = goals.map(goal => `
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1rem;${goal.completed ? 'opacity:0.6' : ''}">
+      <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:8px">
+        <div style="flex:1">
+          <div style="font-weight:600;font-size:14px;margin-bottom:4px ${goal.completed ? 'text-decoration:line-through;color:var(--text-muted)' : ''}">${goal.title}</div>
+          ${goal.deadline ? `<div style="font-size:12px;color:var(--text-muted)">Due: ${new Date(goal.deadline).toLocaleDateString()}</div>` : ''}
+        </div>
+        <div style="display:flex;gap:8px">
+          <button onclick="toggleGoalComplete(${goal.id}, ${!goal.completed})" style="padding:6px 10px;border-radius:var(--radius-sm);border:1px solid ${goal.completed ? 'var(--success)' : 'var(--border)'};background:${goal.completed ? 'rgba(34,197,94,0.1)' : 'transparent'};color:${goal.completed ? 'var(--success)' : 'var(--text-secondary)'};cursor:pointer;font-size:12px;font-family:var(--font)">
+            ${goal.completed ? '✓' : '○'}
+          </button>
+          <button onclick="deleteGoal(${goal.id})" style="padding:6px 10px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text-muted);cursor:pointer;font-size:12px;font-family:var(--font)">✕</button>
+        </div>
+      </div>
+      ${goal.intensity || goal.effort ? `
+        <div style="display:flex;gap:12px;margin-top:8px">
+          ${goal.intensity ? `<div style="font-size:11px;color:var(--text-muted)">Intensity: ${goal.intensity}/10</div>` : ''}
+          ${goal.effort ? `<div style="font-size:11px;color:var(--text-muted)">Effort: ${goal.effort}/10</div>` : ''}
+        </div>
+      ` : ''}
+      <div style="margin-top:8px;height:4px;background:var(--bg-secondary);border-radius:2px;overflow:hidden">
+        <div style="height:100%;background:linear-gradient(90deg,#6c63ff,#ec4899);width:${goal.progress_pct}%"></div>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function addGoal() {
+  if (!currentUser || !authToken) return;
+  
+  const title = document.getElementById('goal-title').value.trim();
+  const intensity = parseInt(document.getElementById('goal-intensity').value) || null;
+  const effort = parseInt(document.getElementById('goal-effort').value) || null;
+  const deadline = document.getElementById('goal-deadline').value || null;
+  const errEl = document.getElementById('goal-error');
+  const btnEl = document.getElementById('goal-add-btn');
+  
+  errEl.style.display = 'none';
+  
+  if (!title) {
+    errEl.textContent = 'Please enter a milestone title';
+    errEl.style.display = 'block';
+    return;
+  }
+  
+  if (btnEl) {
+    btnEl.disabled = true;
+    btnEl.textContent = 'Adding...';
+  }
+  
+  try {
+    const res = await fetch(`${API}/api/v1/goals`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title, intensity, effort, deadline: deadline ? new Date(deadline).toISOString().split('T')[0] : null })
+    });
+    
+    if (res.ok) {
+      showToast('Milestone added! 🎯', 'success');
+      document.getElementById('goal-title').value = '';
+      document.getElementById('goal-intensity').value = '';
+      document.getElementById('goal-effort').value = '';
+      document.getElementById('goal-deadline').value = '';
+      loadGoals();
+      loadGoalProgress();
+    } else {
+      const data = await res.json().catch(() => ({}));
+      errEl.textContent = data.detail || 'Failed to add milestone';
+      errEl.style.display = 'block';
+    }
+  } catch (e) {
+    errEl.textContent = 'Could not connect to server';
+    errEl.style.display = 'block';
+  } finally {
+    if (btnEl) {
+      btnEl.disabled = false;
+      btnEl.textContent = 'Add Milestone';
+    }
+  }
+}
+
+async function toggleGoalComplete(goalId, completed) {
+  if (!currentUser || !authToken) return;
+  
+  try {
+    const res = await fetch(`${API}/api/v1/goals/${goalId}`, {
+      method: 'PUT',
+      headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ completed })
+    });
+    
+    if (res.ok) {
+      showToast(completed ? 'Milestone completed! 🎉' : 'Milestone reopened', 'success');
+      loadGoals();
+      loadGoalProgress();
+    } else {
+      showToast('Failed to update milestone', 'error');
+    }
+  } catch (e) {
+    showToast('Could not connect to server', 'error');
+  }
+}
+
+async function deleteGoal(goalId) {
+  if (!confirm('Delete this milestone?')) return;
+  if (!currentUser || !authToken) return;
+  
+  try {
+    const res = await fetch(`${API}/api/v1/goals/${goalId}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${authToken}` }
+    });
+    
+    if (res.ok) {
+      showToast('Milestone deleted', 'success');
+      loadGoals();
+      loadGoalProgress();
+    } else {
+      showToast('Failed to delete milestone', 'error');
+    }
+  } catch (e) {
+    showToast('Could not connect to server', 'error');
+  }
+}
+
+// ── ANALYTICS DASHBOARD ──
+let currentAnalyticsPeriod = '7d';
+
+async function loadAnalytics(period) {
+  if (!currentUser || !authToken) return;
+  
+  currentAnalyticsPeriod = period;
+  
+  // Update period button styles
+  document.querySelectorAll('.period-btn').forEach(btn => {
+    btn.style.borderColor = 'var(--border)';
+    btn.style.background = 'transparent';
+    btn.style.color = 'var(--text-secondary)';
+  });
+  const activeBtn = document.getElementById(`period-${period}`);
+  if (activeBtn) {
+    activeBtn.style.borderColor = 'var(--accent)';
+    activeBtn.style.background = 'rgba(108,99,255,0.2)';
+    activeBtn.style.color = 'var(--accent)';
+  }
+  
+  try {
+    const res = await fetch(`${API}/api/v1/users/${currentUser.id}/snapshots/analytics?period=${period}`, {
+      headers: { 'Authorization': `Bearer ${authToken}` }
+    });
+    
+    if (res.ok) {
+      const data = await res.json();
+      renderAnalyticsCharts(data.data);
+    } else {
+      console.error('Failed to load analytics');
+      showAnalyticsError();
+    }
+  } catch (e) {
+    console.error('Error loading analytics:', e);
+    showAnalyticsError();
+  }
+}
+
+function showAnalyticsError() {
+  const charts = ['chart-vektra', 'chart-networth', 'chart-sleep', 'chart-mood', 'chart-focus'];
+  charts.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-muted);font-size:13px">Could not load data</div>';
+    }
+  });
+}
+
+function renderAnalyticsCharts(data) {
+  if (!data || data.length === 0) {
+    showNoDataMessage();
+    return;
+  }
+  
+  renderSimpleChart('chart-vektra', data, 'vektra_score', 0, 100, '#6c63ff');
+  renderSimpleChart('chart-networth', data, 'current_net_worth', null, null, '#22c55e');
+  renderSimpleChart('chart-sleep', data, 'sleep_hours', 0, 12, '#f59e0b');
+  renderSimpleChart('chart-mood', data, 'mood_score', 1, 10, '#ec4899');
+  renderSimpleChart('chart-focus', data, 'focus_hours', 0, 12, '#06b6d4');
+}
+
+function showNoDataMessage() {
+  const charts = ['chart-vektra', 'chart-networth', 'chart-sleep', 'chart-mood', 'chart-focus'];
+  charts.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-muted);font-size:13px">No data for this period</div>';
+    }
+  });
+}
+
+function renderSimpleChart(containerId, data, valueKey, minVal, maxVal, color) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  
+  const values = data.map(d => d[valueKey]).filter(v => v !== null && v !== undefined);
+  
+  if (values.length === 0) {
+    container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-muted);font-size:13px">No data</div>';
+    return;
+  }
+  
+  const actualMin = minVal !== null ? minVal : Math.min(...values);
+  const actualMax = maxVal !== null ? maxVal : Math.max(...values);
+  const range = actualMax - actualMin || 1;
+  
+  // Create simple bar chart
+  const barsHtml = values.map((val, i) => {
+    const normalized = (val - actualMin) / range;
+    const height = Math.max(5, normalized * 100);
+    const displayVal = val !== null && val !== undefined ? val.toFixed(1) : '—';
+    return `
+      <div style="flex:1;display:flex;align-items:end;justify-content:center;position:relative">
+        <div style="width:80%;height:${height}%;background:${color};border-radius:4px 4px 0 0;min-height:4px;transition:height 0.3s ease"></div>
+        <div style="position:absolute;top:-20px;font-size:10px;color:var(--text-muted)">${displayVal}</div>
+      </div>
+    `;
+  }).join('');
+  
+  // Date labels (show first, middle, last)
+  const dateLabels = data.map(d => new Date(d.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+  const labelHtml = `
+    <div style="display:flex;justify-content:space-between;margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">
+      <span style="font-size:10px;color:var(--text-muted)">${dateLabels[0]}</span>
+      ${dateLabels.length > 2 ? `<span style="font-size:10px;color:var(--text-muted)">${dateLabels[Math.floor(dateLabels.length / 2)]}</span>` : ''}
+      <span style="font-size:10px;color:var(--text-muted)">${dateLabels[dateLabels.length - 1]}</span>
+    </div>
+  `;
+  
+  container.innerHTML = `
+    <div style="display:flex;gap:4px;height:100%;align-items:end;padding-bottom:24px">
+      ${barsHtml}
+    </div>
+    ${labelHtml}
+  `;
+}
+
+// ── DAILY REMINDER ENGINE ──
+let notificationsEnabled = false;
+let reminderTime = '20:00';
+
+async function toggleNotifications() {
+  const toggleBtn = document.getElementById('notification-toggle');
+  const timeContainer = document.getElementById('reminder-time-container');
+  const statusEl = document.getElementById('notification-status');
+  
+  if (!('Notification' in window)) {
+    statusEl.textContent = 'Notifications not supported in this browser';
+    statusEl.style.color = 'var(--danger)';
+    return;
+  }
+  
+  if (notificationsEnabled) {
+    // Disable notifications
+    notificationsEnabled = false;
+    toggleBtn.textContent = 'Enable';
+    toggleBtn.style.borderColor = 'var(--border)';
+    toggleBtn.style.background = 'transparent';
+    toggleBtn.style.color = 'var(--text-secondary)';
+    timeContainer.style.display = 'none';
+    statusEl.textContent = 'Notifications disabled';
+    statusEl.style.color = 'var(--text-muted)';
+    
+    // Clear any scheduled alarms
+    if (navigator.alarms) {
+      navigator.alarms.clear('vektra-daily-log');
+    }
+  } else {
+    // Request permission
+    const permission = await Notification.requestPermission();
+    
+    if (permission === 'granted') {
+      notificationsEnabled = true;
+      toggleBtn.textContent = 'Disable';
+      toggleBtn.style.borderColor = 'var(--success)';
+      toggleBtn.style.background = 'rgba(34,197,94,0.1)';
+      toggleBtn.style.color = 'var(--success)';
+      timeContainer.style.display = 'block';
+      statusEl.textContent = 'Notifications enabled';
+      statusEl.style.color = 'var(--success)';
+      
+      // Schedule the reminder
+      scheduleReminder();
+    } else {
+      statusEl.textContent = 'Notification permission denied';
+      statusEl.style.color = 'var(--danger)';
+    }
+  }
+}
+
+function scheduleReminder() {
+  if (!notificationsEnabled) return;
+  
+  const timeInput = document.getElementById('reminder-time');
+  if (timeInput) {
+    reminderTime = timeInput.value;
+  }
+  
+  // Parse the reminder time
+  const [hours, minutes] = reminderTime.split(':').map(Number);
+  
+  // Calculate when to trigger
+  const now = new Date();
+  const triggerTime = new Date();
+  triggerTime.setHours(hours, minutes, 0, 0);
+  
+  // If the time has already passed today, schedule for tomorrow
+  if (triggerTime <= now) {
+    triggerTime.setDate(triggerTime.getDate() + 1);
+  }
+  
+  const delayMs = triggerTime - now;
+  
+  // Set timeout for the reminder
+  setTimeout(() => {
+    sendDailyReminder();
+    // Reschedule for next day
+    scheduleReminder();
+  }, delayMs);
+  
+  // Also try to use the Alarm API if available (better for background)
+  if (navigator.alarms && navigator.alarms.create) {
+    try {
+      navigator.alarms.create('vektra-daily-log', {
+        when: triggerTime.getTime(),
+        periodInMinutes: 24 * 60 // Daily
+      });
+    } catch (e) {
+      console.log('Alarm API not available, using setTimeout fallback');
+    }
+  }
+}
+
+function sendDailyReminder() {
+  const messages = [
+    "Time to log your daily VEKTRA snapshot! 📝",
+    "Don't break your streak - log today's progress! 🔥",
+    "Your trajectory awaits - log your daily snapshot! 🎯",
+    "Keep the momentum going - log today! ⚡",
+    "Daily logging = better insights. Log now! 📊"
+  ];
+  
+  const randomMessage = messages[Math.floor(Math.random() * messages.length)];
+  
+  if (Notification.permission === 'granted') {
+    new Notification('VEKTRA Daily Reminder', {
+      body: randomMessage,
+      icon: '/favicon.ico',
+      tag: 'vektra-daily-log'
+    });
+  }
+}
+
+// Listen for reminder time changes
+document.addEventListener('DOMContentLoaded', () => {
+  const timeInput = document.getElementById('reminder-time');
+  if (timeInput) {
+    timeInput.addEventListener('change', () => {
+      reminderTime = timeInput.value;
+      if (notificationsEnabled) {
+        scheduleReminder();
+        showToast('Reminder time updated', 'success');
+      }
+    });
+  }
+  
+  // Check for existing notification permission
+  if ('Notification' in window && Notification.permission === 'granted') {
+    const toggleBtn = document.getElementById('notification-toggle');
+    const timeContainer = document.getElementById('reminder-time-container');
+    const statusEl = document.getElementById('notification-status');
+    
+    if (toggleBtn) {
+      toggleBtn.textContent = 'Disable';
+      toggleBtn.style.borderColor = 'var(--success)';
+      toggleBtn.style.background = 'rgba(34,197,94,0.1)';
+      toggleBtn.style.color = 'var(--success)';
+    }
+    if (timeContainer) timeContainer.style.display = 'block';
+    if (statusEl) {
+      statusEl.textContent = 'Notifications enabled';
+      statusEl.style.color = 'var(--success)';
+    }
+    notificationsEnabled = true;
+    scheduleReminder();
+  }
+});
+
+// ── TRAJECTORY HISTORY ──
+let currentHistoryFilter = 'all';
+let allReports = [];
+
+async function loadHistory() {
+  if (!currentUser || !authToken) return;
+  
+  try {
+    const res = await fetch(`${API}/api/v1/users/${currentUser.id}/reports`, {
+      headers: { 'Authorization': `Bearer ${authToken}` }
+    });
+    
+    if (res.ok) {
+      allReports = await res.json();
+      filterHistory(currentHistoryFilter);
+    } else {
+      console.error('Failed to load reports');
+    }
+  } catch (e) {
+    console.error('Error loading reports:', e);
+  }
+}
+
+function filterHistory(filter) {
+  currentHistoryFilter = filter;
+  
+  // Update filter button styles
+  document.querySelectorAll('.hist-filter-btn').forEach(btn => {
+    btn.style.borderColor = 'var(--border)';
+    btn.style.background = 'transparent';
+    btn.style.color = 'var(--text-secondary)';
+  });
+  const activeBtn = document.getElementById(`hist-filter-${filter}`);
+  if (activeBtn) {
+    activeBtn.style.borderColor = 'var(--accent)';
+    activeBtn.style.background = 'rgba(108,99,255,0.2)';
+    activeBtn.style.color = 'var(--accent)';
+  }
+  
+  // Filter reports
+  let filtered = allReports;
+  if (filter === 'weekly') {
+    filtered = allReports.filter(r => r.report_type === 'weekly');
+  } else if (filter === 'monthly') {
+    filtered = allReports.filter(r => r.report_type === 'monthly');
+  }
+  
+  renderHistory(filtered);
+}
+
+function renderHistory(reports) {
+  const listEl = document.getElementById('history-list');
+  const emptyEl = document.getElementById('history-empty');
+  
+  if (!listEl) return;
+  
+  if (!reports || reports.length === 0) {
+    listEl.style.display = 'none';
+    if (emptyEl) emptyEl.style.display = 'block';
+    return;
+  }
+  
+  listEl.style.display = 'flex';
+  if (emptyEl) emptyEl.style.display = 'none';
+  
+  listEl.innerHTML = reports.map(report => {
+    const date = new Date(report.generated_at);
+    const formattedDate = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    const score = report.vektra_score ? Math.round(report.vektra_score) : '—';
+    const typeLabel = report.report_type === 'weekly' ? 'Weekly' : report.report_type === 'monthly' ? 'Monthly' : report.report_type;
+    
+    // Determine trajectory status from summary
+    let trajectoryStatus = 'Neutral';
+    let trajectoryColor = 'var(--text-muted)';
+    if (report.summary_text) {
+      const summary = report.summary_text.toLowerCase();
+      if (summary.includes('improving') || summary.includes('positive') || summary.includes('upward')) {
+        trajectoryStatus = 'Improving';
+        trajectoryColor = 'var(--success)';
+      } else if (summary.includes('declining') || summary.includes('negative') || summary.includes('downward')) {
+        trajectoryStatus = 'Declining';
+        trajectoryColor = 'var(--danger)';
+      } else if (summary.includes('stable') || summary.includes('steady')) {
+        trajectoryStatus = 'Stable';
+        trajectoryColor = 'var(--accent)';
+      }
+    }
+    
+    return `
+      <div onclick="viewReport(${report.id})" style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1rem;cursor:pointer;transition:border-color 0.2s ease" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+        <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:8px">
+          <div>
+            <div style="font-weight:600;font-size:14px;margin-bottom:4px">${typeLabel} Report</div>
+            <div style="font-size:12px;color:var(--text-muted)">${formattedDate}</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:20px;font-weight:700;color:var(--accent)">${score}</div>
+            <div style="font-size:10px;color:var(--text-muted)">Score</div>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">
+          <div style="font-size:12px;color:${trajectoryColor};font-weight:600">${trajectoryStatus}</div>
+          <div style="font-size:11px;color:var(--text-muted)">Tap to view →</div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+async function viewReport(reportId) {
+  if (!currentUser || !authToken) return;
+  
+  try {
+    const res = await fetch(`${API}/api/v1/users/${currentUser.id}/reports/${reportId}`, {
+      headers: { 'Authorization': `Bearer ${authToken}` }
+    });
+    
+    if (res.ok) {
+      const report = await res.json();
+      // Load the report into the current report view
+      currentReport = report;
+      goTo('reports');
+      loadReport();
+    } else {
+      showToast('Failed to load report', 'error');
+    }
+  } catch (e) {
+    showToast('Could not connect to server', 'error');
+  }
+}
+
+// ── WEEKLY COMPARISON ENGINE ──
+async function loadWeeklyComparison() {
+  if (!currentUser || !authToken) return;
+  
+  try {
+    const res = await fetch(`${API}/api/v1/users/${currentUser.id}/snapshots/comparison`, {
+      headers: { 'Authorization': `Bearer ${authToken}` }
+    });
+    
+    if (res.ok) {
+      const data = await res.json();
+      renderWeeklyComparison(data);
+    } else {
+      console.error('Failed to load comparison');
+      document.getElementById('comparison-metrics').innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:40px;color:var(--text-muted);font-size:13px">Comparison unavailable</div>';
+    }
+  } catch (e) {
+    console.error('Error loading comparison:', e);
+    document.getElementById('comparison-metrics').innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:40px;color:var(--text-muted);font-size:13px">Could not load comparison</div>';
+  }
+}
+
+function renderWeeklyComparison(data) {
+  const container = document.getElementById('comparison-metrics');
+  if (!container) return;
+  
+  const metrics = [
+    { key: 'vektra_score', label: 'VEKTRA Score', format: (v) => v ? v.toFixed(1) : '—' },
+    { key: 'mood_score', label: 'Mood', format: (v) => v ? v.toFixed(1) : '—' },
+    { key: 'sleep_hours', label: 'Sleep', format: (v) => v ? v.toFixed(1) + 'h' : '—' },
+    { key: 'focus_hours', label: 'Focus', format: (v) => v ? v.toFixed(1) + 'h' : '—' },
+    { key: 'net_cash_flow', label: 'Cash Flow', format: (v) => v ? (v >= 0 ? '+' : '') + v.toFixed(0) : '—' }
+  ];
+  
+  const html = metrics.map(metric => {
+    const current = data.current_week[metric.key];
+    const previous = data.previous_week[metric.key];
+    const change = data.changes[metric.key];
+    
+    if (change === null || current === null || previous === null) {
+      return `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0">
+          <span style="font-size:13px;color:var(--text-secondary)">${metric.label}</span>
+          <span style="font-size:13px;color:var(--text-muted)">No data</span>
+        </div>
+      `;
+    }
+    
+    const isPositive = change >= 0;
+    const arrow = isPositive ? '↑' : '↓';
+    const color = isPositive ? 'var(--success)' : 'var(--danger)';
+    const sign = isPositive ? '+' : '';
+    
+    return `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0">
+        <span style="font-size:13px;color:var(--text-secondary)">${metric.label}</span>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:13px;color:var(--text-primary)">${metric.format(current)}</span>
+          <span style="font-size:12px;color:${color};font-weight:600">${arrow} ${sign}${change.toFixed(1)}%</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+  
+  container.innerHTML = html;
+}
+
+// ── SMART DASHBOARD ──
+function generateSmartInsight(snapshots, latest) {
+  if (!snapshots || snapshots.length === 0) {
+    return "Log your first snapshot to unlock personalized insights";
+  }
+  
+  const insights = [];
+  
+  // Check for streak warning
+  const streak = calculateStreak(snapshots);
+  if (streak === 0 && snapshots.length > 0) {
+    insights.push("🔥 Your streak has reset. Log today to start building momentum!");
+  } else if (streak >= 7) {
+    insights.push(`🔥 Amazing! You're on a ${streak}-day streak. Keep it going!`);
+  } else if (streak >= 3) {
+    insights.push(`🔥 Great progress! ${streak}-day streak and counting.`);
+  }
+  
+  // Check score trend
+  if (latest && latest.vektra_score) {
+    if (latest.vektra_score >= 80) {
+      insights.push("🚀 Your trajectory is excellent! You're performing at a high level.");
+    } else if (latest.vektra_score >= 60) {
+      insights.push("📈 Good momentum. Focus on consistency to reach the next level.");
+    } else if (latest.vektra_score < 40) {
+      insights.push("⚠️ Your score needs attention. Review your habits and make small improvements.");
+    }
+  }
+  
+  // Check sleep patterns
+  if (latest && latest.sleep_hours) {
+    if (latest.sleep_hours < 6) {
+      insights.push("😴 Low sleep detected. Prioritize rest for better performance.");
+    } else if (latest.sleep_hours >= 7 && latest.sleep_hours <= 9) {
+      insights.push("💤 Great sleep! You're well-rested for peak performance.");
+    }
+  }
+  
+  // Check financial health
+  if (latest && latest.survival_runway) {
+    if (latest.survival_runway < 30) {
+      insights.push("💰 Low runway warning. Focus on increasing income or reducing expenses.");
+    } else if (latest.survival_runway >= 180) {
+      insights.push("💰 Strong financial position. You have excellent runway.");
+    }
+  }
+  
+  // Check goal progress
+  if (latest && latest.target_hit_bool === false) {
+    insights.push("🎯 You missed yesterday's goal. Reflect and adjust your approach.");
+  } else if (latest && latest.target_hit_bool === true) {
+    insights.push("🎯 Goal hit! Keep the momentum going.");
+  }
+  
+  // Check focus
+  if (latest && latest.focus_hours) {
+    if (latest.focus_hours >= 6) {
+      insights.push("⚡ Excellent focus hours today. Deep work pays off!");
+    } else if (latest.focus_hours < 2) {
+      insights.push("⚡ Low focus time. Try to block time for deep work tomorrow.");
+    }
+  }
+  
+  // Return a random insight if multiple exist
+  if (insights.length > 0) {
+    return insights[Math.floor(Math.random() * insights.length)];
+  }
+  
+  return "Keep logging daily to unlock more personalized insights!";
+}
+
+// ── Score reveal after log submission ──
+function showScoreReveal(snap) {
+  const score = snap.vektra_score || 0;
+  
+  // Set message based on score
+  const message = score >= 80 ? "You're locked in. Keep this energy going." :
+                  score >= 70 ? "Strong trajectory. One more push." :
+                  score >= 60 ? "Moving forward. The gap is closing." :
+                  score >= 50 ? "Steady. Identify your weakest engine." :
+                  "The data doesn't lie. Tomorrow is a new vector.";
+
+  document.getElementById('reveal-message').textContent = message;
+
+  // Show metrics
+  const metrics = [];
+  if (snap.survival_runway) metrics.push({label:'Runway', val: snap.survival_runway + ' days'});
+  if (snap.burn_rate) metrics.push({label:'Burn Rate', val: snap.burn_rate});
+  if (snap.leverage_score) metrics.push({label:'Leverage', val: snap.leverage_score.toFixed(2)});
+
+  document.getElementById('reveal-metrics').innerHTML = metrics.map(m => `
+    <div style="text-align:center">
+      <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">${m.label}</div>
+      <div style="font-size:18px;font-weight:700">${m.val}</div>
+    </div>
+  `).join('');
+
+  goTo('score-reveal');
+
+  // Animate score counting up
+  const el = document.getElementById('reveal-score');
+  const duration = 1800;
+  const start = performance.now();
+
+  function update(currentTime) {
+    const elapsed = currentTime - start;
+    const progress = Math.min(elapsed / duration, 1);
+    const eased = 1 - Math.pow(1 - progress, 3);
+    const current = Math.round(score * eased);
+    el.textContent = current;
+    if (progress < 1) requestAnimationFrame(update);
+  }
+  requestAnimationFrame(update);
+
+  // Auto-go to dashboard after 5 seconds
+  setTimeout(() => {
+    goTo('dashboard');
+    loadDashboard();
+  }, 5000);
 }

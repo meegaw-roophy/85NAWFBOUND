@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from app import crud
-from app.db.models import Snapshot, User
+from app.db.models import Snapshot, User, Report
 from app.services.ai_client import ai_client
 
 
@@ -171,9 +171,10 @@ async def generate_weekly_report(
     1. Pull last 7 days of snapshots
     2. Build summary statistics
     3. Get user context (north star, tone preference)
-    4. Call AI to generate narrative
-    5. Store report in database
-    6. Return report object
+    4. Pull historical reports for AI memory
+    5. Call AI to generate narrative with historical context
+    6. Store report in database
+    7. Return report object
     """
     # ── Default to last 7 days ───────────────
     if not period_end:
@@ -203,11 +204,38 @@ async def generate_weekly_report(
     # ── Build weekly summary ─────────────────
     summary = await build_weekly_summary(snapshots)
 
-    # ── Generate AI narrative ─────────────────
+    # ── Pull historical reports for AI Memory ──
+    historical_result = await db.execute(
+        select(Report)
+        .where(Report.user_id == user_id)
+        .where(Report.report_type == 'weekly')
+        .where(Report.status == 'ready')
+        .order_by(Report.generated_at.desc())
+        .limit(4)  # Last 4 weeks for context
+    )
+    historical_reports = historical_result.scalars().all()
+    
+    # Build historical context
+    historical_context = []
+    for report in historical_reports:
+        if report.content:
+            historical_context.append({
+                'period_start': report.period_start.isoformat() if report.period_start else None,
+                'period_end': report.period_end.isoformat() if report.period_end else None,
+                'vektra_score': report.vektra_score,
+                'summary': report.content.get('avg_vektra_score'),
+                'mood': report.content.get('avg_mood'),
+                'sleep': report.content.get('avg_sleep'),
+                'net_cash_flow': report.content.get('net_cash_flow'),
+                'goal_hit_rate': report.content.get('goal_hit_rate'),
+            })
+
+    # ── Generate AI narrative with memory ───────
     summary_text = await ai_client.generate_weekly_report(
         user_data=user_data,
         weekly_summary=summary,
         feedback_tone=user_data.get('feedback_tone', 'Balanced'),
+        historical_context=historical_context
     )
 
     # ── Calculate headline report score ─────

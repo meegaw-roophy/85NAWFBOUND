@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List, Optional
-from app.db.models import User, Snapshot, Report, Subscription, Payment
+from app.db.models import User, Snapshot, Report, Subscription, Payment, Goal
 
 
 async def get_user_by_id(db: AsyncSession, user_id: int) -> Optional[User]:
@@ -174,3 +174,133 @@ async def create_report(db: AsyncSession, user_id: int, report_payload: dict) ->
     await db.commit()
     await db.refresh(rpt)
     return rpt
+
+
+async def create_goal(db: AsyncSession, user_id: int, goal_data: dict) -> Goal:
+    goal = Goal(user_id=user_id, **goal_data)
+    db.add(goal)
+    await db.commit()
+    await db.refresh(goal)
+    return goal
+
+
+async def list_goals(db: AsyncSession, user_id: int, limit: int = 100) -> List[Goal]:
+    result = await db.execute(select(Goal).where(Goal.user_id == user_id).order_by(Goal.created_at.desc()).limit(limit))
+    return result.scalars().all()
+
+
+async def get_goal_by_id(db: AsyncSession, goal_id: int, user_id: int) -> Optional[Goal]:
+    result = await db.execute(select(Goal).where(Goal.id == goal_id).where(Goal.user_id == user_id))
+    return result.scalars().first()
+
+
+async def update_goal(db: AsyncSession, goal: Goal, goal_data: dict) -> Goal:
+    for key, value in goal_data.items():
+        setattr(goal, key, value)
+    if goal_data.get('completed') and not goal.completion_date:
+        goal.completion_date = datetime.utcnow()
+    db.add(goal)
+    await db.commit()
+    await db.refresh(goal)
+    return goal
+
+
+async def delete_goal(db: AsyncSession, goal_id: int, user_id: int) -> bool:
+    result = await db.execute(select(Goal).where(Goal.id == goal_id).where(Goal.user_id == user_id))
+    goal = result.scalars().first()
+    if not goal:
+        return False
+    await db.delete(goal)
+    await db.commit()
+    return True
+
+
+async def calculate_goal_progress(db: AsyncSession, user_id: int) -> dict:
+    goals = await list_goals(db, user_id)
+    total_goals = len(goals)
+    completed_goals = sum(1 for g in goals if g.completed)
+    progress_pct = (completed_goals / total_goals * 100) if total_goals > 0 else 0
+    next_milestone = next((g for g in goals if not g.completed), None)
+    return {
+        'total_goals': total_goals,
+        'completed_goals': completed_goals,
+        'progress_pct': progress_pct,
+        'next_milestone': next_milestone.title if next_milestone else None
+    }
+
+
+async def predict_goal_completion(db: AsyncSession, user_id: int) -> dict:
+    """Predict when user will reach their North Star goal based on trajectory"""
+    snapshots = await list_snapshots(db, user_id, limit=90)
+    
+    if len(snapshots) < 7:
+        return {
+            'has_prediction': False,
+            'reason': 'Need at least 7 days of data for prediction'
+        }
+    
+    # Calculate average VEKTRA score trend
+    recent_scores = [s.vektra_score for s in snapshots if s.vektra_score]
+    if len(recent_scores) < 7:
+        return {
+            'has_prediction': False,
+            'reason': 'Insufficient score data'
+        }
+    
+    # Split into two halves to calculate trend
+    mid_point = len(recent_scores) // 2
+    first_half_avg = sum(recent_scores[:mid_point]) / mid_point
+    second_half_avg = sum(recent_scores[mid_point:]) / (len(recent_scores) - mid_point)
+    
+    # Calculate weekly improvement rate
+    weekly_improvement = second_half_avg - first_half_avg
+    
+    # Get user's current score
+    current_score = recent_scores[0]
+    
+    # Target is 100 (perfect VEKTRA score)
+    target_score = 100
+    remaining = target_score - current_score
+    
+    if weekly_improvement <= 0:
+        return {
+            'has_prediction': False,
+            'reason': 'Score is not trending upward',
+            'current_score': current_score,
+            'trend': 'declining' if weekly_improvement < 0 else 'stable'
+        }
+    
+    # Calculate weeks to reach target
+    weeks_to_target = remaining / weekly_improvement
+    
+    # Cap at reasonable maximum (5 years)
+    if weeks_to_target > 260:
+        return {
+            'has_prediction': True,
+            'prediction': '5+ years',
+            'weeks_remaining': weeks_to_target,
+            'current_score': current_score,
+            'weekly_improvement': weekly_improvement,
+            'confidence': 'low'
+        }
+    
+    # Convert to months/years
+    if weeks_to_target < 4:
+        prediction = f"{int(weeks_to_target)} weeks"
+    elif weeks_to_target < 52:
+        prediction = f"{int(weeks_to_target / 4.3)} months"
+    else:
+        prediction = f"{int(weeks_to_target / 52)} years"
+    
+    # Calculate confidence based on data consistency
+    score_variance = sum((s - current_score) ** 2 for s in recent_scores) / len(recent_scores)
+    confidence = 'high' if score_variance < 100 else 'medium' if score_variance < 400 else 'low'
+    
+    return {
+        'has_prediction': True,
+        'prediction': prediction,
+        'weeks_remaining': weeks_to_target,
+        'current_score': current_score,
+        'weekly_improvement': weekly_improvement,
+        'confidence': confidence
+    }

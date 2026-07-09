@@ -5,6 +5,7 @@ from .auth import router as auth_router
 from .payments import router as payments_router
 from .webhooks import router as webhooks_router
 from .users import router as users_router
+from .goals import router as goals_router
 
 router = APIRouter()
 
@@ -18,3 +19,4 @@ router.include_router(payments_router)
 router.include_router(webhooks_router)
 router.include_router(auth_router)
 router.include_router(users_router)
+router.include_router(goals_router, prefix="/goals", tags=["goals"])

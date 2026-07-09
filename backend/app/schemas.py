@@ -210,3 +210,36 @@ class MpesaPaymentRequest(BaseModel):
 class Token(BaseModel):
     access_token: str
     token_type: str = "bearer"
+
+
+class GoalCreate(BaseModel):
+    title: str
+    is_primary: Optional[bool] = False
+    intensity: Optional[int] = None
+    effort: Optional[int] = None
+    deadline: Optional[date] = None
+
+
+class GoalUpdate(BaseModel):
+    title: Optional[str] = None
+    is_primary: Optional[bool] = None
+    intensity: Optional[int] = None
+    effort: Optional[int] = None
+    deadline: Optional[date] = None
+    completed: Optional[bool] = None
+    progress_pct: Optional[float] = None
+
+
+class GoalOut(BaseModel):
+    id: int
+    user_id: int
+    title: str
+    is_primary: bool
+    intensity: Optional[int] = None
+    effort: Optional[int] = None
+    deadline: Optional[date] = None
+    completed: bool
+    completion_date: Optional[datetime] = None
+    progress_pct: float
+    created_at: Optional[datetime] = None
+    model_config = ConfigDict(from_attributes=True)

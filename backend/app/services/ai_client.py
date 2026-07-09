@@ -34,16 +34,17 @@ class AIClient:
         self,
         user_data: dict,
         weekly_summary: dict,
-        feedback_tone: str = "Balanced"
+        feedback_tone: str = "Balanced",
+        historical_context: Optional[List[dict]] = None
     ) -> str:
         """
         Generate a weekly VEKTRA report using Claude API.
         Falls back to structured mock if no API key.
         """
         if not self.client:
-            return self._mock_weekly_report(weekly_summary)
+            return self._mock_weekly_report(weekly_summary, historical_context)
 
-        prompt = self._build_weekly_prompt(user_data, weekly_summary, feedback_tone)
+        prompt = self._build_weekly_prompt(user_data, weekly_summary, feedback_tone, historical_context)
 
         response = await asyncio.to_thread(
             lambda: self.client.messages.create(
@@ -59,7 +60,8 @@ class AIClient:
         self,
         user_data: dict,
         summary: dict,
-        tone: str
+        tone: str,
+        historical_context: Optional[List[dict]] = None
     ) -> str:
         """Build the weekly report prompt from user data and weekly summary."""
 
@@ -72,6 +74,14 @@ class AIClient:
             'Balanced': 'Be honest but constructive. Balance wins with areas to improve.',
             'Gentle': 'Be encouraging. Frame challenges as opportunities. Stay supportive.',
         }.get(tone, 'Be honest but constructive.')
+
+        # Build historical context section
+        historical_section = ""
+        if historical_context and len(historical_context) > 0:
+            historical_section = "\nHISTORICAL CONTEXT (Last 4 weeks):\n"
+            for i, week in enumerate(historical_context, 1):
+                historical_section += f"- Week {i}: VEKTRA Score {week.get('vektra_score', 'N/A')}, Mood {week.get('mood', 'N/A')}, Sleep {week.get('sleep', 'N/A')}h, Cash Flow {week.get('net_cash_flow', 'N/A')}, Goal Rate {week.get('goal_hit_rate', 'N/A')}%\n"
+            historical_section += "\nUse this historical data to identify trends and patterns. Is the trajectory improving, declining, or stable?\n"
 
         return f"""Generate a VEKTRA weekly report for this user.
 
@@ -115,9 +125,9 @@ HIGHLIGHTS FROM LOGS:
 - Worst decisions: {summary.get('worst_decisions', [])}
 - What was avoided: {summary.get('avoided_items', [])}
 - Funny lines (wellbeing signal): {summary.get('funny_lines', [])}
-
+{historical_section}
 Generate a weekly report with these sections:
-1. TRAJECTORY STATUS (2-3 sentences — is the vector moving right?)
+1. TRAJECTORY STATUS (2-3 sentences — is the vector moving right? Compare with historical trends if available)
 2. YOUR WINS THIS WEEK (specific, data-backed)
 3. SILENT KILLERS (what's quietly dragging the score down)
 4. THE NUMBERS DON'T LIE (key financial and execution stats with commentary)
@@ -125,7 +135,7 @@ Generate a weekly report with these sections:
 
 Keep it under 400 words. Make every sentence earn its place."""
 
-    def _mock_weekly_report(self, summary: dict) -> str:
+    def _mock_weekly_report(self, summary: dict, historical_context: Optional[List[dict]] = None) -> str:
         """
         Structured mock report when Claude API key not configured.
         Used during development before API key is added.
@@ -139,6 +149,19 @@ Keep it under 400 words. Make every sentence earn its place."""
         unique_days = summary.get('unique_days_logged', summary.get('days_logged', 0))
         report_countdown = summary.get('report_countdown', max(0, 7 - unique_days))
         goal_rate = round(goals_hit / goals_set * 100, 1) if goals_set > 0 else None
+
+        # Analyze historical trend if available
+        trend_analysis = ""
+        if historical_context and len(historical_context) > 0:
+            prev_scores = [w.get('vektra_score') for w in historical_context if w.get('vektra_score')]
+            if prev_scores:
+                avg_prev = sum(prev_scores) / len(prev_scores)
+                if score > avg_prev + 5:
+                    trend_analysis = f"Your trajectory is improving compared to your {len(prev_scores)}-week average of {avg_prev:.0f}."
+                elif score < avg_prev - 5:
+                    trend_analysis = f"Your trajectory is declining compared to your {len(prev_scores)}-week average of {avg_prev:.0f}."
+                else:
+                    trend_analysis = f"Your trajectory is stable around your {len(prev_scores)}-week average of {avg_prev:.0f}."
 
         trajectory = "RISING" if score >= 65 else "FLAT" if score >= 45 else "DECLINING"
         momentum_line = (
@@ -156,6 +179,7 @@ Keep it under 400 words. Make every sentence earn its place."""
 TRAJECTORY STATUS: {trajectory}
 Your composite VEKTRA score this week was {score}/100 across {unique_days} unique days logged.
 {momentum_line}
+{trend_analysis}
 
 YOUR WINS THIS WEEK:
 {consistency_line}
@@ -177,7 +201,7 @@ THE NUMBERS DON'T LIE:
 NEXT WEEK DIRECTIVE:
 {'Log every single day this week. No exceptions. Incomplete data produces weak reports and weak insights.' if unique_days < 7 else 'Push your VEKTRA score above ' + str(min(100, int(score) + 10)) + ' — identify which sub-engine is dragging you and attack it specifically.'}
 
-[Note: Connect your CLAUDE_API_KEY in .env to unlock full AI-powered narrative reports]
+[Note: Connect your CLAUDE_API_KEY in .env to unlock full AI-powered narrative reports with historical trend analysis]
 {'='*40}"""
 
 
