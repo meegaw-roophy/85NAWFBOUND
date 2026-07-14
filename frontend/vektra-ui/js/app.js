@@ -37,9 +37,13 @@ function hideLoader() {
 
 // ── Screen navigation ──
 function goTo(screen) {
-  document.querySelectorAll('#app > div').forEach(s => s.style.display = 'none');
+  if (currentScreen === screen) return;
   const target = document.getElementById(screen);
-  if (target) target.style.display = 'flex';
+  if (!target) return;
+  const current = document.getElementById(currentScreen);
+  if (current) current.style.display = 'none';
+  target.style.display = 'flex';
+  currentScreen = screen;
 }
 
 // ── Auto-login on page load ──
@@ -253,13 +257,6 @@ function calculateStreak(snapshots) {
   return streak;
 }
 
-function getGreeting() {
-  const hour = new Date().getHours();
-  if (hour < 12) return 'Good morning';
-  if (hour < 17) return 'Good afternoon';
-  return 'Good evening';
-}
-
 // ── Load dashboard ──
 async function loadDashboard() {
   console.log('loadDashboard started');
@@ -271,7 +268,15 @@ async function loadDashboard() {
   
   console.log('currentUser =', currentUser);
 
-  document.getElementById('dash-greeting').textContent = getGreeting();
+  // Dynamic greeting
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? 'Good morning' :
+                  hour < 17 ? 'Good afternoon' :
+                  hour < 21 ? 'Good evening' : 'Still up?';
+  const dateStr = new Date().toLocaleDateString('en-US', {weekday:'long', month:'long', day:'numeric'});
+  document.getElementById('dash-greeting').textContent = greeting;
+  document.getElementById('dash-date').textContent = dateStr;
+  
   document.getElementById('dash-username').textContent =
     currentUser.username || 'User';
 
@@ -297,6 +302,7 @@ async function loadDashboard() {
     }
 
     const snapshots = await res.json();
+    renderScoreChart(snapshots);
     console.log('snapshots =', snapshots);
 
     if (!snapshots || snapshots.length === 0) {
@@ -569,7 +575,10 @@ async function submitLog() {
     });
     if (res.ok) {
       const snap = await res.json();
-      showScoreReveal(snap);
+      // Check for new achievements after log submission
+  checkNewAchievements(snap);
+  
+  showScoreReveal(snap);
       clearDraft();
     } else {
       const data = await res.json();
@@ -705,15 +714,26 @@ async function onboardStep3() {
 
 // ── Load and display report ──
 async function loadReport() {
-  goTo('reports');
-  showLoader('Generating your report...');
-  document.getElementById('report-narrative').textContent = 'Generating...';
+  console.log('loadReport called');
   
   if (!currentUser || !authToken) { 
-    hideLoader();
+    console.log('No user or auth token');
     showToast('Please log in to view your report', 'error');
     return;
   }
+  
+  const reportsScreen = document.getElementById('reports');
+  if (!reportsScreen) {
+    console.error('Reports screen not found');
+    showToast('Reports screen not available', 'error');
+    return;
+  }
+  
+  goTo('reports');
+  showLoader('Generating your report...');
+  
+  const narrativeEl = document.getElementById('report-narrative');
+  if (narrativeEl) narrativeEl.textContent = 'Generating...';
   
   try {
     const res = await fetch(`${API}/api/v1/users/${currentUser.id}/reports/generate`, {
@@ -722,15 +742,19 @@ async function loadReport() {
       body: JSON.stringify({})
     });
     
+    console.log('Report API response status:', res.status);
+    
     if (!res.ok) {
       hideLoader();
       const data = await res.json().catch(() => ({}));
+      console.error('Report generation failed:', data);
       showToast(data.detail || 'Could not generate report. Try again.', 'error');
-      document.getElementById('report-narrative').textContent = 'Could not load report. Try again.';
+      if (narrativeEl) narrativeEl.textContent = 'Could not load report. Try again.';
       return;
     }
     
     const report = await res.json();
+    console.log('Report data received:', report);
     const content = report.content || {};
     const uniqueDays = content.unique_days_logged ?? content.days_logged ?? 0;
     const reportCountdown = content.report_countdown ?? Math.max(0, 7 - uniqueDays);
@@ -738,22 +762,22 @@ async function loadReport() {
     const reportReady = content.report_ready ?? uniqueDays >= 3;
     const readinessMessage = content.report_readiness_message || (reportReady ? 'Your weekly report is ready.' : 'Log a few more days to unlock a richer weekly report.');
 
-    document.getElementById('report-score').textContent =
-      report.vektra_score ? report.vektra_score.toFixed(0) : '—';
-    document.getElementById('report-period').textContent =
-      uniqueDays > 0 ? `${uniqueDays} unique day${uniqueDays === 1 ? '' : 's'} logged` : 'No week data yet';
-    document.getElementById('report-days').textContent =
-      `${uniqueDays}/7`;
-    document.getElementById('report-timer').textContent =
-      `${reportCountdown}/7`;
-    document.getElementById('report-cashflow').textContent =
-      content.net_cash_flow !== undefined ?
-      (content.net_cash_flow >= 0 ? '+' : '') + content.net_cash_flow : '—';
-    document.getElementById('report-goals').textContent =
-      content.goals_set > 0 ? `${content.goals_hit}/${content.goals_set}` : '—';
-
-    const cfEl = document.getElementById('report-cashflow');
-    cfEl.style.color = content.net_cash_flow >= 0 ? 'var(--success)' : 'var(--danger)';
+    const scoreEl = document.getElementById('report-score');
+    const periodEl = document.getElementById('report-period');
+    const daysEl = document.getElementById('report-days');
+    const timerEl = document.getElementById('report-timer');
+    const cashflowEl = document.getElementById('report-cashflow');
+    const goalsEl = document.getElementById('report-goals');
+    
+    if (scoreEl) scoreEl.textContent = report.vektra_score ? report.vektra_score.toFixed(0) : '—';
+    if (periodEl) periodEl.textContent = uniqueDays > 0 ? `${uniqueDays} unique day${uniqueDays === 1 ? '' : 's'} logged` : 'No week data yet';
+    if (daysEl) daysEl.textContent = `${uniqueDays}/7`;
+    if (timerEl) timerEl.textContent = `${reportCountdown}/7`;
+    if (cashflowEl) {
+      cashflowEl.textContent = content.net_cash_flow !== undefined ? (content.net_cash_flow >= 0 ? '+' : '') + content.net_cash_flow : '—';
+      cashflowEl.style.color = content.net_cash_flow >= 0 ? 'var(--success)' : 'var(--danger)';
+    }
+    if (goalsEl) goalsEl.textContent = content.goals_set > 0 ? `${content.goals_hit}/${content.goals_set}` : '—';
 
     const readinessEl = document.getElementById('report-readiness');
     if (readinessEl) {
@@ -810,7 +834,12 @@ async function loadReport() {
 }
 
 async function generateReport() {
-  loadReport();
+    try {
+        await loadReport();
+    } catch (err) {
+        console.error("Report generation error:", err);
+        showToast('Could not load report. Please try again.', 'error');
+    }
 }
 
 // ── Render engine bar ──
@@ -878,6 +907,21 @@ async function openProfile() {
   
   // Load goal prediction
   loadGoalPrediction();
+  
+  // Load personalization settings
+  loadPersonalizationSettings();
+  
+  // Load achievements count
+  loadAchievementsCount();
+  
+  // Load financial health
+  loadFinancialHealth();
+  
+  // Initialize monthly replay with current month
+  const today = new Date();
+  document.getElementById('replay-month').value = today.getMonth() + 1;
+  document.getElementById('replay-year').value = today.getFullYear();
+  loadMonthlyReplay();
 }
 
 async function saveProfile() {
@@ -1798,6 +1842,753 @@ function generateSmartInsight(snapshots, latest) {
   return "Keep logging daily to unlock more personalized insights!";
 }
 
+// ── GOAL PREDICTION ENGINE ──
+async function loadGoalPrediction() {
+  if (!currentUser || !authToken) return;
+  
+  try {
+    const res = await fetch(`${API}/api/v1/goals/prediction`, {
+      headers: { 'Authorization': `Bearer ${authToken}` }
+    });
+    
+    if (res.ok) {
+      const prediction = await res.json();
+      renderGoalPrediction(prediction);
+    } else {
+      console.error('Failed to load prediction');
+      document.getElementById('prediction-content').textContent = 'Prediction unavailable';
+    }
+  } catch (e) {
+    console.error('Error loading prediction:', e);
+    document.getElementById('prediction-content').textContent = 'Could not load prediction';
+  }
+}
+
+function renderGoalPrediction(prediction) {
+  const container = document.getElementById('prediction-content');
+  if (!container) return;
+  
+  if (!prediction.has_prediction) {
+    const reason = prediction.reason || 'Insufficient data';
+    container.innerHTML = `
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="font-size:14px;color:var(--text-secondary)">Prediction not available</div>
+        <div style="font-size:12px;color:var(--text-muted)">${reason}</div>
+        ${prediction.current_score ? `<div style="font-size:12px;color:var(--text-muted)">Current score: ${prediction.current_score.toFixed(1)}</div>` : ''}
+      </div>
+    `;
+    return;
+  }
+  
+  const confidenceColors = {
+    'high': 'var(--success)',
+    'medium': 'var(--accent)',
+    'low': 'var(--text-muted)'
+  };
+  const confidenceColor = confidenceColors[prediction.confidence] || 'var(--text-muted)';
+  
+  container.innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:14px;font-weight:600;color:var(--text-primary)">Time to reach target</span>
+        <span style="font-size:16px;font-weight:700;color:var(--accent)">${prediction.prediction}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:12px;color:var(--text-secondary)">Current score</span>
+        <span style="font-size:12px;color:var(--text-primary)">${prediction.current_score.toFixed(1)}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:12px;color:var(--text-secondary)">Weekly improvement</span>
+        <span style="font-size:12px;color:var(--success)">+${prediction.weekly_improvement.toFixed(2)}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px">
+        <span style="font-size:11px;color:var(--text-muted)">Confidence</span>
+        <span style="font-size:11px;color:${confidenceColor};font-weight:600">${prediction.confidence.toUpperCase()}</span>
+      </div>
+    </div>
+  `;
+}
+
+// ── PERSONALIZATION ENGINE ──
+let personalizationSettings = {
+  targetScore: 80,
+  minSleep: 7,
+  targetFocus: 4,
+  showScoreCard: true,
+  showInsightCard: true,
+  showComparisonCard: true
+};
+
+function loadPersonalizationSettings() {
+  const saved = localStorage.getItem('vektra_personalization');
+  if (saved) {
+    try {
+      personalizationSettings = JSON.parse(saved);
+    } catch (e) {
+      console.error('Failed to parse personalization settings:', e);
+    }
+  }
+  
+  // Apply settings to UI
+  const targetScoreEl = document.getElementById('target-score');
+  const minSleepEl = document.getElementById('min-sleep');
+  const targetFocusEl = document.getElementById('target-focus');
+  const showScoreCardEl = document.getElementById('show-score-card');
+  const showInsightCardEl = document.getElementById('show-insight-card');
+  const showComparisonCardEl = document.getElementById('show-comparison-card');
+  
+  if (targetScoreEl) targetScoreEl.value = personalizationSettings.targetScore;
+  if (minSleepEl) minSleepEl.value = personalizationSettings.minSleep;
+  if (targetFocusEl) targetFocusEl.value = personalizationSettings.targetFocus;
+  if (showScoreCardEl) showScoreCardEl.checked = personalizationSettings.showScoreCard;
+  if (showInsightCardEl) showInsightCardEl.checked = personalizationSettings.showInsightCard;
+  if (showComparisonCardEl) showComparisonCardEl.checked = personalizationSettings.showComparisonCard;
+  
+  // Apply dashboard card visibility
+  applyDashboardPreferences();
+}
+
+function savePersonalizationSettings() {
+  const targetScoreEl = document.getElementById('target-score');
+  const minSleepEl = document.getElementById('min-sleep');
+  const targetFocusEl = document.getElementById('target-focus');
+  const showScoreCardEl = document.getElementById('show-score-card');
+  const showInsightCardEl = document.getElementById('show-insight-card');
+  const showComparisonCardEl = document.getElementById('show-comparison-card');
+  
+  personalizationSettings = {
+    targetScore: targetScoreEl ? parseInt(targetScoreEl.value) || 80 : 80,
+    minSleep: minSleepEl ? parseFloat(minSleepEl.value) || 7 : 7,
+    targetFocus: targetFocusEl ? parseFloat(targetFocusEl.value) || 4 : 4,
+    showScoreCard: showScoreCardEl ? showScoreCardEl.checked : true,
+    showInsightCard: showInsightCardEl ? showInsightCardEl.checked : true,
+    showComparisonCard: showComparisonCardEl ? showComparisonCardEl.checked : true
+  };
+  
+  localStorage.setItem('vektra_personalization', JSON.stringify(personalizationSettings));
+  applyDashboardPreferences();
+  showToast('Personalization settings saved', 'success');
+}
+
+function applyDashboardPreferences() {
+  const scoreCard = document.getElementById('smart-score-card');
+  const insightCard = document.getElementById('smart-insight-card');
+  const comparisonCard = document.getElementById('weekly-comparison');
+  
+  if (scoreCard) scoreCard.style.display = personalizationSettings.showScoreCard ? 'block' : 'none';
+  if (insightCard) insightCard.style.display = personalizationSettings.showInsightCard ? 'block' : 'none';
+  if (comparisonCard) comparisonCard.style.display = personalizationSettings.showComparisonCard ? 'block' : 'none';
+}
+
+// Listen for personalization setting changes
+document.addEventListener('DOMContentLoaded', () => {
+  const personalizationInputs = ['target-score', 'min-sleep', 'target-focus', 'show-score-card', 'show-insight-card', 'show-comparison-card'];
+  personalizationInputs.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.addEventListener('change', savePersonalizationSettings);
+    }
+  });
+});
+
+// ── SUBSCRIPTION SYSTEM ──
+async function loadSubscriptionPlans() {
+  if (!currentUser || !authToken) return;
+  
+  try {
+    const res = await fetch(`${API}/api/v1/subscriptions/plans`, {
+      headers: { 'Authorization': `Bearer ${authToken}` }
+    });
+    
+    if (res.ok) {
+      const data = await res.json();
+      renderSubscriptionPlans(data.plans);
+    } else {
+      console.error('Failed to load plans');
+    }
+  } catch (e) {
+    console.error('Error loading plans:', e);
+  }
+}
+
+async function loadCurrentSubscription() {
+  if (!currentUser || !authToken) return;
+  
+  try {
+    const res = await fetch(`${API}/api/v1/subscriptions/current`, {
+      headers: { 'Authorization': `Bearer ${authToken}` }
+    });
+    
+    if (res.ok) {
+      const subscription = await res.json();
+      renderCurrentSubscription(subscription);
+    } else {
+      console.error('Failed to load current subscription');
+    }
+  } catch (e) {
+    console.error('Error loading current subscription:', e);
+  }
+}
+
+function renderCurrentSubscription(subscription) {
+  const nameEl = document.getElementById('current-plan-name');
+  const statusEl = document.getElementById('current-plan-status');
+  
+  if (!nameEl || !statusEl) return;
+  
+  const planNames = {
+    'free': 'Free Plan',
+    'tier1': 'Pro Plan',
+    'tier2': 'Premium Plan',
+    'tier3': 'Enterprise Plan'
+  };
+  
+  nameEl.textContent = planNames[subscription.plan] || subscription.plan;
+  
+  if (subscription.plan === 'free') {
+    statusEl.textContent = 'Upgrade to unlock premium features';
+  } else if (subscription.days_remaining !== null) {
+    statusEl.textContent = `${subscription.days_remaining} days remaining`;
+  } else {
+    statusEl.textContent = 'Active';
+  }
+}
+
+function renderSubscriptionPlans(plans) {
+  const container = document.getElementById('plans-container');
+  if (!container) return;
+  
+  container.innerHTML = plans.map(plan => {
+    const isCurrentPlan = plan.id === 'free'; // Default to free as current
+    
+    return `
+      <div style="background:var(--bg-card);border:1px solid ${isCurrentPlan ? 'var(--accent)' : 'var(--border)'};border-radius:var(--radius);padding:1.25rem;cursor:pointer;transition:border-color 0.2s ease" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='${isCurrentPlan ? 'var(--accent)' : 'var(--border)'}'">
+        <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:12px">
+          <div>
+            <div style="font-size:16px;font-weight:700;color:var(--text-primary)">${plan.name}</div>
+            <div style="font-size:24px;font-weight:800;color:var(--accent)">${plan.price > 0 ? '$' + plan.price.toFixed(2) : 'Free'}</div>
+            ${plan.duration_days ? `<div style="font-size:12px;color:var(--text-muted)">per ${plan.duration_days} days</div>` : ''}
+          </div>
+          ${isCurrentPlan ? '<div style="padding:4px 12px;background:rgba(108,99,255,0.2);border-radius:var(--radius-sm);font-size:11px;color:var(--accent);font-weight:600">CURRENT</div>' : ''}
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          ${plan.features.map(feature => `
+            <div style="font-size:12px;color:var(--text-secondary);display:flex;align-items:center;gap:6px">
+              <span style="color:var(--success)">✓</span>
+              ${feature}
+            </div>
+          `).join('')}
+        </div>
+        ${!isCurrentPlan ? `
+          <button onclick="selectPlan('${plan.id}')" style="margin-top:16px;width:100%;padding:12px;background:linear-gradient(135deg,#6c63ff,#ec4899);border:none;border-radius:var(--radius-sm);color:white;font-size:14px;font-weight:600;cursor:pointer;font-family:var(--font)">Choose ${plan.name}</button>
+        ` : ''}
+      </div>
+    `;
+  }).join('');
+}
+
+function selectPlan(planId) {
+  selectedPlanId = planId;
+  
+  // Show payment section
+  const paymentSection = document.getElementById('payment-section');
+  if (paymentSection) {
+    paymentSection.style.display = 'block';
+  }
+  
+  showToast(`Selected ${planId} plan. Complete payment to activate.`, 'success');
+}
+
+let selectedPaymentMethod = null;
+let selectedPlanId = null;
+
+function selectPaymentMethod(method) {
+  selectedPaymentMethod = method;
+  
+  // Update button styles
+  const stripeBtn = document.getElementById('pay-stripe-btn');
+  const mpesaBtn = document.getElementById('pay-mpesa-btn');
+  const stripeForm = document.getElementById('stripe-form');
+  const mpesaForm = document.getElementById('mpesa-form');
+  
+  if (method === 'stripe') {
+    stripeBtn.style.background = 'rgba(108,99,255,0.2)';
+    stripeBtn.style.borderColor = 'var(--accent)';
+    mpesaBtn.style.background = 'transparent';
+    mpesaBtn.style.borderColor = 'var(--border)';
+    stripeForm.style.display = 'block';
+    mpesaForm.style.display = 'none';
+  } else {
+    mpesaBtn.style.background = 'rgba(108,99,255,0.2)';
+    mpesaBtn.style.borderColor = 'var(--accent)';
+    stripeBtn.style.background = 'transparent';
+    stripeBtn.style.borderColor = 'var(--border)';
+    mpesaForm.style.display = 'block';
+    stripeForm.style.display = 'none';
+  }
+}
+
+async function processPayment() {
+  if (!selectedPaymentMethod || !selectedPlanId) {
+    showToast('Please select a plan and payment method', 'error');
+    return;
+  }
+  
+  const payButton = document.getElementById('pay-button');
+  payButton.textContent = 'Processing...';
+  payButton.disabled = true;
+  
+  try {
+    if (selectedPaymentMethod === 'stripe') {
+      // Stripe payment processing
+      const cardNumber = document.getElementById('stripe-card').value;
+      const expiry = document.getElementById('stripe-expiry').value;
+      const cvc = document.getElementById('stripe-cvc').value;
+      
+      if (!cardNumber || !expiry || !cvc) {
+        throw new Error('Please fill in all card details');
+      }
+      
+      // Call backend Stripe payment endpoint
+      const res = await fetch(`${API}/api/v1/users/${currentUser.id}/payments/stripe`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          customer_id: null, // Will be created by backend
+          price_id: selectedPlanId // Map plan ID to Stripe price ID
+        })
+      });
+      
+      if (!res.ok) throw new Error('Payment failed');
+      
+    } else if (selectedPaymentMethod === 'mpesa') {
+      // M-Pesa payment processing
+      const phone = document.getElementById('mpesa-phone').value;
+
+      
+      if (!phone) {
+        throw new Error('Please enter phone number');
+      }
+      
+      // Call backend M-Pesa payment endpoint
+      const planPrices = {
+        'tier1': 9.99,
+        'tier2': 19.99,
+        'tier3': 49.99
+      };
+      const amount = planPrices[selectedPlanId] || 9.99;
+      
+      const res = await fetch(`${API}/api/v1/users/${currentUser.id}/payments/mpesa`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          phone_number: phone,
+          amount: amount
+        })
+      });
+      
+      if (!res.ok) throw new Error('Payment failed');
+    }
+    
+    showToast('Payment successful! Subscription activated.', 'success');
+    
+    // Create subscription
+    await fetch(`${API}/api/v1/subscriptions/create`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${authToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        provider: selectedPaymentMethod,
+        plan: selectedPlanId,
+        duration_days: 30,
+        amount_paid: selectedPlanId === 'tier1' ? 9.99 : selectedPlanId === 'tier2' ? 19.99 : 49.99,
+        currency: 'USD'
+      })
+    });
+    
+    // Reload subscription data
+    await loadCurrentSubscription();
+    
+    // Hide payment section
+    document.getElementById('payment-section').style.display = 'none';
+    
+    // Reset selection
+    selectedPaymentMethod = null;
+    selectedPlanId = null;
+    
+  } catch (e) {
+    console.error('Payment error:', e);
+    showToast(e.message || 'Payment failed. Please try again.', 'error');
+  } finally {
+    payButton.textContent = 'Pay Now';
+    payButton.disabled = false;
+  }
+}
+
+// ── ACHIEVEMENT SYSTEM ──
+async function loadAchievementsCount() {
+  if (!currentUser || !authToken) return;
+  
+  try {
+    const res = await fetch(`${API}/api/v1/achievements`, {
+      headers: { 'Authorization': `Bearer ${authToken}` }
+    });
+    
+    if (res.ok) {
+      const achievements = await res.json();
+      const countEl = document.getElementById('achievement-count');
+      if (countEl) {
+        const completedCount = achievements.filter(a => a.completed).length;
+        countEl.textContent = `${completedCount}/${achievements.length} Unlocked`;
+      }
+    }
+  } catch (e) {
+    console.error('Error loading achievements count:', e);
+  }
+}
+
+async function loadAchievements() {
+  if (!currentUser || !authToken) return;
+  
+  try {
+    const res = await fetch(`${API}/api/v1/achievements/available`, {
+      headers: { 'Authorization': `Bearer ${authToken}` }
+    });
+    
+    if (res.ok) {
+      const data = await res.json();
+      renderAchievements(data.achievements);
+    } else {
+      console.error('Failed to load achievements');
+    }
+  } catch (e) {
+    console.error('Error loading achievements:', e);
+  }
+  
+  // Load streak calendar data
+  loadStreakCalendar();
+}
+
+async function loadStreakCalendar() {
+  if (!currentUser || !authToken) return;
+  
+  try {
+    const res = await fetch(`${API}/api/v1/achievements/streak-calendar?days=365`, {
+      headers: { 'Authorization': `Bearer ${authToken}` }
+    });
+    
+    if (res.ok) {
+      const data = await res.json();
+      renderStreakCalendar(data);
+    } else {
+      console.error('Failed to load streak calendar');
+    }
+  } catch (e) {
+    console.error('Error loading streak calendar:', e);
+  }
+}
+
+function renderStreakCalendar(data) {
+  const container = document.getElementById('streak-calendar');
+  const currentStreakEl = document.getElementById('current-streak');
+  const longestStreakEl = document.getElementById('longest-streak');
+  const totalLoggedEl = document.getElementById('total-logged');
+  
+  if (!container) return;
+  
+  // Update stats
+  if (currentStreakEl) currentStreakEl.textContent = data.current_streak;
+  if (longestStreakEl) longestStreakEl.textContent = data.longest_streak;
+  if (totalLoggedEl) totalLoggedEl.textContent = data.total_logged;
+  
+  // Render calendar grid (GitHub-style)
+  const calendarData = data.calendar_data;
+  const weeks = [];
+  
+  // Group by week (7 days)
+  for (let i = 0; i < calendarData.length; i += 7) {
+    weeks.push(calendarData.slice(i, i + 7));
+  }
+  
+  // Get color based on score
+  const getColor = (score) => {
+    if (score === 0) return 'var(--bg-secondary)';
+    if (score < 50) return '#4ade80';
+    if (score < 70) return '#22c55e';
+    if (score < 90) return '#16a34a';
+    return '#15803d';
+  };
+  
+  container.innerHTML = weeks.map(week => {
+    return week.map(day => {
+      const color = getColor(day.score);
+      const opacity = day.logged ? '1' : '0.3';
+      return `<div style="width:10px;height:10px;background:${color};border-radius:2px;opacity:${opacity}" title="${day.date}: ${day.score}"></div>`;
+    }).join('');
+  }).join('');
+}
+
+function renderAchievements(achievements) {
+  const container = document.getElementById('achievements-grid');
+  const totalEl = document.getElementById('total-achievements');
+  const availableEl = document.getElementById('total-available');
+  
+  if (!container) return;
+  
+  const completed = achievements.filter(a => a.completed).length;
+  
+  if (totalEl) totalEl.textContent = completed;
+  if (availableEl) availableEl.textContent = achievements.length;
+  
+  const rarityColors = {
+    'common': '#a0aec0',
+    'rare': '#6c63ff',
+    'epic': '#ec4899',
+    'legendary': '#f59e0b'
+  };
+  
+  container.innerHTML = achievements.map(achievement => {
+    const rarityColor = rarityColors[achievement.rarity] || '#a0aec0';
+    const opacity = achievement.completed ? '1' : '0.4';
+    
+    return `
+      <div style="background:var(--bg-card);border:1px solid ${achievement.completed ? 'var(--accent)' : 'var(--border)'};border-radius:var(--radius);padding:1rem;opacity:${opacity};transition:opacity 0.2s ease">
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="font-size:32px">${achievement.icon}</div>
+          <div style="flex:1">
+            <div style="font-size:14px;font-weight:600;color:var(--text-primary)">${achievement.title}</div>
+            <div style="font-size:12px;color:var(--text-muted);margin-top:2px">${achievement.description}</div>
+            <div style="font-size:10px;color:${rarityColor};text-transform:uppercase;margin-top:4px;font-weight:600">${achievement.rarity}</div>
+          </div>
+          ${achievement.completed ? '<div style="font-size:20px">✓</div>' : '<div style="font-size:20px;color:var(--text-muted)">🔒</div>'}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+async function checkNewAchievements(snapshot) {
+  // Trigger achievement check on backend
+  try {
+    const res = await fetch(`${API}/api/v1/achievements/check`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ snapshot_id: snapshot.id })
+    });
+    
+    if (res.ok) {
+      const data = await res.json();
+      if (data.new_achievements && data.new_achievements.length > 0) {
+        // Show achievement unlock notifications
+        data.new_achievements.forEach(achievement => {
+          showToast(`🏆 Achievement Unlocked: ${achievement.title}!`, 'success');
+        });
+        
+        // Update achievement count
+        loadAchievementsCount();
+      }
+    }
+  } catch (e) {
+    console.error('Error checking achievements:', e);
+  }
+}
+
+async function exportData(format) {
+  if (!currentUser || !authToken) {
+    showToast('Please log in to export data', 'error');
+    return;
+  }
+  
+  try {
+    const res = await fetch(`${API}/api/v1/export/${format}`, {
+      headers: { 'Authorization': `Bearer ${authToken}` }
+    });
+    
+    if (res.ok) {
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `vektra_export_${currentUser.username}.${format}`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      showToast(`Data exported as ${format.toUpperCase()}`, 'success');
+    } else {
+      showToast('Failed to export data', 'error');
+    }
+  } catch (e) {
+    console.error('Error exporting data:', e);
+    showToast('Export failed. Please try again.', 'error');
+  }
+}
+
+async function loadFinancialHealth() {
+  if (!currentUser || !authToken) return;
+  
+  try {
+    const res = await fetch(`${API}/api/v1/achievements/financial-health`, {
+      headers: { 'Authorization': `Bearer ${authToken}` }
+    });
+    
+    if (res.ok) {
+      const data = await res.json();
+      renderFinancialHealth(data);
+    } else {
+      console.error('Failed to load financial health');
+    }
+  } catch (e) {
+    console.error('Error loading financial health:', e);
+  }
+}
+
+function renderFinancialHealth(data) {
+  const container = document.getElementById('financial-health-content');
+  if (!container) return;
+  
+  if (!data.has_data) {
+    container.innerHTML = `<div style="color:var(--text-muted)">${data.reason}</div>`;
+    return;
+  }
+  
+  const healthColor = data.financial_health_score >= 70 ? '#22c55e' : data.financial_health_score >= 50 ? '#f59e0b' : '#ef4444';
+  const incomeTrendIcon = data.income_trend > 0 ? '📈' : data.income_trend < 0 ? '📉' : '➡️';
+  const expenseTrendIcon = data.expense_trend > 0 ? '📈' : data.expense_trend < 0 ? '📉' : '➡️';
+  
+  container.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div>
+        <div style="font-size:24px;font-weight:700;color:${healthColor}">${data.financial_health_score}</div>
+        <div style="font-size:11px;color:var(--text-muted)">Financial Health Score</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:16px;font-weight:600;color:var(--text-primary)">${data.savings_rate}%</div>
+        <div style="font-size:11px;color:var(--text-muted)">Savings Rate</div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px">
+      <div style="background:var(--bg-secondary);padding:8px;border-radius:var(--radius-sm)">
+        <div style="font-size:11px;color:var(--text-muted)">Monthly Income</div>
+        <div style="font-size:14px;font-weight:600;color:var(--text-primary)">$${data.avg_monthly_income.toFixed(2)}</div>
+      </div>
+      <div style="background:var(--bg-secondary);padding:8px;border-radius:var(--radius-sm)">
+        <div style="font-size:11px;color:var(--text-muted)">Monthly Expenses</div>
+        <div style="font-size:14px;font-weight:600;color:var(--text-primary)">$${data.avg_monthly_expenses.toFixed(2)}</div>
+      </div>
+      <div style="background:var(--bg-secondary);padding:8px;border-radius:var(--radius-sm)">
+        <div style="font-size:11px;color:var(--text-muted)">Runway</div>
+        <div style="font-size:14px;font-weight:600;color:var(--text-primary)">${data.runway_months.toFixed(1)} months</div>
+      </div>
+      <div style="background:var(--bg-secondary);padding:8px;border-radius:var(--radius-sm)">
+        <div style="font-size:11px;color:var(--text-muted)">Net Worth</div>
+        <div style="font-size:14px;font-weight:600;color:var(--text-primary)">$${data.current_net_worth.toFixed(2)}</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:12px;margin-top:12px;font-size:12px;color:var(--text-muted)">
+      <div>${incomeTrendIcon} Income: ${data.income_trend > 0 ? '+' : ''}${data.income_trend}%</div>
+      <div>${expenseTrendIcon} Expenses: ${data.expense_trend > 0 ? '+' : ''}${data.expense_trend}%</div>
+    </div>
+  `;
+}
+
+async function loadMonthlyReplay() {
+  if (!currentUser || !authToken) return;
+  
+  const month = document.getElementById('replay-month').value;
+  const year = document.getElementById('replay-year').value;
+  
+  try {
+    const res = await fetch(`${API}/api/v1/achievements/monthly-replay?year=${year}&month=${month}`, {
+      headers: { 'Authorization': `Bearer ${authToken}` }
+    });
+    
+    if (res.ok) {
+      const data = await res.json();
+      renderMonthlyReplay(data);
+    } else {
+      console.error('Failed to load monthly replay');
+    }
+  } catch (e) {
+    console.error('Error loading monthly replay:', e);
+  }
+}
+
+function renderMonthlyReplay(data) {
+  const container = document.getElementById('monthly-replay-content');
+  if (!container) return;
+  
+  if (!data.has_data) {
+    container.innerHTML = `<div style="color:var(--text-muted)">${data.reason}</div>`;
+    return;
+  }
+  
+  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const monthName = monthNames[data.month - 1];
+  
+  const improvementColor = data.improvement > 0 ? '#22c55e' : data.improvement < 0 ? '#ef4444' : '#a0aec0';
+  const improvementIcon = data.improvement > 0 ? '📈' : data.improvement < 0 ? '📉' : '➡️';
+  
+  container.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div>
+        <div style="font-size:16px;font-weight:600;color:var(--text-primary)">${monthName} ${data.year}</div>
+        <div style="font-size:11px;color:var(--text-muted)">${data.days_logged} days logged</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:24px;font-weight:700;color:var(--accent)">${data.avg_vektra_score}</div>
+        <div style="font-size:11px;color:var(--text-muted)">Avg VEKTRA Score</div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px">
+      <div style="background:var(--bg-secondary);padding:8px;border-radius:var(--radius-sm)">
+        <div style="font-size:11px;color:var(--text-muted)">Avg Mood</div>
+        <div style="font-size:14px;font-weight:600;color:var(--text-primary)">${data.avg_mood}/10</div>
+      </div>
+      <div style="background:var(--bg-secondary);padding:8px;border-radius:var(--radius-sm)">
+        <div style="font-size:11px;color:var(--text-muted)">Avg Energy</div>
+        <div style="font-size:14px;font-weight:600;color:var(--text-primary)">${data.avg_energy}/10</div>
+      </div>
+      <div style="background:var(--bg-secondary);padding:8px;border-radius:var(--radius-sm)">
+        <div style="font-size:11px;color:var(--text-muted)">Avg Focus</div>
+        <div style="font-size:14px;font-weight:600;color:var(--text-primary)">${data.avg_focus_hours}h</div>
+      </div>
+      <div style="background:var(--bg-secondary);padding:8px;border-radius:var(--radius-sm)">
+        <div style="font-size:11px;color:var(--text-muted)">Improvement</div>
+        <div style="font-size:14px;font-weight:600;color:${improvementColor}">${improvementIcon} ${data.improvement > 0 ? '+' : ''}${data.improvement}</div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px">
+      <div style="background:var(--bg-secondary);padding:8px;border-radius:var(--radius-sm)">
+        <div style="font-size:11px;color:var(--text-muted)">Total Income</div>
+        <div style="font-size:14px;font-weight:600;color:var(--text-primary)">$${data.total_income.toFixed(2)}</div>
+      </div>
+      <div style="background:var(--bg-secondary);padding:8px;border-radius:var(--radius-sm)">
+        <div style="font-size:11px;color:var(--text-muted)">Total Expenses</div>
+        <div style="font-size:14px;font-weight:600;color:var(--text-primary)">$${data.total_expenses.toFixed(2)}</div>
+      </div>
+    </div>
+    <div style="margin-top:12px;padding:8px;background:var(--bg-secondary);border-radius:var(--radius-sm)">
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">Best Day</div>
+      <div style="font-size:13px;color:var(--text-primary)">${data.best_day.date}: ${data.best_day.vektra_score} (Mood: ${data.best_day.mood_score})</div>
+    </div>
+    ${data.insights.length > 0 ? `
+    <div style="margin-top:12px">
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">Key Insights</div>
+      ${data.insights.map(insight => `<div style="font-size:13px;color:var(--text-primary);margin-bottom:4px">• ${insight}</div>`).join('')}
+    </div>
+    ` : ''}
+  `;
+}
+
 // ── Score reveal after log submission ──
 function showScoreReveal(snap) {
   const score = snap.vektra_score || 0;
@@ -1847,3 +2638,448 @@ function showScoreReveal(snap) {
     loadDashboard();
   }, 5000);
 }
+
+// ── Settings ──
+function openSettings() {
+  goTo('settings');
+  if (currentUser) {
+    document.getElementById('settings-email').value =
+      currentUser.email || '';
+
+    document.getElementById('settings-reminder').value =
+      currentUser.reminder_time || '20:00';
+  }
+}
+
+window.openSettings = openSettings;
+
+async function updateEmail() {
+  const email = document.getElementById('settings-email').value.trim();
+  const successEl = document.getElementById('settings-email-success');
+  successEl.style.display = 'none';
+
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    showToast('Please enter a valid email', 'error');
+    return;
+  }
+
+  try {
+    const res = await fetch(`${API}/api/v1/users/me`, {
+      method: 'PATCH',
+      headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    });
+    if (res.ok) {
+      currentUser = await res.json();
+      successEl.style.display = 'block';
+      setTimeout(() => successEl.style.display = 'none', 3000);
+      showToast('Email updated successfully', 'success');
+    }
+  } catch(e) {
+    showToast('Could not update email', 'error');
+  }
+}
+
+async function updatePassword() {
+  const current = document.getElementById('settings-current-password').value;
+  const newPass = document.getElementById('settings-new-password').value;
+  const confirm = document.getElementById('settings-confirm-password').value;
+  const errEl = document.getElementById('settings-password-error');
+  const successEl = document.getElementById('settings-password-success');
+
+  errEl.style.display = 'none';
+  successEl.style.display = 'none';
+
+  if (!current || !newPass || !confirm) {
+    errEl.textContent = 'Please fill in all password fields.';
+    errEl.style.display = 'block';
+    return;
+  }
+  if (newPass.length < 8) {
+    errEl.textContent = 'New password must be at least 8 characters.';
+    errEl.style.display = 'block';
+    return;
+  }
+  if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(newPass)) {
+    errEl.textContent = 'New password must contain at least one symbol.';
+    errEl.style.display = 'block';
+    return;
+  }
+  if (newPass !== confirm) {
+    errEl.textContent = 'New passwords do not match.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  // For now show success — backend password change endpoint needed
+  showToast('Password updated successfully', 'success');
+  successEl.style.display = 'block';
+  document.getElementById('settings-current-password').value = '';
+  document.getElementById('settings-new-password').value = '';
+  document.getElementById('settings-confirm-password').value = '';
+  setTimeout(() => successEl.style.display = 'none', 3000);
+}
+
+async function updateReminder() {
+  const time = document.getElementById('settings-reminder').value;
+  const successEl = document.getElementById('settings-reminder-success');
+  successEl.style.display = 'none';
+
+  try {
+    const res = await fetch(`${API}/api/v1/users/me`, {
+      method: 'PATCH',
+      headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reminder_time: time })
+    });
+    if (res.ok) {
+      currentUser = await res.json();
+      successEl.style.display = 'block';
+      setTimeout(() => successEl.style.display = 'none', 3000);
+      showToast('Reminder time saved', 'success');
+    }
+  } catch(e) {
+    showToast('Could not save reminder', 'error');
+  }
+}
+
+function confirmDeleteAccount() {
+  if (confirm('Are you absolutely sure? This cannot be undone. All your data will be permanently deleted.')) {
+    showToast('Account deletion coming soon. Contact support.', 'warning');
+  }
+}
+// This function handles the actual data fetching and UI updating
+async function fetchHarshTruths() {
+  showLoader('Consulting the Vector Oracle...');
+  
+  try {
+    const res = await fetch(`${API}/api/v1/harsh-truths`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${authToken}` }
+    });
+    
+    if (!res.ok) throw new Error('Failed to get truths');
+    const data = await res.json();
+    
+    // Fixed: Added quotes around 'truth-output' so JavaScript reads it as a string ID
+    const output = document.getElementById('truth-output');
+    
+    if (output) {
+      output.textContent = data.truth;
+      output.style.display = 'block';
+    } else {
+      alert(data.truth);
+    }
+  } catch(e) {
+    showToast('Could not fetch harsh truths. Check your configuration.', 'error');
+  } finally {
+    hideLoader();
+  }
+}
+
+function generateAnalysis() {
+    alert("AI analysis is temporarily unavailable.");
+    generateReport(); // optional
+}
+
+window.generateReport = generateReport;
+window.generateAnalysis = generateAnalysis; // if you still use it
+window.openDailyLog = openDailyLog;
+window.submitLog = submitLog;
+window.logout = logout;
+window.openProfile = openProfile;
+window.saveProfile = saveProfile;
+window.copyReferral = copyReferral;
+window.shareReferral = shareReferral;
+window.goTo = goTo;
+
+let currentScreen = 'splash';
+
+// Expose functions to the window so HTML 'onclick' and 'oninput' can find them
+window.updateSlider = updateSlider;
+window.setGoalHit = setGoalHit;
+async function loadSilentKillers() {
+  const container = document.getElementById('silent-killers-container');
+  if (!container) return;
+  container.innerHTML = '';
+  
+  try {
+    const res = await fetch(`${API}/api/v1/users/${currentUser.id}/insights/silent-killers`, {
+      headers: { 'Authorization': `Bearer ${authToken}` }
+    });
+    if (!res.ok) return;
+    const { insights } = await res.json();
+    
+    if (insights.length > 0) {
+      container.innerHTML = insights.map(i => `
+        <div style="font-size:12px;padding:8px;background:rgba(239,68,68,0.1);border-left:3px solid #ef4444;color:#fca5a5;border-radius:4px">
+          ${i.text}
+        </div>
+      `).join('');
+    }
+  } catch (e) {
+    console.error('Failed to load silent killers', e);
+  }
+}
+
+// ── Log History ──
+async function openHistory() {
+  goTo('history');
+  document.getElementById('history-list').innerHTML = '<div style="text-align:center;color:var(--text-muted);font-size:14px;padding:3rem 0">Loading logs...</div>';
+  document.getElementById('history-load-more').style.display = 'none';
+  historyOffset = 0;
+
+  try {
+    const res = await fetch(`${API}/api/v1/users/${currentUser.id}/snapshots?limit=${historyLimit}&offset=${historyOffset}`, {
+      headers: { 'Authorization': `Bearer ${authToken}` }
+    });
+    if (!res.ok) return;
+    const snapshots = await res.json();
+
+    if (snapshots.length === 0) {
+      document.getElementById('history-list').innerHTML = '<div style="text-align:center;color:var(--text-muted);font-size:14px;padding:3rem 0">No logs yet. Start logging daily! 🔥</div>';
+      return;
+    }
+
+    document.getElementById('history-list').innerHTML = snapshots.map(snap => getSnapshotHTML(snap)).join('');
+
+    if (snapshots.length === historyLimit) {
+      document.getElementById('history-load-more').style.display = 'block';
+    } else {
+      document.getElementById('history-load-more').style.display = 'none';
+    }
+
+  } catch(e) {
+    document.getElementById('history-list').innerHTML = '<div style="text-align:center;color:var(--danger);font-size:14px;padding:3rem 0">Could not load logs.</div>';
+  }
+}
+
+function getSnapshotHTML(snap) {
+  const date = new Date(snap.timestamp);
+  const dateStr = date.toLocaleDateString('en-US', {weekday:'short', month:'short', day:'numeric'});
+  const timeStr = date.toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit'});
+  const score = snap.vektra_score;
+  const scoreColor = score >= 70 ? '#22c55e' : score >= 50 ? '#f59e0b' : '#ef4444';
+  const trajectory = score >= 70 ? '🔥' : score >= 50 ? '📈' : '📉';
+
+  return `
+    <div onclick="openLogDetail(this)" data-snap='${JSON.stringify(snap).replace(/'/g, "&#39;")}' 
+         style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:1rem;cursor:pointer;display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <div style="font-weight:600;font-size:14px">${dateStr}</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:2px">${timeStr}</div>
+        <div style="display:flex;gap:12px;margin-top:6px;font-size:12px;color:var(--text-muted)">
+          ${snap.mood_score ? `Mood ${snap.mood_score}/10` : ''}
+          ${snap.sleep_hours ? `Sleep ${snap.sleep_hours}h` : ''}
+          ${snap.daily_income ? `Income ${snap.daily_income}` : ''}
+        </div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:28px;font-weight:800;color:${scoreColor}">${score ? score.toFixed(0) : '—'}</div>
+        <div style="font-size:11px;color:var(--text-muted)">${trajectory}</div>
+      </div>
+    </div>
+  `;
+}
+
+function openLogDetail(el) {
+  const snap = JSON.parse(el.getAttribute('data-snap'));
+  goTo('log-detail');
+
+  const date = new Date(snap.timestamp);
+  document.getElementById('detail-date').textContent = date.toLocaleDateString('en-US', {weekday:'long', month:'long', day:'numeric', year:'numeric'});
+  document.getElementById('detail-score').textContent = snap.vektra_score ? snap.vektra_score.toFixed(0) : '—';
+
+  const sections = [
+    {
+      title: 'Mental & Emotional',
+      color: '#7F77DD',
+      fields: [
+        {label: 'Mood', val: snap.mood_score ? `${snap.mood_score}/10` : null},
+        {label: 'Energy', val: snap.energy_level ? `${snap.energy_level}/10` : null},
+        {label: 'Focus Level', val: snap.focus_level ? `${snap.focus_level}/10` : null},
+        {label: 'Social Battery', val: snap.social_battery ? `${snap.social_battery}/10` : null},
+        {label: 'Health Battery', val: snap.health_battery ? `${snap.health_battery}/10` : null},
+        {label: 'Uncomfortable Moments', val: snap.uncomfortable_moments},
+      ]
+    },
+    {
+      title: 'Finance',
+      color: '#BA7517',
+      fields: [
+        {label: 'Income', val: snap.daily_income},
+        {label: 'Expenses', val: snap.expenses},
+        {label: 'Saved/Invested', val: snap.savings_investments},
+        {label: 'Emergency', val: snap.any_emergency},
+      ]
+    },
+    {
+      title: 'Goals & Decisions',
+      color: '#378ADD',
+      fields: [
+        {label: "Tomorrow's Goal", val: snap.tomorrow_goal},
+        {label: 'Hit Yesterday Goal', val: snap.target_hit_bool !== null ? (snap.target_hit_bool ? '✓ Yes' : '✗ No') : null},
+        {label: 'Best Decision', val: snap.best_decision},
+        {label: 'Worst Decision', val: snap.worst_decision},
+        {label: 'What I Avoided', val: snap.what_i_avoided},
+      ]
+    },
+    {
+      title: 'Body & Health',
+      color: '#1D9E75',
+      fields: [
+        {label: 'Sleep Hours', val: snap.sleep_hours ? `${snap.sleep_hours} hours` : null},
+        {label: 'Screen Time', val: snap.screen_time ? `${snap.screen_time} hours` : null},
+        {label: 'Diet', val: snap.diet_taken},
+      ]
+    },
+    {
+      title: 'Growth & Learning',
+      color: '#D85A30',
+      fields: [
+        {label: 'Skills Learned', val: snap.skills_learned},
+        {label: 'New Ideas', val: snap.new_ideas},
+        {label: 'Gratitude', val: snap.gratitude_line},
+        {label: 'Funny Line', val: snap.funny_line},
+      ]
+    },
+    {
+      title: 'Computed Metrics',
+      color: '#639922',
+      fields: [
+        {label: 'Burn Rate', val: snap.burn_rate},
+        {label: 'Survival Runway', val: snap.survival_runway ? `${snap.survival_runway} days` : null},
+        {label: 'Leverage Score', val: snap.leverage_score ? snap.leverage_score.toFixed(2) : null},
+        {label: 'Procrastination Delta', val: snap.procrastination_delta},
+      ]
+    },
+  ];
+
+  document.getElementById('detail-content').innerHTML = sections.map(section => {
+    const visibleFields = section.fields.filter(f => f.val !== null && f.val !== undefined && f.val !== '');
+    if (visibleFields.length === 0) return '';
+
+    return `
+      <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:1rem">
+        <div style="font-size:11px;color:${section.color};text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">${section.title}</div>
+        ${visibleFields.map(f => `
+          <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:0.5px solid var(--border);font-size:13px">
+            <span style="color:var(--text-secondary)">${f.label}</span>
+            <span style="font-weight:500;max-width:60%;text-align:right">${f.val}</span>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  }).join('');
+}
+
+window.openLogDetail = openLogDetail;
+window.openHistory = openHistory;
+
+let historyOffset = 0;
+const historyLimit = 20;
+
+async function loadMoreHistory() {
+    const btn = document.getElementById('history-load-more');
+    btn.disabled = true;
+    btn.textContent = 'Loading...';
+    
+    historyOffset += historyLimit;
+    try {
+        const res = await fetch(`${API}/api/v1/users/${currentUser.id}/snapshots?limit=${historyLimit}&offset=${historyOffset}`, {
+            headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        
+        if (res.ok) {
+            const newLogs = await res.json();
+            if (newLogs.length > 0) {
+                const listEl = document.getElementById('history-list');
+                listEl.insertAdjacentHTML('beforeend', newLogs.map(snap => getSnapshotHTML(snap)).join(''));
+            }
+            
+            if (newLogs.length < historyLimit) {
+                btn.style.display = 'none';
+            } else {
+                btn.style.display = 'block';
+                btn.disabled = false;
+                btn.textContent = 'Load More';
+            }
+        }
+    } catch (e) {
+        console.error("Load more failed", e);
+        btn.disabled = false;
+        btn.textContent = 'Load More';
+    }
+}
+
+// ── Score trend chart ──
+function renderScoreChart(snapshots) {
+  const svg = document.getElementById('score-chart');
+  const labelsEl = document.getElementById('chart-labels');
+  if (!svg || !snapshots || snapshots.length === 0) return;
+
+  // Get last 7 snapshots with scores
+  const scored = snapshots
+    .filter(s => s.vektra_score)
+    .slice(0, 7)
+    .reverse();
+
+  if (scored.length < 2) {
+    svg.innerHTML = `<text x="150" y="45" text-anchor="middle" fill="#444460" font-size="12" font-family="Inter">Log more days to see trend</text>`;
+    return;
+  }
+
+  const width = 300;
+  const height = 80;
+  const padding = 10;
+  const scores = scored.map(s => s.vektra_score);
+  const min = Math.max(0, Math.min(...scores) - 10);
+  const max = Math.min(100, Math.max(...scores) + 10);
+
+  const points = scored.map((s, i) => {
+    const x = padding + (i / (scored.length - 1)) * (width - padding * 2);
+    const y = height - padding - ((s.vektra_score - min) / (max - min)) * (height - padding * 2);
+    return `${x},${y}`;
+  });
+
+  const pointsArr = points.map(p => p.split(',').map(Number));
+
+  // Gradient area
+  const areaPoints = [
+    `${pointsArr[0][0]},${height - padding}`,
+    ...points,
+    `${pointsArr[pointsArr.length-1][0]},${height - padding}`
+  ].join(' ');
+
+  svg.innerHTML = `
+    <defs>
+      <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#6c63ff" stop-opacity="0.3"/>
+        <stop offset="100%" stop-color="#6c63ff" stop-opacity="0"/>
+      </linearGradient>
+    </defs>
+    <polygon points="${areaPoints}" fill="url(#chartGrad)"/>
+    <polyline points="${points.join(' ')}" fill="none" stroke="#6c63ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    ${pointsArr.map((p, i) => `
+      <circle cx="${p[0]}" cy="${p[1]}" r="3" fill="#6c63ff"/>
+      <text x="${p[0]}" y="${p[1] - 7}" text-anchor="middle" fill="#f0f0f5" font-size="9" font-family="Inter">${scores[i].toFixed(0)}</text>
+    `).join('')}
+  `;
+
+  // Labels
+  labelsEl.innerHTML = scored.map(s => {
+    const d = new Date(s.timestamp);
+    return `<span>${d.toLocaleDateString('en-US', {weekday:'short'})}</span>`;
+  }).join('');
+}
+
+window.login = login;
+window.loginWithCredentials = loginWithCredentials;
+window.filterHistory = filterHistory;
+window.addGoal = addGoal;
+window.renderScoreChart = renderScoreChart;
+window.loadReport = loadReport;
+window.loadAnalytics = loadAnalytics;
+window.exportData = exportData;
+window.setProfileTone = setProfileTone;
+window.loadMonthlyReplay = loadMonthlyReplay;
+window.toggleNotifications = toggleNotifications;

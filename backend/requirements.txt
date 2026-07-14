@@ -20,3 +20,6 @@ reportlab
 Pillow
 openai
 matplotlib
+celery
+redis
+

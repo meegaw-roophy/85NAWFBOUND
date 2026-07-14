@@ -6,6 +6,7 @@ from app.db.session import get_session
 from sqlalchemy.ext.asyncio import AsyncSession
 from app import crud
 from app.core.deps import get_current_user
+from app.services.math_engine import calculate_correlations
 
 router = APIRouter()
 
@@ -32,12 +33,18 @@ async def get_today_snapshot_status(
 
 
 @router.get("/users/{user_id}/snapshots", response_model=List[SnapshotOut])
-async def get_snapshots(user_id: int, db: AsyncSession = Depends(get_session), current_user=Depends(get_current_user)):
+async def get_snapshots(
+    user_id: int,
+    limit: int = Query(default=20, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+    db: AsyncSession = Depends(get_session),
+    current_user=Depends(get_current_user)
+):
     if current_user.id != user_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not allowed")
-    snaps = await crud.list_snapshots(db, user_id)
+    snaps = await crud.list_snapshots(db, user_id, limit=limit, offset=offset)
     return snaps
-
+    
 
 @router.get("/users/{user_id}/snapshots/analytics")
 async def get_analytics(
@@ -62,9 +69,8 @@ async def get_analytics(
         start_date = today - timedelta(days=90)
     else:  # 1y
         start_date = today - timedelta(days=365)
-    
     filtered = [s for s in snapshots if s.timestamp and s.timestamp.date() >= start_date]
-    
+
     # Aggregate by date
     daily_data = {}
     for snap in sorted(filtered, key=lambda x: x.timestamp):
@@ -79,7 +85,6 @@ async def get_analytics(
             'expenses': snap.expenses,
             'current_net_worth': snap.current_net_worth
         }
-    
     return {
         'period': period,
         'data': list(daily_data.values())
@@ -95,23 +100,23 @@ async def get_weekly_comparison(
     """Get comparison between current week and previous week"""
     if current_user.id != user_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not allowed")
-    
+
     snapshots = await crud.list_snapshots(db, user_id, limit=100)
-    
+
     today = date.today()
     current_week_start = today - timedelta(days=today.weekday())
     previous_week_start = current_week_start - timedelta(days=7)
     previous_week_end = current_week_start - timedelta(days=1)
-    
+
     # Filter snapshots for current and previous week
     current_week = [s for s in snapshots if s.timestamp and s.timestamp.date() >= current_week_start]
     previous_week = [s for s in snapshots if s.timestamp and previous_week_start <= s.timestamp.date() <= previous_week_end]
-    
+
     # Calculate averages for each metric
     def calculate_avg(snapshots, field):
         values = [getattr(s, field) for s in snapshots if getattr(s, field) is not None]
         return sum(values) / len(values) if values else None
-    
+
     current_metrics = {
         'vektra_score': calculate_avg(current_week, 'vektra_score'),
         'mood_score': calculate_avg(current_week, 'mood_score'),
@@ -121,7 +126,7 @@ async def get_weekly_comparison(
         'expenses': sum([s.expenses or 0 for s in current_week]),
         'net_cash_flow': sum([(s.daily_income or 0) - (s.expenses or 0) for s in current_week])
     }
-    
+
     previous_metrics = {
         'vektra_score': calculate_avg(previous_week, 'vektra_score'),
         'mood_score': calculate_avg(previous_week, 'mood_score'),
@@ -131,13 +136,13 @@ async def get_weekly_comparison(
         'expenses': sum([s.expenses or 0 for s in previous_week]),
         'net_cash_flow': sum([(s.daily_income or 0) - (s.expenses or 0) for s in previous_week])
     }
-    
+
     # Calculate percentage changes
     def calculate_change(current, previous):
         if previous is None or previous == 0 or current is None:
             return None
         return ((current - previous) / previous) * 100
-    
+
     changes = {
         'vektra_score': calculate_change(current_metrics['vektra_score'], previous_metrics['vektra_score']),
         'mood_score': calculate_change(current_metrics['mood_score'], previous_metrics['mood_score']),
@@ -147,7 +152,7 @@ async def get_weekly_comparison(
         'expenses': calculate_change(current_metrics['expenses'], previous_metrics['expenses']),
         'net_cash_flow': calculate_change(current_metrics['net_cash_flow'], previous_metrics['net_cash_flow'])
     }
-    
+
     return {
         'current_week': current_metrics,
         'previous_week': previous_metrics,
@@ -155,3 +160,40 @@ async def get_weekly_comparison(
         'current_week_logs': len(current_week),
         'previous_week_logs': len(previous_week)
     }
+
+
+@router.get("/users/{user_id}/snapshots/activity-metrics")
+async def get_activity_metrics(
+    user_id: int,
+    db: AsyncSession = Depends(get_session),
+    current_user=Depends(get_current_user)
+):
+    if current_user.id != user_id:
+        raise HTTPException(status_code=403, detail="Not allowed")
+
+    # Get last 30 days of logs
+    snaps = await crud.list_snapshots(db, user_id, limit=30)
+
+    # Simple activity rate: logs in last 30 days
+    activity_rate = len(snaps) / 30
+
+    return {
+        "logs_last_30_days": len(snaps),
+        "activity_rate_daily": round(activity_rate, 2)
+    }
+
+
+@router.get("/users/{user_id}/insights/silent-killers")
+async def get_silent_killers(
+    user_id: int,
+    db: AsyncSession = Depends(get_session),
+    current_user=Depends(get_current_user)
+):
+    if current_user.id != user_id:
+        raise HTTPException(status_code=403, detail="Not allowed")
+
+    # Get enough history to find patterns (e.g., last 30 logs)
+    snaps = await crud.list_snapshots(db, user_id, limit=30)
+    insights = calculate_correlations(snaps)
+    return {"insights": insights}
+

@@ -53,6 +53,7 @@ class User(Base):
     goals                   = relationship('Goal',        back_populates='user', cascade='all, delete')
     vek_credits             = relationship('VekCredit',   back_populates='user', cascade='all, delete')
     referrals_made          = relationship('Referral',    foreign_keys='Referral.referrer_id', back_populates='referrer', cascade='all, delete')
+    achievements            = relationship('Achievement', back_populates='user', cascade='all, delete')
 
 
 # ─────────────────────────────────────────────
@@ -280,3 +281,25 @@ class Referral(Base):
     credits_awarded = Column(Integer,  default=0)                   # credits given to referrer
 
     referrer        = relationship('User', foreign_keys=[referrer_id], back_populates='referrals_made')
+
+
+# ─────────────────────────────────────────────
+#  ACHIEVEMENT
+# ─────────────────────────────────────────────
+class Achievement(Base):
+    __tablename__ = 'achievements'
+
+    id              = Column(Integer, primary_key=True, index=True)
+    user_id         = Column(Integer, ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
+    created_at      = Column(DateTime, default=datetime.datetime.utcnow)
+
+    achievement_id  = Column(String(50),  nullable=False)   # first_log, streak_7, score_80, etc.
+    title           = Column(String(100), nullable=False)   # "First Log", "7-Day Streak"
+    description     = Column(Text, nullable=True)           # "Logged your first snapshot"
+    icon            = Column(String(50), nullable=True)      # emoji or icon name
+    rarity          = Column(String(20), nullable=True)      # common, rare, epic, legendary
+    progress        = Column(Float, default=0.0)              # progress toward achievement (0-100)
+    completed       = Column(Boolean, default=False)
+    completed_at    = Column(DateTime, nullable=True)
+
+    user            = relationship('User')

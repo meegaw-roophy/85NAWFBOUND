@@ -47,9 +47,49 @@ class VektraScoreResult:
     leverage_score: Optional[float] = None         # output per unit time+energy
     system_leak: Optional[float] = None            # planned vs actual focus gap
     opportunity_cost_score: Optional[float] = None # % time on low value tasks
+    
+    # coaching tip
+    coaching_tip: Optional[str] = None
+
+    @property
+    def shareable_summary(self) -> str:
+        if self.vektra_score >= 80:
+            return f"VEKTRA Peak: {self.vektra_score}/100. Unstoppable."
+        elif self.vektra_score >= 50:
+            return f"VEKTRA Level: {self.vektra_score}/100. Momentum building."
+        else:
+            return f"VEKTRA Status: {self.vektra_score}/100. Resetting trajectory."
+
+    @property
+    def viral_caption(self) -> str:
+        if self.vektra_score >= 90:
+            return f"I just hit a {self.vektra_score} on my VEKTRA scale while you were scrolling TikTok. We are not the same. [UPWARD TREND]"
+        elif self.vektra_score >= 70:
+            return f"My VEKTRA score is a {self.vektra_score}. Building an empire, one day at a time. [TEMPLE]"
+        elif self.vektra_score >= 50:
+            return f"Hit {self.vektra_score}/100 on VEKTRA today. Consistency beats talent every single time. [WRENCH]"
+        else:
+            return f"Today was a reset day ({self.vektra_score}/100). Recalibrating trajectory for a massive bounceback tomorrow. [GEAR]"
 
     # confidence (0-1) — how many inputs were actually logged
     confidence: float = 1.0
+
+
+def get_coaching_tip(result: VektraScoreResult) -> str:
+    """Generates an AI-driven actionable insight based on the score."""
+    if result.vektra_score >= 80:
+        return "You're in the flow state. Keep your routine tight and scale your output."
+    
+    if result.execution_score < 40:
+        return "Execution is dipping. Pick one high-value task for tomorrow and ignore everything else."
+    
+    if result.financial_score < 40:
+        return "Financial discipline needs attention. Review your daily burn and look for one leakage point."
+    
+    if result.mental_score < 50:
+        return "Mental battery low. Prioritize 30 minutes of intentional rest before bed tonight."
+    
+    return "Refine your focus. What is the one thing that will compound most for tomorrow?"
 
 
 def _safe(value, default=None):
@@ -409,13 +449,14 @@ def calculate_growth_score(
 # ─────────────────────────────────────────────
 #  MASTER VEKTRA SCORE ENGINE
 # ─────────────────────────────────────────────
-def calculate_vektra_score(snapshot: dict, previous_snapshot: dict = None) -> VektraScoreResult:
+def calculate_vektra_score(snapshot: dict, previous_snapshot: dict = None, current_streak: int = 0) -> VektraScoreResult:
     """
     Master engine — combines all 5 sub-engines into one trajectory score.
 
     Args:
         snapshot: dict of all current snapshot field values
         previous_snapshot: dict of previous snapshot (for variance calculations)
+        current_streak: integer representing user's current daily streak
 
     Returns:
         VektraScoreResult with master score + all computed metrics
@@ -483,6 +524,11 @@ def calculate_vektra_score(snapshot: dict, previous_snapshot: dict = None) -> Ve
         growth['score']    * weights['growth']
     )
 
+    # ── Streak Momentum Bonus (Scale-up viral feature) ──
+    # Every day in streak gives +1% bonus up to max +20% (multiplier of 1.20)
+    streak_bonus_multiplier = min(1.0 + (current_streak * 0.01), 1.20)
+    master_score *= streak_bonus_multiplier
+
     # ── Confidence score ─────────────────────
     # How many sub-engines had real data? Affects how much we trust the score.
     engines_with_data = sum([
@@ -499,7 +545,7 @@ def calculate_vektra_score(snapshot: dict, previous_snapshot: dict = None) -> Ve
     all_metrics.update(financial.get('metrics', {}))
     all_metrics.update(execution.get('metrics', {}))
 
-    return VektraScoreResult(
+    result = VektraScoreResult(
         financial_score=round(financial['score'], 2),
         mental_score=round(mental['score'], 2),
         execution_score=round(execution['score'], 2),
@@ -516,6 +562,8 @@ def calculate_vektra_score(snapshot: dict, previous_snapshot: dict = None) -> Ve
         system_leak=all_metrics.get('system_leak'),
         opportunity_cost_score=all_metrics.get('opportunity_cost_score'),
     )
+    result.coaching_tip = get_coaching_tip(result)
+    return result
 
 
 # ─────────────────────────────────────────────
@@ -543,18 +591,21 @@ if __name__ == "__main__":
         'funny_line': 'Elsy still has me saved as Roophy (elvis)',
     }
 
-    result = calculate_vektra_score(test_snapshot)
+    result = calculate_vektra_score(test_snapshot, current_streak=5)
 
     print("\n" + "="*50)
-    print("  VEKTRA SCORE ENGINE — TEST RUN")
+    print("  VEKTRA SCORE ENGINE — TEST RUN (With 5-Day Streak)")
     print("="*50)
     print(f"  Financial score:  {result.financial_score}/100")
     print(f"  Mental score:     {result.mental_score}/100")
     print(f"  Execution score:  {result.execution_score}/100")
     print(f"  Body score:       {result.body_score}/100")
     print(f"  Growth score:     {result.growth_score}/100")
-    print(f"  {'─'*30}")
+    print(f"  {'='*30}")
     print(f"  VEKTRA SCORE:     {result.vektra_score}/100")
+    print(f"  Summary:          {result.shareable_summary}")
+    print(f"  Viral Caption:    {result.viral_caption}")
+    print(f"  Coach Tip:        {result.coaching_tip}")
     print(f"  Confidence:       {result.confidence*100:.0f}%")
     print(f"\n  Computed metrics:")
     print(f"  Burn rate:        {result.burn_rate}")

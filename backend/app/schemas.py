@@ -243,3 +243,26 @@ class GoalOut(BaseModel):
     progress_pct: float
     created_at: Optional[datetime] = None
     model_config = ConfigDict(from_attributes=True)
+
+
+class AchievementCreate(BaseModel):
+    achievement_id: str
+    title: str
+    description: Optional[str] = None
+    icon: Optional[str] = None
+    rarity: Optional[str] = "common"
+
+
+class AchievementOut(BaseModel):
+    id: int
+    user_id: int
+    achievement_id: str
+    title: str
+    description: Optional[str] = None
+    icon: Optional[str] = None
+    rarity: Optional[str] = None
+    progress: float
+    completed: bool
+    completed_at: Optional[datetime] = None
+    created_at: Optional[datetime] = None
+    model_config = ConfigDict(from_attributes=True)

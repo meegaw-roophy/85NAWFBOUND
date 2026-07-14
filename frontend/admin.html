@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>VEKTRA Commander</title>
+    <style>
+        :root {
+            --bg-main: #0a0a0f;
+            --bg-card: #111118;
+            --border-card: rgba(255, 255, 255, 0.06);
+            --text-primary: #16eed1;
+            --text-secondary: #8888aa;
+        }
+
+        body { 
+            background: var(--bg-main); 
+            color: var(--text-primary); 
+            font-family: 'Inter', sans-serif; 
+            padding: 40px; 
+            margin: 0; /* Reset default browser margin */
+        }
+
+        h1 { 
+            font-weight: 800; 
+            letter-spacing: -0.05em; 
+            margin: 0 0 2rem 0; /* Clear top margin */
+        }
+
+        .grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
+            gap: 20px; 
+        }
+
+        .card { 
+            background: var(--bg-card); 
+            border: 1px solid var(--border-card); 
+            border-radius: 16px; 
+            padding: 24px; 
+        }
+
+        .val { 
+            font-size: 2.5rem; 
+            font-weight: 900; 
+            background: linear-gradient(135deg, #6c63ff, #ec4899); 
+            -webkit-background-clip: text; 
+            background-clip: text; /* Standard syntax fallback */
+            -webkit-text-fill-color: transparent; 
+            display: inline-block; /* Fixes grid clipping bugs */
+            line-height: 1.2; /* Prevents text descenders from being cut off */
+        }
+
+        .label { 
+            color: var(--text-secondary); 
+            font-size: 0.8rem; 
+            text-transform: uppercase; 
+            letter-spacing: 0.1em; 
+            margin-bottom: 4px; /* Optional spacing adjustment */
+        }
+    </style>
+
+</head>
+<body>
+    <h1>VEKTRA Command Center</h1>
+    <div class="grid" id="stats">
+        <div class="card"><div class="label">Total Users</div><div class="val" id="users">--</div></div>
+        <div class="card"><div class="label">Total Logs</div><div class="val" id="logs">--</div></div>
+    </div>
+    <div style="margin-top:20px;">
+        <button onclick="seedData()" style="padding:10px 20px; background:#6c63ff; color:#fff; border:none; border-radius:8px; cursor:pointer;">Seed 30 Days Data</button>
+    </div>
+
+    <script>
+        const API = 'http://127.0.0.1:8000';
+        async function fetchAdminData() {
+            const token = localStorage.getItem('vektra_token');
+            try {
+                const res = await fetch(`${API}/api/v1/admin/stats`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.status === 403) { document.body.innerHTML = "<h1>403: Not Authorized</h1>"; return; }
+            const data = await res.json();
+                document.getElementById('users').textContent = data.total_users;
+                document.getElementById('logs').textContent = data.total_logs;
+            } catch (e) { console.error("Telemetry failure", e); }
+        }
+
+        async function seedData() {
+            const token = localStorage.getItem('vektra_token');
+            const res = await fetch(`${API}/api/v1/admin/seed-data`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                alert("Data seeded!");
+        fetchAdminData();
+            } else {
+                alert("Failed to seed data");
+            }
+        }
+
+        fetchAdminData();
+        setInterval(fetchAdminData, 5000); // Pulse every 5 seconds
+    </script>
+</body>
+</html>
