@@ -15,6 +15,13 @@ from .admin import router as admin_router
 from .subscriptions import router as subscriptions_router
 from .achievements import router as achievements_router
 from .export import router as export_router
+from .circles import router as circles_router
+from .streak import router as streak_router
+from .flex import router as flex_router
+from .insights import router as insights_router
+from .wagers import router as wagers_router
+from .trash_talk import router as trash_talk_router
+from .notifications import router as notifications_router
 
 router = APIRouter()
 
@@ -34,4 +41,11 @@ router.include_router(goals_router, prefix="/goals", tags=["goals"])
 router.include_router(subscriptions_router, prefix="/subscriptions", tags=["subscriptions"])
 router.include_router(achievements_router, prefix="/achievements", tags=["achievements"])
 router.include_router(export_router, prefix="/export", tags=["export"])
+router.include_router(circles_router, prefix="/circles", tags=["circles"])
+router.include_router(streak_router, prefix="/streak", tags=["streak"])
+router.include_router(flex_router, prefix="/flex", tags=["flex"])
+router.include_router(insights_router, prefix="/insights", tags=["insights"])
+router.include_router(wagers_router, prefix="/wagers", tags=["wagers"])
+router.include_router(trash_talk_router, prefix="/trash-talk", tags=["trash-talk"])
+router.include_router(notifications_router, prefix="/notifications", tags=["notifications"])
 

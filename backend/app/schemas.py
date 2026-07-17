@@ -17,17 +17,20 @@ class UserCreate(BaseModel):
 class UserOut(BaseModel):
     id: int
     username: str
-    email: EmailStr
-    created_at: Optional[datetime]
+    email: str
     full_name: Optional[str] = None
-    dob: Optional[date] = None
+    primary_goal: Optional[str] = None
+    north_star: Optional[str] = None
+    north_star_deadline: Optional[date] = None
     initial_net_worth: Optional[float] = None
     currency: Optional[str] = None
     language: Optional[str] = None
-    primary_goal: Optional[str] = None
-    north_star: Optional[str] = None
+    preferred_feedback_tone: Optional[str] = None
+    ai_tone_language: Optional[str] = None
     tier: Optional[str] = None
-    model_config = ConfigDict(from_attributes=True)
+    tier_expires_at: Optional[datetime] = None  # 2. RECOMMENDED: Kept as datetime/date or string
+    created_at: Optional[datetime] = None
+    current_location: Optional[str] = None
 
 
 # ─────────────────────────────────────────────
@@ -85,6 +88,8 @@ class SnapshotCreate(BaseModel):
     focus_hours: Optional[float] = None
     environment_rating: Optional[int] = None
     opportunity_cost: Optional[float] = None
+    last_trash_talk_sent: Optional[datetime] = None
+    trash_talk_count: Optional[int] = None
 
     # weekly inputs
     how_many_goals: Optional[int] = None

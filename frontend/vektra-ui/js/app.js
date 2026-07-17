@@ -2,8 +2,8 @@
 const API = 'http://127.0.0.1:8000';
 
 // ── Token storage ──
-let authToken = null;
-let currentUser = null;
+let authToken = null; // Ensure this is not declared as a 'const' anywhere!
+let currentUser = {};
 
 // ── Toast notifications ──
 function showToast(message, type = 'info', duration = 3000) {
@@ -46,54 +46,60 @@ function goTo(screen) {
   currentScreen = screen;
 }
 
-// ── Auto-login on page load ──
-window.addEventListener('load', () => {
+// ── Clean Auto-login Engine on Page Load ──
+window.addEventListener('DOMContentLoaded', async () => {
   const splash = document.getElementById('splash');
-  setTimeout(() => {
+  
+  // 1. Instantly check storage before waiting for heavy images/timers
+  let savedToken = localStorage.getItem('vektra_token');
+  console.log('Token from storage:', savedToken);
+  // 2. Handle the splash screen animation cleanly
+  if (splash) {
+    splash.style.transition = 'opacity 0.4s ease';
     splash.style.opacity = '0';
-    setTimeout(async () => {
-      splash.style.display = 'none';
-      const savedToken = localStorage.getItem('vektra_token');
-console.log('Saved token:', savedToken);
+    // Remove from layout after fade out animation completes
+    setTimeout(() => splash.style.display = 'none', 400);
+  }
 
-if (savedToken) {
+  // 3. Explicit routing gates based on token validation state
+  if (!savedToken) {
+    console.log('No token found. Routing straight to welcome...');
+    goTo('welcome');
+    return; // 🚀 STOP EXECUTION HERE
+  }
+
+  // 4. If a token exists, authenticate it against your FastAPI server
   authToken = savedToken;
-
   try {
     const res = await fetch(`${API}/api/v1/users/me`, {
-      headers: {
-        'Authorization': `Bearer ${authToken}`
-      }
+      headers: { 'Authorization': `Bearer ${authToken}` }
     });
 
-    console.log('Auto-login status:', res.status);
+    console.log('Server auto-login check status:', res.status);
 
     if (res.ok) {
-  currentUser = await res.json();
-  console.log('Auto-login user:', currentUser);
-
-  console.log('Going to dashboard...');
-  goTo('dashboard');
-
-  try {
-    console.log('Before loadDashboard');
-    await loadDashboard();
-    console.log('After loadDashboard');
-  } catch (e) {
-    console.error('Dashboard crashed:', e);
-  }
-
-  return;
-}
-  } catch (e) {
-    console.log('Auto-login error:', e);
-  }
-        localStorage.removeItem('vektra_token');
-        authToken = null;
+      currentUser = await res.json();
+      console.log('User profile authenticated:', currentUser);
+      
+      goTo('dashboard');
+      
+      try {
+        await loadDashboard();
+      } catch (dashboardError) {
+        console.error('Dashboard rendering failure:', dashboardError);
       }
-      goTo('welcome');
-    }, 600);
-  }, 2000);
+      return; // 🚀 SUCCESSFUL ROUTE EXIT
+    }
+  } catch (networkError) {
+    console.log('Server connection error during validation:', networkError);
+  }
+
+  // 5. Fallback Cleanup: If token exists but server rejected it (expired/invalid)
+  console.log('Invalid token tracking parameters detected. Purging credentials...');
+  localStorage.removeItem('vektra_token');
+  authToken = null;
+  currentUser = null;
+  goTo('welcome');
 });
 
 // ── Register service worker ──
@@ -168,28 +174,70 @@ async function register() {
 
 // ── Login with credentials ──
 async function loginWithCredentials(username, password) {
-  const body = new URLSearchParams({ username, password });
-  const res = await fetch(`${API}/api/v1/auth/token`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body
-  });
-  const data = await res.json();
-  if (res.ok) {
-    authToken = data.access_token;
+  try {
+    const tokenBody = new URLSearchParams({ username, password });
+    const tokenRes = await fetch(`${API}/api/v1/auth/token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: tokenBody
+    });
+
+    if (!tokenRes.ok) {
+      console.error("Token acquisition failed.");
+      return; // Stop execution if credentials are wrong
+    }
+
+    const tokenData = await tokenRes.json();
+    authToken = tokenData.access_token;
+    localStorage.setItem('vektra_token', authToken);
+
+    // 1. Fetch primary profile records
     const userRes = await fetch(`${API}/api/v1/users/me`, {
       headers: { 'Authorization': `Bearer ${authToken}` }
     });
+    
     if (userRes.ok) {
       currentUser = await userRes.json();
+    } else {
+      currentUser = {}; // Ensure it's never null to prevent layout crashes
     }
-    localStorage.setItem('vektra_token', authToken);
+
+    // 2. Safely auto-detect and sync PPP localization matrix
+    if (location && currentUser) {
+      const locationRes = await fetch(`${API}/api/v1/users/me`, {
+        method: 'PATCH',
+        headers: { 
+          'Authorization': `Bearer ${authToken}`, 
+          'Content-Type': 'application/json' 
+        },
+        body: JSON.stringify({
+          current_location: location.location_string || "KE",
+          currency: location.currency || "KES",
+          language: location.language || "en",
+        })
+      });
+
+      if (locationRes.ok) {
+        // Safely update user profile state with localized values
+        currentUser = await locationRes.json(); 
+      }
+    }
+
+    // 3. Absolute safety fallback to prevent "reading properties of null"
+    if (!currentUser) {
+      currentUser = { currency: "USD", current_location: "US" };
+    }
+
+    // 4. Secure Onboarding Core Pipeline Redirect
     if (!currentUser.north_star) {
       goTo('onboard-1');
     } else {
       goTo('dashboard');
       loadDashboard();
     }
+
+  } catch (error) {
+    console.error("Critical login connection error:", error);
   }
 }
 
@@ -539,6 +587,11 @@ async function submitLog() {
     }
     return;
   }
+
+  // Helper to safely get values
+  const getVal = (id) => document.getElementById(id)?.value || null;
+  const getInt = (id) => parseInt(getVal(id)) || null;
+  const getFloat = (id) => parseFloat(getVal(id)) || null;
 
   const payload = {
     mood_score:            parseInt(moodVal),
@@ -2580,7 +2633,7 @@ function renderMonthlyReplay(data) {
       <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">Best Day</div>
       <div style="font-size:13px;color:var(--text-primary)">${data.best_day.date}: ${data.best_day.vektra_score} (Mood: ${data.best_day.mood_score})</div>
     </div>
-    ${data.insights.length > 0 ? `
+    ${(data?.insights || []).length > 0 ? `
     <div style="margin-top:12px">
       <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">Key Insights</div>
       ${data.insights.map(insight => `<div style="font-size:13px;color:var(--text-primary);margin-bottom:4px">• ${insight}</div>`).join('')}
@@ -2711,13 +2764,29 @@ async function updatePassword() {
     return;
   }
 
-  // For now show success — backend password change endpoint needed
-  showToast('Password updated successfully', 'success');
-  successEl.style.display = 'block';
-  document.getElementById('settings-current-password').value = '';
-  document.getElementById('settings-new-password').value = '';
-  document.getElementById('settings-confirm-password').value = '';
-  setTimeout(() => successEl.style.display = 'none', 3000);
+  try {
+    const res = await fetch(`${API}/api/v1/users/me/change-password`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ current_password: current, new_password: newPass })
+    });
+    
+    if (res.ok) {
+      showToast('Password updated successfully', 'success');
+      successEl.style.display = 'block';
+      document.getElementById('settings-current-password').value = '';
+      document.getElementById('settings-new-password').value = '';
+      document.getElementById('settings-confirm-password').value = '';
+      setTimeout(() => successEl.style.display = 'none', 3000);
+    } else {
+      const data = await res.json().catch(() => ({}));
+      errEl.textContent = data.detail || 'Failed to update password';
+      errEl.style.display = 'block';
+    }
+  } catch (e) {
+    errEl.textContent = 'Failed to update password. Please try again.';
+    errEl.style.display = 'block';
+  }
 }
 
 async function updateReminder() {
@@ -3013,13 +3082,15 @@ async function loadMoreHistory() {
 
 // ── Score trend chart ──
 function renderScoreChart(snapshots) {
+  console.log("Rendering chart with:");
+  console.log("DEBUG: Chart snapshots sample:", snapshots[0]);
   const svg = document.getElementById('score-chart');
   const labelsEl = document.getElementById('chart-labels');
   if (!svg || !snapshots || snapshots.length === 0) return;
 
   // Get last 7 snapshots with scores
   const scored = snapshots
-    .filter(s => s.vektra_score)
+    .filter(s => s.vektra_score !== null && s.vektra_score !== undefined)
     .slice(0, 7)
     .reverse();
 
@@ -3072,7 +3143,71 @@ function renderScoreChart(snapshots) {
   }).join('');
 }
 
+// ── Auto-detect location and set currency/language ──
+async function detectUserLocation() {
+  try {
+    const res = await fetch('https://ipapi.co/json/');
+    const data = await res.json();
+    
+    const countryCode = data.country_code;
+    const currency = data.currency;
+    const languages = data.languages?.split(',')[0] || 'en';
+    const timezone = data.timezone;
+    const city = data.city;
+    const country = data.country_name;
+
+    return {
+      country_code: countryCode,
+      currency: currency,
+      language: getLanguageName(languages),
+      timezone: timezone,
+      city: city,
+      country: country,
+      location_string: `${city}, ${country}`
+    };
+  } catch(e) {
+    console.log('Location detection failed:', e);
+    return null;
+  }
+}
+
+function getLanguageName(code) {
+  const languages = {
+    'en': 'English', 'sw': 'Swahili', 'fr': 'French',
+    'es': 'Spanish', 'pt': 'Portuguese', 'ar': 'Arabic',
+    'hi': 'Hindi', 'zh': 'Chinese', 'de': 'German',
+    'it': 'Italian', 'ru': 'Russian', 'ja': 'Japanese'
+  };
+  return languages[code] || 'English';
+}
+
+// ── Currency pricing by region ──
+function getPricingForCurrency(currency) {
+  const pricing = {
+    // Africa
+    'KES': { tier1: 499,    tier2: 1999,  symbol: 'KES', name: 'Kenya' },
+    'NGN': { tier1: 2999,   tier2: 9999,  symbol: '₦',   name: 'Nigeria' },
+    'GHS': { tier1: 29,     tier2: 99,    symbol: '₵',   name: 'Ghana' },
+    'ZAR': { tier1: 74,     tier2: 279,   symbol: 'R',   name: 'South Africa' },
+    'UGX': { tier1: 14900,  tier2: 54900, symbol: 'UGX', name: 'Uganda' },
+    'TZS': { tier1: 9900,   tier2: 39900, symbol: 'TZS', name: 'Tanzania' },
+    // Americas
+    'USD': { tier1: 3.99,   tier2: 14.99, symbol: '$',   name: 'US' },
+    'BRL': { tier1: 19.90,  tier2: 74.90, symbol: 'R$',  name: 'Brazil' },
+    'MXN': { tier1: 69,     tier2: 249,   symbol: '$',   name: 'Mexico' },
+    // Europe
+    'GBP': { tier1: 3.49,   tier2: 12.99, symbol: '£',   name: 'UK' },
+    'EUR': { tier1: 3.99,   tier2: 14.99, symbol: '€',   name: 'Europe' },
+    // Asia
+    'INR': { tier1: 329,    tier2: 1249,  symbol: '₹',   name: 'India' },
+    'PKR': { tier1: 1099,   tier2: 3999,  symbol: '₨',   name: 'Pakistan' },
+  };
+  return pricing[currency] || pricing['USD'];
+}
+
+
 window.login = login;
+window.register = register;
 window.loginWithCredentials = loginWithCredentials;
 window.filterHistory = filterHistory;
 window.addGoal = addGoal;
@@ -3083,3 +3218,4 @@ window.exportData = exportData;
 window.setProfileTone = setProfileTone;
 window.loadMonthlyReplay = loadMonthlyReplay;
 window.toggleNotifications = toggleNotifications;
+window.currentUser = currentUser;

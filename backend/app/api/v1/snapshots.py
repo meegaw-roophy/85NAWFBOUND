@@ -15,7 +15,14 @@ router = APIRouter()
 async def add_snapshot(user_id: int, payload: SnapshotCreate, db: AsyncSession = Depends(get_session), current_user=Depends(get_current_user)):
     if current_user.id != user_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not allowed")
-    snap = await crud.create_snapshot(db, user_id, payload.dict(exclude_none=True))
+
+    # Filter out trash_talk fields if not intended to be set from frontend
+    data = payload.dict(exclude_none=True)
+    if 'last_trash_talk_sent' in data:
+        del data['last_trash_talk_sent']
+    if 'trash_talk_count' in data:
+        del data['trash_talk_count']
+    snap = await crud.create_snapshot(db, user_id, data)
     return snap
 
 

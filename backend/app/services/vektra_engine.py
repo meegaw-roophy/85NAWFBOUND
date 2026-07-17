@@ -35,6 +35,9 @@ class VektraScoreResult:
 
     # master score
     vektra_score: float = 50.0
+    
+    # Predictive (Shadow) Data
+    shadow_score: float = 0.0 # What you *could* have been at
 
     # computed financial metrics
     burn_rate: Optional[float] = None          # daily spend rate
@@ -528,6 +531,11 @@ def calculate_vektra_score(snapshot: dict, previous_snapshot: dict = None, curre
     # Every day in streak gives +1% bonus up to max +20% (multiplier of 1.20)
     streak_bonus_multiplier = min(1.0 + (current_streak * 0.01), 1.20)
     master_score *= streak_bonus_multiplier
+    
+    # ── Shadow Score Logic ──
+    # The 'shadow' is your potential score at 100% execution
+    # (Assuming all metrics logged are ideal)
+    shadow_score = _clamp(master_score * (1.20 / streak_bonus_multiplier))
 
     # ── Confidence score ─────────────────────
     # How many sub-engines had real data? Affects how much we trust the score.

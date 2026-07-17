@@ -4,6 +4,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List, Optional
 from app.db.models import User, Snapshot, Report, Subscription, Payment, Goal
 from collections.abc import Sequence
+import csv
+import json
 
 
 async def get_user_by_id(db: AsyncSession, user_id: int) -> Optional[User]:
@@ -828,5 +830,116 @@ async def get_monthly_replay(db: AsyncSession, user_id: int, year: int = None, m
             'mood_score': worst_day.mood_score
         },
         'improvement': round(improvement, 1),
-        'insights': insights
     }
+
+
+async def export_user_data_csv(db: AsyncSession, user_id: int) -> str:
+    """Export user snapshots as CSV string"""
+    result = await db.execute(
+        select(Snapshot)
+        .where(Snapshot.user_id == user_id)
+        .order_by(Snapshot.timestamp.desc())
+    )
+    snapshots = result.scalars().all()
+    
+    if not snapshots:
+        return "No data available for export"
+    
+    # Define CSV headers based on Snapshot model fields
+    headers = [
+        'timestamp', 'log_date', 'mood_score', 'energy_level', 'focus_level',
+        'social_battery', 'health_battery', 'uncomfortable_moments',
+        'daily_income', 'expenses', 'savings_investments', 'any_emergency',
+        'tomorrow_goal', 'target_hit_bool', 'best_decision', 'worst_decision',
+        'what_i_avoided', 'sleep_hours', 'screen_time', 'diet_taken',
+        'skills_learned', 'new_ideas', 'gratitude_line', 'funny_line',
+        'focus_hours', 'environment_rating', 'opportunity_cost',
+        'vektra_score', 'burn_rate', 'survival_runway', 'leverage_score',
+        'procrastination_delta', 'interactions_done'
+    ]
+    
+    output = []
+    output.append(','.join(headers))
+    
+    for snap in snapshots:
+        row = []
+        for field in headers:
+            value = getattr(snap, field, None)
+            if value is None:
+                row.append('')
+            elif isinstance(value, (datetime, date)):
+                row.append(value.isoformat())
+            elif isinstance(value, bool):
+                row.append(str(value).lower())
+            else:
+                row.append(str(value))
+        output.append(','.join(row))
+    
+    return '\n'.join(output)
+
+
+async def export_user_data_json(db: AsyncSession, user_id: int) -> dict:
+    """Export user snapshots as JSON dict"""
+    result = await db.execute(
+        select(Snapshot)
+        .where(Snapshot.user_id == user_id)
+        .order_by(Snapshot.timestamp.desc())
+    )
+    snapshots = result.scalars().all()
+    
+    # Get user info
+    user_result = await db.execute(select(User).where(User.id == user_id))
+    user = user_result.scalars().first()
+    
+    export_data = {
+        'user': {
+            'username': user.username if user else None,
+            'email': user.email if user else None,
+            'north_star': user.north_star if user else None,
+            'primary_goal': user.primary_goal if user else None,
+            'currency': user.currency if user else None,
+        },
+        'snapshots': [],
+        'export_date': datetime.utcnow().isoformat(),
+        'total_snapshots': len(snapshots)
+    }
+    
+    for snap in snapshots:
+        snapshot_dict = {
+            'timestamp': snap.timestamp.isoformat() if snap.timestamp else None,
+            'log_date': snap.log_date.isoformat() if snap.log_date else None,
+            'mood_score': snap.mood_score,
+            'energy_level': snap.energy_level,
+            'focus_level': snap.focus_level,
+            'social_battery': snap.social_battery,
+            'health_battery': snap.health_battery,
+            'uncomfortable_moments': snap.uncomfortable_moments,
+            'daily_income': snap.daily_income,
+            'expenses': snap.expenses,
+            'savings_investments': snap.savings_investments,
+            'any_emergency': snap.any_emergency,
+            'tomorrow_goal': snap.tomorrow_goal,
+            'target_hit_bool': snap.target_hit_bool,
+            'best_decision': snap.best_decision,
+            'worst_decision': snap.worst_decision,
+            'what_i_avoided': snap.what_i_avoided,
+            'sleep_hours': snap.sleep_hours,
+            'screen_time': snap.screen_time,
+            'diet_taken': snap.diet_taken,
+            'skills_learned': snap.skills_learned,
+            'new_ideas': snap.new_ideas,
+            'gratitude_line': snap.gratitude_line,
+            'funny_line': snap.funny_line,
+            'focus_hours': snap.focus_hours,
+            'environment_rating': snap.environment_rating,
+            'opportunity_cost': snap.opportunity_cost,
+            'vektra_score': snap.vektra_score,
+            'burn_rate': snap.burn_rate,
+            'survival_runway': snap.survival_runway,
+            'leverage_score': snap.leverage_score,
+            'procrastination_delta': snap.procrastination_delta,
+            'interactions_done': snap.interactions_done,
+        }
+        export_data['snapshots'].append(snapshot_dict)
+    
+    return export_data

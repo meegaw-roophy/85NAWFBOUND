@@ -54,6 +54,47 @@ class User(Base):
     vek_credits             = relationship('VekCredit',   back_populates='user', cascade='all, delete')
     referrals_made          = relationship('Referral',    foreign_keys='Referral.referrer_id', back_populates='referrer', cascade='all, delete')
     achievements            = relationship('Achievement', back_populates='user', cascade='all, delete')
+    circles                 = relationship('CircleMember', back_populates='user', cascade='all, delete')
+
+
+# ─────────────────────────────────────────────
+#  CIRCLES (Social Squads)
+# ─────────────────────────────────────────────
+class Circle(Base):
+    __tablename__ = 'circles'
+
+    id              = Column(Integer, primary_key=True, index=True)
+    created_at      = Column(DateTime, default=datetime.datetime.utcnow)
+    name            = Column(String(100), nullable=False)
+    description     = Column(Text, nullable=True)
+    owner_id        = Column(Integer, ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
+    
+    members         = relationship('CircleMember', back_populates='circle', cascade='all, delete')
+
+
+class CircleMember(Base):
+    __tablename__ = 'circle_members'
+
+    id              = Column(Integer, primary_key=True, index=True)
+    circle_id       = Column(Integer, ForeignKey('circles.id', ondelete='CASCADE'), nullable=False)
+    user_id         = Column(Integer, ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
+    joined_at       = Column(DateTime, default=datetime.datetime.utcnow)
+    role            = Column(String(20), default='member')  # member / admin
+    circle          = relationship('Circle', back_populates='members')
+    user            = relationship('User', back_populates='circles')
+
+
+class Wager(Base):
+    __tablename__ = 'wagers'
+
+    id              = Column(Integer, primary_key=True, index=True)
+    circle_id       = Column(Integer, ForeignKey('circles.id', ondelete='CASCADE'), nullable=False)
+    amount          = Column(Float, nullable=False)
+    status          = Column(String(20), default='active') # active, completed, cancelled
+    winner_id       = Column(Integer, ForeignKey('users.id'), nullable=True)
+    created_at      = Column(DateTime, default=datetime.datetime.utcnow)
+
+
 
 
 # ─────────────────────────────────────────────
@@ -89,8 +130,6 @@ class Snapshot(Base):
     timestamp   = Column(DateTime, default=datetime.datetime.utcnow, index=True)
     log_date    = Column(Date,     nullable=True, index=True)   # the actual day this log is for
     locked      = Column(Boolean,  default=False)               # locks at midnight — no edits after
-
-    # ── MENTAL & EMOTIONAL ────────────────────
     mood_score              = Column(Integer, nullable=True)    # 1-10
     energy_level            = Column(Integer, nullable=True)    # 1-10
     focus_level             = Column(Integer, nullable=True)    # 1-10
@@ -134,10 +173,16 @@ class Snapshot(Base):
     funny_line              = Column(Text,    nullable=True)    # something that made you laugh
     quotes_insights         = Column(Text,    nullable=True)    # quote + source
 
-    # ── PERFORMANCE & FOCUS ───────────────────
+
+
+
+
+                    # ── PERFORMANCE & FOCUS ───────────────────
     focus_hours             = Column(Float,   nullable=True)    # deep work hours — hard number
     environment_rating      = Column(Integer, nullable=True)    # 1-10 quality of work environment
     opportunity_cost        = Column(Float,   nullable=True)    # hours wasted on low value tasks
+    last_trash_talk_sent    = Column(DateTime, nullable=True)
+    trash_talk_count        = Column(Integer, default=0)
 
     # ── WEEKLY INPUTS (logged once per week) ──
     how_many_goals          = Column(Integer, nullable=True)    # active goals count — auto computed

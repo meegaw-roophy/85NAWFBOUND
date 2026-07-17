@@ -4,15 +4,17 @@ from sqlalchemy import select
 from app.db.session import get_session
 from app.db.models import User
 from app.core.deps import get_current_user
-from pydantic import BaseModel, EmailStr
+from app.core.security import verify_password, get_password_hash
+from pydantic import BaseModel, EmailStr, ConfigDict
 from typing import Optional
-from datetime import date, time
+from datetime import datetime, date, time  # 1. FIXED: Imported date and time
 
 router = APIRouter(prefix="/users", tags=["users"])
 
 
 class UserUpdate(BaseModel):
     full_name: Optional[str] = None
+    email: Optional[EmailStr] = None
     primary_goal: Optional[str] = None
     north_star: Optional[str] = None
     north_star_deadline: Optional[date] = None
@@ -23,6 +25,11 @@ class UserUpdate(BaseModel):
     ai_tone_language: Optional[str] = None
     reminder_time: Optional[time] = None
     current_location: Optional[str] = None
+
+
+class PasswordChange(BaseModel):
+    current_password: str
+    new_password: str
 
 
 class UserOut(BaseModel):
@@ -39,10 +46,12 @@ class UserOut(BaseModel):
     preferred_feedback_tone: Optional[str] = None
     ai_tone_language: Optional[str] = None
     tier: Optional[str] = None
-    tier_expires_at: Optional[str] = None
-
-    class Config:
-        from_attributes = True
+    tier_expires_at: Optional[datetime] = None  # 2. RECOMMENDED: Kept as datetime/date or string
+    created_at: Optional[datetime] = None
+    current_location: Optional[str] = None
+    
+    # 3. FIXED: Kept v2 syntax and removed the redundant v1 "class Config" block
+    model_config = ConfigDict(from_attributes=True)
 
 
 @router.get("/me", response_model=UserOut)
@@ -69,3 +78,22 @@ async def update_me(
     await db.commit()
     await db.refresh(current_user)
     return current_user
+
+
+@router.post("/me/change-password")
+async def change_password(
+    payload: PasswordChange,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_session),
+):
+    """Change user password"""
+    # Verify current password
+    if not verify_password(payload.current_password, current_user.password_hash):
+        raise HTTPException(status_code=400, detail="Incorrect current password")
+    
+    # Update password
+    current_user.password_hash = get_password_hash(payload.new_password)
+    db.add(current_user)
+    await db.commit()
+    
+    return {"message": "Password changed successfully"}
