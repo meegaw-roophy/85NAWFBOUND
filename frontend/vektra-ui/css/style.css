@@ -89,6 +89,12 @@ body {
   100% { left: 100%; }
 }
 
+@keyframes pulse {
+  0% { transform: scale(0.9); opacity: 0.6; }
+  50% { transform: scale(1.1); opacity: 1; }
+  100% { transform: scale(0.9); opacity: 0.6; }
+}
+
 /* ── WELCOME SCREEN ── */
 #welcome {
   display: none;
@@ -619,4 +625,125 @@ body,
   font-weight: 500;
   border-left: 2px solid var(--accent);
   padding-left: 10px;
+}
+
+/* ── PREMIUM VISUAL UPGRADES ── */
+
+/* Glassmorphism cards */
+.log-group,
+#dashboard .card,
+.feature-card {
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+/* Gradient border on score card */
+.score-card-wrapper {
+  background: linear-gradient(135deg, #6c63ff, #ec4899);
+  padding: 2px;
+  border-radius: var(--radius);
+  margin-bottom: 1rem;
+}
+
+.score-card-inner {
+  background: #12121a;
+  border-radius: calc(var(--radius) - 2px);
+  padding: 1.5rem;
+  text-align: center;
+}
+
+/* Glowing accent on score number */
+#dash-score {
+  text-shadow: 0 0 40px rgba(108, 99, 255, 0.5);
+  filter: drop-shadow(0 0 20px rgba(236, 72, 153, 0.3));
+}
+
+/* Premium card hover effect */
+#history-list > div,
+.log-group {
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+#history-list > div:hover {
+  transform: translateY(-2px);
+  border-color: rgba(108, 99, 255, 0.4);
+}
+
+/* Premium gradient text for section labels */
+.log-group > div:first-child {
+  background: linear-gradient(135deg, #6c63ff, #a855f7);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Better input focus glow */
+.text-field input:focus,
+.text-field textarea:focus,
+.number-field input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(108, 99, 255, 0.15);
+}
+
+/* Premium button glow on hover */
+.btn-primary:hover {
+  box-shadow: 0 8px 25px rgba(108, 99, 255, 0.4);
+  transform: translateY(-1px);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+/* Score reveal premium feel */
+#reveal-score {
+  text-shadow: 0 0 60px rgba(108, 99, 255, 0.6);
+  filter: drop-shadow(0 0 30px rgba(236, 72, 153, 0.4));
+}
+
+/* Streak fire glow */
+#dash-streak {
+  text-shadow: 0 0 20px rgba(245, 158, 11, 0.4);
+}
+
+/* North star italic glow */
+#dash-northstar {
+  border-left: 2px solid var(--accent);
+  padding-left: 10px;
+  font-style: italic;
+}
+
+/* Chart container premium */
+#score-chart {
+  filter: drop-shadow(0 4px 12px rgba(108, 99, 255, 0.2));
+}
+
+/* Onboarding step bars premium */
+.step-bar {
+  height: 3px;
+  width: 60px;
+  background: var(--border);
+  border-radius: 2px;
+  transition: background 0.3s ease;
+}
+
+.step-bar.active {
+  background: linear-gradient(90deg, #6c63ff, #ec4899);
+}
+
+/* Toast premium shadow */
+.toast {
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255,255,255,0.05);
+}
+
+/* Landing page score bars animation */
+.bar-fill {
+  animation: barGrow 1.5s ease forwards;
+  transform-origin: left;
+}
+
+@keyframes barGrow {
+  from { width: 0 !important; }
+  to   { width: var(--target-width); }
 }

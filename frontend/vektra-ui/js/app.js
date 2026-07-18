@@ -1925,10 +1925,13 @@ function renderGoalPrediction(prediction) {
   if (!prediction.has_prediction) {
     const reason = prediction.reason || 'Insufficient data';
     container.innerHTML = `
-      <div style="display:flex;flex-direction:column;gap:8px">
-        <div style="font-size:14px;color:var(--text-secondary)">Prediction not available</div>
-        <div style="font-size:12px;color:var(--text-muted)">${reason}</div>
-        ${prediction.current_score ? `<div style="font-size:12px;color:var(--text-muted)">Current score: ${prediction.current_score.toFixed(1)}</div>` : ''}
+      <div style="display:flex; flex-direction:column; gap:12px; padding: 4px 0;">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <div class="radar-dot" style="width:10px; height:10px; border-radius:50%; background:var(--accent); animation: pulse 1.5s infinite;"></div>
+          <span style="font-size:13px; font-weight:600; color:var(--text-secondary)">Calibrating Goal Trajectory Engine...</span>
+        </div>
+        <p style="font-size:12px; color:var(--text-muted); margin:0;">${reason}. VEKTRA requires at least 5 consecutive logs to accurately project your completion velocity.</p>
+        ${prediction.current_score ? `<div style="font-size:11px; color:var(--text-muted); opacity:0.8;">Current base score: ${prediction.current_score.toFixed(1)}/100</div>` : ''}
       </div>
     `;
     return;

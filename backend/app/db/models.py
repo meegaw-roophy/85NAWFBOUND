@@ -86,6 +86,7 @@ class CircleMember(Base):
 
 class Wager(Base):
     __tablename__ = 'wagers'
+    __table_args__ = {'extend_existing': True}
 
     id              = Column(Integer, primary_key=True, index=True)
     circle_id       = Column(Integer, ForeignKey('circles.id', ondelete='CASCADE'), nullable=False)
@@ -93,6 +94,20 @@ class Wager(Base):
     status          = Column(String(20), default='active') # active, completed, cancelled
     winner_id       = Column(Integer, ForeignKey('users.id'), nullable=True)
     created_at      = Column(DateTime, default=datetime.datetime.utcnow)
+    
+    participants    = relationship('WagerParticipant', back_populates='wager', cascade='all, delete')
+
+class WagerParticipant(Base):
+    __tablename__ = 'wager_participants'
+    __table_args__ = {'extend_existing': True}
+
+    id          = Column(Integer, primary_key=True, index=True)
+    wager_id    = Column(Integer, ForeignKey('wagers.id', ondelete='CASCADE'), nullable=False)
+    user_id     = Column(Integer, ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
+    joined_at   = Column(DateTime, default=datetime.datetime.utcnow)
+    
+    wager       = relationship('Wager', back_populates='participants')
+
 
 
 
