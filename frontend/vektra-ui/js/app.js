@@ -369,6 +369,7 @@ async function loadDashboard() {
 
     if (snapshots.length > 0) {
       const latest = snapshots[0];
+      generateInsight(latest);
       console.log('latest =', latest);
 
       const streak = calculateStreak(snapshots);
@@ -3205,7 +3206,30 @@ function getPricingForCurrency(currency) {
   return pricing[currency] || pricing['USD'];
 }
 
+function generateInsight(latest) {
+  const insightEl = document.getElementById('insight-text');
+  
+  // Logic for the "Truth"
+  let message = "Keep logging to calibrate your trajectory.";
+  
+  if (latest.mood_score < 5) {
+    message = "Your mood is in the basement. Stop overthinking and move your body. Progress doesn't care about your feelings.";
+  } else if (latest.energy_level > 8 && latest.focus_level < 5) {
+    message = "High energy but low focus? You're just spinning wheels. Pick one hard task and kill it.";
+  } else if (latest.vektra_score > 75) {
+    message = "You're building momentum. Don't get arrogant—that's exactly when you'll slip up.";
+  } else if (latest.daily_income === 0) {
+    message = "Income is zero. Your trajectory is currently just a hobby. Fix your leverage.";
+  }
+  // Add this logic to your function to handle the "Best Decision" scenario
+  if (latest.best_decision && latest.best_decision.length > 5) {
+    message = `You made a good move: "${latest.best_decision}". Keep repeating that logic.`;
+  }
 
+  insightEl.textContent = message;
+}
+
+window.generateInsight = generateInsight;
 window.login = login;
 window.register = register;
 window.loginWithCredentials = loginWithCredentials;

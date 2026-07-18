@@ -613,3 +613,10 @@ body,
     grid-template-columns: 1fr !important;
   }
 }
+
+#insight-text {
+  font-family: 'Courier New', Courier, monospace; /* Makes it feel like code/data */
+  font-weight: 500;
+  border-left: 2px solid var(--accent);
+  padding-left: 10px;
+}
