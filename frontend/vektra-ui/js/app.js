@@ -596,15 +596,19 @@ async function checkTodayLogStatus() {
 function openDailyLog() {
   const today = new Date().toLocaleDateString('en-US', {weekday:'long', month:'long', day:'numeric'});
   document.getElementById('log-date').textContent = today;
+  
+  // Hide goal hit question for new users
+  fetch(`${API}/api/v1/users/${currentUser.id}/snapshots`, {
+    headers: { 'Authorization': `Bearer ${authToken}` }
+  }).then(r => r.json()).then(snapshots => {
+    const goalSection = document.getElementById('goal-hit-section');
+    if (goalSection) {
+      goalSection.style.display = snapshots.length === 0 ? 'none' : 'block';
+    }
+  }).catch(() => {});
+  
   goTo('daily-log');
   restoreDraft();
-  checkTodayLogStatus();
-  // Auto-save every 30 seconds when on daily log screen
-  setInterval(() => {
-    if (document.getElementById('daily-log').style.display !== 'none') {
-      saveDraft();
-    }
-  }, 30000);
 }
 
 // ── Submit daily log ──
@@ -1204,6 +1208,12 @@ function restoreDraft() {
   const savedDate = new Date(draft.savedAt).toDateString();
   const today = new Date().toDateString();
   if (savedDate !== today) {
+    localStorage.removeItem('vektra_draft');
+    return;
+  }
+
+  // Don't restore if this is clearly a different user's draft
+  if (draft.userId && currentUser && draft.userId !== currentUser.id) {
     localStorage.removeItem('vektra_draft');
     return;
   }
