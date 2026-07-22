@@ -1,9 +1,13 @@
+// ── VEKTRA Frontend Application ──
+console.log('VEKTRA app.js loaded successfully');
+
 // ── API base URL ──
 const API = 'http://127.0.0.1:8000';
 
 // ── Token storage ──
 let authToken = null; // Ensure this is not declared as a 'const' anywhere!
 let currentUser = {};
+let currentScreen = 'welcome';
 
 // ── Toast notifications ──
 function showToast(message, type = 'info', duration = 3000) {
@@ -36,70 +40,148 @@ function hideLoader() {
 }
 
 // ── Screen navigation ──
+// ── 1. CORE ROUTING ENGINE ──
+// ── 1. CORE ROUTING ENGINE ──
 function goTo(screen) {
-  if (currentScreen === screen) return;
+  console.log(`Routing Engine Active -> Transitioning to: ${screen}`);
+  
   const target = document.getElementById(screen);
-  if (!target) return;
+  if (!target) {
+    console.error(`UI Error: Element with ID '${screen}' not found in DOM layout.`);
+    return;
+  }
+  
+  // Safely hide the current active section view container
   const current = document.getElementById(currentScreen);
   if (current) current.style.display = 'none';
+  
+  // Unveil the new target section view
   target.style.display = 'flex';
+  
+  // FORCE CRUSH THE SPLASH OVERLAY: If navigating away from splash, rip the mask off!
+  const splashOverlay = document.getElementById('splash');
+  if (splashOverlay && screen !== 'splash') {
+    splashOverlay.style.display = 'none';
+  }
+  
   currentScreen = screen;
+  
+  // Strip splash out of auth controller array and toggle bottom navigation bar
+  const authScreens = ['welcome', 'login', 'register']; 
+  if (authScreens.includes(screen)) {
+    hideBottomNav();
+  } else {
+    showBottomNav();
+    updateNavActive(screen);
+  }
+  
+  console.log(`Successfully completed navigation sequence to screen layout: ${screen}`);
 }
+
+// ── 2. INSTAGRAM-STYLE NAVIGATION INTERCEPTOR ──
+function navTo(screen) {
+  console.log(`NavTo intercepting screen token parameter: -> ${screen}`);
+  
+  // Maps your menu option items directly to your actual HTML section view container IDs
+  let realTargetViewId = screen;
+  
+  if (screen === 'home') {
+    realTargetViewId = 'dashboard';
+  } else if (screen === 'reports') {
+    realTargetViewId = 'dashboard'; // Adjust to your history or reports view container ID if separate
+  } else if (screen === 'analytics') {
+    realTargetViewId = 'dashboard'; 
+  }
+
+  goTo(realTargetViewId);
+  updateNavActive(screen);
+}
+
+// ── 3. SAFE BOTTOM NAV DISPLAY UTILITIES (No Null-Property Crashes) ──
+function showBottomNav() {
+  const nav = document.getElementById('bottom-nav');
+  if (nav) {
+    nav.style.display = 'block'; 
+  } else {
+    console.warn("UI Warning: 'bottom-nav' element missing from DOM structure.");
+  }
+}
+
+function hideBottomNav() {
+  const nav = document.getElementById('bottom-nav');
+  if (nav) {
+    nav.style.display = 'none'; 
+  }
+}
+
+function updateNavActive(activeScreen) {
+  // Clear all previous active icon highlight color classes safely
+  const items = document.querySelectorAll('.nav-item');
+  items.forEach(item => {
+    item.style.color = 'var(--text-muted)';
+  });
+  
+  // Find the icon using the unified structural ID syntax: nav-[screen_name]
+  const currentIcon = document.getElementById(`nav-${activeScreen}`);
+  if (currentIcon) {
+    currentIcon.style.color = 'var(--accent)'; // Highlights active item purple/pink
+  }
+}
+
+// 🌐 CRITICAL MODULE MOUNT BRIDGE: Force mount functions to global browser scope
+window.goTo = goTo;
+window.navTo = navTo;
+window.showBottomNav = showBottomNav;
+window.hideBottomNav = hideBottomNav;
+window.updateNavActive = updateNavActive;
+
 
 // ── Clean Auto-login Engine on Page Load ──
 window.addEventListener('DOMContentLoaded', async () => {
+  console.log('DOM loaded - starting initialization');
+
+  // 1. Force hide splash screen immediately
   const splash = document.getElementById('splash');
-  
-  // 1. Instantly check storage before waiting for heavy images/timers
+  if (splash) {
+    splash.style.display = 'none';
+    splash.style.opacity = '0';
+    splash.style.visibility = 'hidden';
+  }
+
+  // 2. Fetch locally stored authentication variables
   let savedToken = localStorage.getItem('vektra_token');
   console.log('Token from storage:', savedToken);
-  // 2. Handle the splash screen animation cleanly
-  if (splash) {
-    splash.style.transition = 'opacity 0.4s ease';
-    splash.style.opacity = '0';
-    // Remove from layout after fade out animation completes
-    setTimeout(() => splash.style.display = 'none', 400);
-  }
 
-  // 3. Explicit routing gates based on token validation state
-  if (!savedToken) {
-    console.log('No token found. Routing straight to welcome...');
+  // 3. Simple Route: If no token exists, send them straight to the entry wall
+  if (!savedToken || savedToken === "null" || savedToken === "undefined") {
+    console.log('No token found - routing to welcome view');
+    localStorage.removeItem('vektra_token'); // Clear corrupted states
     goTo('welcome');
-    return; // 🚀 STOP EXECUTION HERE
+    return;
   }
 
-  // 4. If a token exists, authenticate it against your FastAPI server
+  // 4. Try auto-login if token exists
   authToken = savedToken;
+  goTo('welcome'); // Show welcome while checking
+
   try {
     const res = await fetch(`${API}/api/v1/users/me`, {
       headers: { 'Authorization': `Bearer ${authToken}` }
     });
-
-    console.log('Server auto-login check status:', res.status);
-
+    
     if (res.ok) {
       currentUser = await res.json();
-      console.log('User profile authenticated:', currentUser);
-      
+      console.log('Auto-login successful:', currentUser);
       goTo('dashboard');
-      
-      try {
-        await loadDashboard();
-      } catch (dashboardError) {
-        console.error('Dashboard rendering failure:', dashboardError);
-      }
-      return; // 🚀 SUCCESSFUL ROUTE EXIT
+      await loadDashboard();
+    } else {
+      console.log('Token invalid - staying on welcome');
+      localStorage.removeItem('vektra_token');
+      authToken = null;
     }
-  } catch (networkError) {
-    console.log('Server connection error during validation:', networkError);
+  } catch (err) {
+    console.log('Server error - staying on welcome:', err);
   }
-
-  // 5. Fallback Cleanup: If token exists but server rejected it (expired/invalid)
-  console.log('Invalid token tracking parameters detected. Purging credentials...');
-  localStorage.removeItem('vektra_token');
-  authToken = null;
-  currentUser = null;
-  goTo('welcome');
 });
 
 // ── Register service worker ──
@@ -544,7 +626,7 @@ async function submitLog() {
   const incomeVal = document.getElementById('inp-income').value;
   const expenseVal = document.getElementById('inp-expenses').value;
   
-  if (!moodVal || moodVal === '5') {
+  if (!moodVal || moodVal === '') {
     showToast('Please select your mood', 'warning');
     if (submitBtn) {
       submitBtn.disabled = false;
@@ -552,7 +634,7 @@ async function submitLog() {
     }
     return;
   }
-  if (!sleepVal || sleepVal === '7') {
+  if (!sleepVal || sleepVal === '') {
     showToast('Please enter your sleep hours', 'warning');
     if (submitBtn) {
       submitBtn.disabled = false;
@@ -768,28 +850,32 @@ async function onboardStep3() {
 
 // ── Load and display report ──
 async function loadReport() {
-  console.log('loadReport called');
+  console.log('loadReport called - START');
   
   if (!currentUser || !authToken) { 
-    console.log('No user or auth token');
+    console.log('No user or auth token - ABORTING');
     showToast('Please log in to view your report', 'error');
     return;
   }
   
   const reportsScreen = document.getElementById('reports');
   if (!reportsScreen) {
-    console.error('Reports screen not found');
+    console.error('Reports screen not found - ABORTING');
     showToast('Reports screen not available', 'error');
     return;
   }
   
+  console.log('Navigating to reports screen');
   goTo('reports');
+  console.log('Current screen after goTo:', currentScreen);
+  
   showLoader('Generating your report...');
   
   const narrativeEl = document.getElementById('report-narrative');
   if (narrativeEl) narrativeEl.textContent = 'Generating...';
   
   try {
+    console.log('Fetching report from API');
     const res = await fetch(`${API}/api/v1/users/${currentUser.id}/reports/generate`, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
@@ -809,6 +895,10 @@ async function loadReport() {
     
     const report = await res.json();
     console.log('Report data received:', report);
+    
+    hideLoader();
+    
+    console.log('Rendering report data...');
     const content = report.content || {};
     const uniqueDays = content.unique_days_logged ?? content.days_logged ?? 0;
     const reportCountdown = content.report_countdown ?? Math.max(0, 7 - uniqueDays);
@@ -841,9 +931,7 @@ async function loadReport() {
       readinessEl.style.background = reportReady ? 'rgba(34,197,94,0.08)' : 'rgba(236,72,153,0.08)';
     }
 
-    // Show/hide empty state based on report readiness
     const emptyEl = document.getElementById('report-empty');
-    const narrativeEl = document.getElementById('report-narrative');
     if (emptyEl && narrativeEl) {
       if (!reportReady) {
         emptyEl.style.display = 'block';
@@ -854,7 +942,6 @@ async function loadReport() {
       }
     }
 
-    // Format narrative
     const raw = report.summary_text || 'No report generated yet.';
     const formatted = raw
       .replace(/={3,}/g, '')
@@ -865,8 +952,12 @@ async function loadReport() {
       .replace(/SILENT KILLERS:/g, '\n\n⚠️ SILENT KILLERS:')
       .replace(/THE NUMBERS DON'T LIE:/g, '\n\n📊 THE NUMBERS DON\'T LIE:')
       .replace(/NEXT WEEK DIRECTIVE:/g, '\n\n🔥 NEXT WEEK DIRECTIVE:')
+      .replace(/<a[^>]*>/g, '') // Remove opening anchor tags
+      .replace(/<\/a>/g, '') // Remove closing anchor tags
+      .replace(/<form[^>]*>/g, '') // Remove form tags
+      .replace(/<\/form>/g, '')
       .trim();
-    document.getElementById('report-narrative').innerHTML = formatted.replace(/\n/g, '<br>');
+    if (narrativeEl) narrativeEl.innerHTML = formatted.replace(/\n/g, '<br>');
 
     renderEngineBar('bar-financial', 'Financial', signalScores.Financial ?? 0, '#22c55e', 100);
     renderEngineBar('bar-mental', 'Mental', signalScores.Mental ?? 0, '#6c63ff', 100);
@@ -874,22 +965,28 @@ async function loadReport() {
     renderEngineBar('bar-body', 'Body', signalScores.Body ?? 0, '#f59e0b', 100);
     renderEngineBar('bar-growth', 'Growth', signalScores.Growth ?? 0, '#06b6d4', 100);
     
-    // Load weekly comparison
     loadWeeklyComparison();
     
-    hideLoader();
+    console.log('loadReport completed successfully - END');
 
   } catch(e) {
-    hideLoader();
     console.error('Report generation error:', e);
+    hideLoader();
     showToast('Could not load report. Please try again.', 'error');
-    document.getElementById('report-narrative').textContent = 'Could not load report. Try again.';
+    if (narrativeEl) narrativeEl.textContent = 'Could not load report. Try again.';
   }
 }
 
-async function generateReport() {
+async function generateReport(e) {
+    console.log('generateReport called');
+    if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
     try {
+        console.log('Calling loadReport...');
         await loadReport();
+        console.log('generateReport completed successfully');
     } catch (err) {
         console.error("Report generation error:", err);
         showToast('Could not load report. Please try again.', 'error');
@@ -1631,8 +1728,18 @@ document.addEventListener('DOMContentLoaded', () => {
 let currentHistoryFilter = 'all';
 let allReports = [];
 
+async function openTrajectoryHistory() {
+  goTo('trajectory-history');
+  loadHistory();
+}
+
 async function loadHistory() {
   if (!currentUser || !authToken) return;
+  
+  const listEl = document.getElementById('trajectory-history-list');
+  if (listEl) {
+    listEl.innerHTML = '<div style="text-align:center;color:var(--text-muted);font-size:14px;padding:3rem 0">Loading reports...</div>';
+  }
   
   try {
     const res = await fetch(`${API}/api/v1/users/${currentUser.id}/reports`, {
@@ -1644,9 +1751,15 @@ async function loadHistory() {
       filterHistory(currentHistoryFilter);
     } else {
       console.error('Failed to load reports');
+      if (listEl) {
+        listEl.innerHTML = '<div style="text-align:center;color:var(--danger);font-size:14px;padding:3rem 0">Failed to load reports.</div>';
+      }
     }
   } catch (e) {
     console.error('Error loading reports:', e);
+    if (listEl) {
+      listEl.innerHTML = '<div style="text-align:center;color:var(--danger);font-size:14px;padding:3rem 0">Could not connect to server.</div>';
+    }
   }
 }
 
@@ -1678,8 +1791,8 @@ function filterHistory(filter) {
 }
 
 function renderHistory(reports) {
-  const listEl = document.getElementById('history-list');
-  const emptyEl = document.getElementById('history-empty');
+  const listEl = document.getElementById('trajectory-history-list');
+  const emptyEl = document.getElementById('trajectory-history-empty');
   
   if (!listEl) return;
   
@@ -1749,12 +1862,41 @@ async function viewReport(reportId) {
       // Load the report into the current report view
       currentReport = report;
       goTo('reports');
-      loadReport();
+      displayReportData(report);
     } else {
       showToast('Failed to load report', 'error');
     }
   } catch (e) {
     showToast('Could not connect to server', 'error');
+  }
+}
+
+function displayReportData(report) {
+  // Update report UI with the loaded report data
+  const narrativeEl = document.getElementById('report-narrative');
+  const scoreEl = document.getElementById('report-score');
+  const readinessEl = document.getElementById('report-readiness');
+  
+  if (narrativeEl) narrativeEl.textContent = report.summary_text || 'No narrative available';
+  if (scoreEl) scoreEl.textContent = report.vektra_score ? Math.round(report.vektra_score) : '—';
+  if (readinessEl) {
+    if (report.vektra_score >= 80) {
+      readinessEl.textContent = 'Ready for major moves';
+      readinessEl.style.color = 'var(--success)';
+    } else if (report.vektra_score >= 60) {
+      readinessEl.textContent = 'Building momentum';
+      readinessEl.style.color = 'var(--accent)';
+    } else {
+      readinessEl.textContent = 'Focus on fundamentals';
+      readinessEl.style.color = 'var(--danger)';
+    }
+  }
+  
+  // Update period label
+  const periodEl = document.getElementById('report-period');
+  if (periodEl) {
+    const date = new Date(report.generated_at);
+    periodEl.textContent = date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
   }
 }
 
@@ -2863,9 +3005,6 @@ window.openProfile = openProfile;
 window.saveProfile = saveProfile;
 window.copyReferral = copyReferral;
 window.shareReferral = shareReferral;
-window.goTo = goTo;
-
-let currentScreen = 'splash';
 
 // Expose functions to the window so HTML 'onclick' and 'oninput' can find them
 window.updateSlider = updateSlider;
@@ -3237,6 +3376,8 @@ window.login = login;
 window.register = register;
 window.loginWithCredentials = loginWithCredentials;
 window.filterHistory = filterHistory;
+window.openTrajectoryHistory = openTrajectoryHistory;
+window.viewReport = viewReport;
 window.addGoal = addGoal;
 window.renderScoreChart = renderScoreChart;
 window.loadReport = loadReport;
@@ -3246,3 +3387,6 @@ window.setProfileTone = setProfileTone;
 window.loadMonthlyReplay = loadMonthlyReplay;
 window.toggleNotifications = toggleNotifications;
 window.currentUser = currentUser;
+window.navTo = navTo;
+window.goTo = goTo;
+window.currentScreen = currentScreen;

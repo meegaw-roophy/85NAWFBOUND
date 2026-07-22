@@ -17,13 +17,6 @@
 
 <div id="app">
 
-  <!-- SCREEN 1: SPLASH -->
-  <div id="splash">
-    <div class="splash-logo">VEKTRA</div>
-    <div class="splash-tagline">Vector = Magnitude × Direction</div>
-    <div class="splash-loader"></div>
-  </div>
-
   <!-- SCREEN 2: WELCOME -->
   <div id="welcome">
     <div class="welcome-logo">VEKTRA</div>
@@ -218,88 +211,102 @@
 </div>
 
 <!-- SCREEN 4: DASHBOARD -->
-<div id="dashboard" style="display:none;flex-direction:column;min-height:100vh;padding:1.5rem;max-width:420px;margin:0 auto">
+<div id="dashboard" style="display:none;flex-direction:column;min-height:100vh;padding:1.5rem 1.5rem 6.5rem 1.5rem;max-width:420px;margin:0 auto">
   
-  <!-- Header -->
+  <!-- Header Layout Elements -->
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2rem;padding-top:1rem">
     <div>
-      <div>
-        <div id="dash-greeting" style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.1em">Good morning</div>
-        <div id="dash-username" style="font-size:20px;font-weight:700">—</div>
-        <div id="dash-date" style="font-size:12px;color:var(--text-muted);margin-top:2px">—</div>
+      <div id="dash-greeting" style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.12em">Good morning</div>
+      <div id="dash-username" style="font-size:22px;font-weight:800;color:var(--text-primary);letter-spacing:-0.02em;margin-top:2px">—</div>
+      <div id="dash-date" style="font-size:12px;color:var(--text-muted);margin-top:4px">—</div>
+    </div>
+    <div style="display:flex;gap:16px;align-items:center">
+      <div style="font-size:22px;cursor:pointer;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.2))" onclick="navTo('analytics')" title="Analytics">📊</div>
+      <div style="font-size:22px;cursor:pointer;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.2))" onclick="openProfile()" title="Profile">⚙️</div>
+    </div>
+  </div>
+
+  <!-- VEKTRA Premium Vector Score Card Container -->
+  <div class="score-card-wrapper" style="margin-bottom:1.25rem">
+    <div class="score-card-inner" style="position: relative; overflow: hidden; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.12em;">VEKTRA Trajectory Score</div>
+        <div id="dash-vector-badge" style="font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 20px; background: rgba(108,99,255,0.15); color: #6c63ff;">STABLE</div>
       </div>
-      <div id="dash-username" style="font-size:20px;font-weight:700">—</div>
-    </div>
-    <div style="display:flex;gap:12px;align-items:center">
-      <div style="font-size:20px;cursor:pointer" onclick="goTo('analytics')" title="Analytics">📊</div>
-      <div style="font-size:20px;cursor:pointer" onclick="openProfile()" title="Profile">⚙</div>
+      <div id="dash-score" style="font-size:64px;font-weight:800;background:linear-gradient(135deg,#6c63ff,#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1;letter-spacing:-0.03em;">—</div>
+      <div style="font-size:11px;color:var(--text-muted);margin-top:4px">INDEX SCALE / 100</div>
+
+      <!-- Micro-Vector Metrics Divider Row Module -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.05);">
+        <div>
+          <div style="font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Direction Angle</div>
+          <div id="dash-vector-angle" style="font-size: 13px; font-weight: 600; color: var(--text-primary);">0.0° (θ)</div>
+        </div>
+        <div>
+          <div style="font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">AI Verification</div>
+          <div id="dash-vector-accuracy" style="font-size: 13px; font-weight: 600; color: var(--text-primary);">0% Match</div>
+        </div>
+      </div>
+      <div id="dash-trajectory" style="margin-top:14px;font-size:12px;color:var(--text-secondary);line-height:1.4;">Log today to update your score vector displacement.</div>
     </div>
   </div>
 
-  <!-- VEKTRA Score Card -->
-  <div class="score-card-wrapper">
-  <div class="score-card-inner">
-    <div style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px">VEKTRA Score</div>
-    <div id="dash-score" style="font-size:64px;font-weight:800;background:linear-gradient(135deg,#6c63ff,#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1">—</div>
-    <div style="font-size:12px;color:var(--text-muted);margin-top:4px">out of 100</div>
-    <div id="dash-trajectory" style="margin-top:12px;font-size:13px;color:var(--text-secondary)">Log today to update your score</div>
-  </div>
-  </div>
-
-  <!-- Smart Insight Card -->
-  <div id="smart-insight-card" style="background:linear-gradient(135deg,rgba(108,99,255,0.12),rgba(236,72,153,0.12));border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
+  <!-- Smart Insight Container Card -->
+  <div id="smart-insight-card" style="background:linear-gradient(135deg,rgba(108,99,255,0.08),rgba(236,72,153,0.08));border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
     <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">Today's Insight</div>
     <div id="smart-insight" style="font-size:14px;color:var(--text-primary);line-height:1.5">Log your first snapshot to unlock personalized insights</div>
     <div id="silent-killers-container" style="display:flex;flex-direction:column;gap:0.5rem;margin-top:0.75rem"></div>
   </div>
 
-  <!-- Quick Stats Row -->
+  <!-- Quick Stats Grid Row Profile -->
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:1rem">
     <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:1rem">
-      <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">NET WORTH</div>
-      <div id="dash-networth" style="font-size:18px;font-weight:700">—</div>
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.05em;">NET WORTH</div>
+      <div id="dash-networth" style="font-size:18px;font-weight:700;color:var(--text-primary);">—</div>
     </div>
     <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:1rem">
-      <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">RUNWAY</div>
-      <div id="dash-runway" style="font-size:18px;font-weight:700">— days</div>
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.05em;">SURVIVAL RUNWAY</div>
+      <div id="dash-runway" style="font-size:18px;font-weight:700;color:var(--text-primary);">— days</div>
     </div>
   </div>
 
-  <!-- Score Trend -->
+  <!-- Score Trend Native SVG Grid -->
   <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:1rem;margin-bottom:1rem">
     <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">7-Day Trajectory</div>
     <svg id="score-chart" viewBox="0 0 300 80" style="width:100%;height:80px"></svg>
     <div id="chart-labels" style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-muted);margin-top:4px"></div>
   </div>
 
-  <!-- Streak -->
-<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:1rem;margin-bottom:1rem;display:flex;align-items:center;justify-content:space-between">
-  <div>
-    <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">CURRENT STREAK</div>
-    <div id="dash-streak" style="font-size:24px;font-weight:700">🔥 0 days</div>
+  <!-- Streak Metrics Container Card -->
+  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:1rem;margin-bottom:1rem;display:flex;align-items:center;justify-content:space-between">
+    <div>
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">CURRENT STREAK</div>
+      <div id="dash-streak" style="font-size:24px;font-weight:700">🔥 0 days</div>
+    </div>
+    <div style="font-size:11px;color:var(--text-muted);text-align:right;line-height:1.4">Log daily<br>to keep it alive</div>
   </div>
-  <div style="font-size:11px;color:var(--text-muted);text-align:right">Log daily<br>to keep it alive</div>
-</div>
 
+  <!-- Weekly Tracking Variables Meta Row -->
   <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:1rem;margin-bottom:1rem">
-    <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.08em">This week</div>
+    <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.08em">This week summary</div>
     <div id="dash-week-summary" style="font-size:16px;font-weight:700;color:var(--text-primary)">0 logs • 0 unique days</div>
     <div id="dash-week-status" style="font-size:13px;color:var(--text-secondary);margin-top:4px">Keep logging to unlock richer weekly insights</div>
   </div>
 
-  <div style="background:linear-gradient(135deg,rgba(108,99,255,0.12),rgba(236,72,153,0.12));border:1px solid var(--border);border-radius:var(--radius-sm);padding:1rem;margin-bottom:1rem">
+  <!-- Real-time Pulse Metric -->
+  <div style="background:linear-gradient(135deg,rgba(108,99,255,0.06),rgba(236,72,153,0.06));border:1px solid var(--border);border-radius:var(--radius-sm);padding:1rem;margin-bottom:1rem">
     <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.08em">Today’s pulse</div>
     <div id="dash-lastlog" style="font-size:14px;font-weight:600;color:var(--text-primary)">No logs yet</div>
     <div id="dash-status" style="font-size:13px;color:var(--text-secondary);margin-top:4px">Start logging to build momentum</div>
   </div>
 
-  <!-- North Star -->
+  <!-- Target North Star Parameter Row -->
   <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:1rem;margin-bottom:1.5rem">
-    <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px">NORTH STAR</div>
+    <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.05em;">NORTH STAR</div>
     <div id="dash-northstar" style="font-size:14px;color:var(--text-secondary);font-style:italic">Not set yet</div>
   </div>
 
-    <!-- First time prompt -->
+  <!-- First Time Onboarding Prompt Banner -->
   <div id="first-log-prompt" style="display:none;background:linear-gradient(135deg,rgba(108,99,255,0.15),rgba(236,72,153,0.15));border:1px solid var(--accent);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem;text-align:center">
     <div style="font-size:24px;margin-bottom:8px">🚀</div>
     <div style="font-weight:700;margin-bottom:6px">Your vector is set.</div>
@@ -307,15 +314,14 @@
     <button class="btn-primary" onclick="openDailyLog()" style="width:100%">Log Your First Day</button>
   </div>
 
-  <!-- Log Today Button -->
+  <!-- Operational Core System Navigation Action Toggles -->
   <button class="btn-primary" onclick="openDailyLog()">+ Log Today</button>
 
-  <!-- Weekly Report Button -->
-  <button type="button" class="btn-secondary" style="margin-top:12px" onclick="generateReport()">
+  <button type="button" class="btn-secondary" style="margin-top:12px" onclick="event.preventDefault(); event.stopPropagation(); generateReport(event)">
     View Weekly Report
   </button>
 
-  <button class="btn-secondary" style="margin-top:12px" onclick="openHistory()">📋 View Log History</button>
+  <button class="btn-secondary" style="margin-top:12px; margin-bottom: 1rem;" onclick="openHistory()">📋 View Log History</button>
 
 </div>
 
@@ -521,7 +527,7 @@
       <div id="report-period" style="font-size:18px;font-weight:700">This Week</div>
     </div>
     <div style="display:flex;gap:12px;align-items:center">
-      <div style="font-size:20px;cursor:pointer" onclick="goTo('history')" title="History">📜</div>
+      <div style="font-size:20px;cursor:pointer" onclick="openTrajectoryHistory()" title="History">📜</div>
       <div onclick="goTo('dashboard')" style="color:var(--text-muted);cursor:pointer;font-size:13px">← Back</div>
     </div>
   </div>
@@ -793,24 +799,24 @@
   <button class="btn-secondary" style="margin-top:12px" onclick="openSettings()">⚙ Settings</button>
   <button class="btn-secondary" style="margin-top:12px" onclick="logout()">Sign Out</button>
 
-</div>
+  <!-- Referral Code -->
+  <div style="background:linear-gradient(135deg,#1a1a2e,#16213e);border:1px solid var(--accent);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem;margin-top:1rem">
+    <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">Your Referral Code</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem">
+      <div id="referral-code" style="font-size:22px;font-weight:800;letter-spacing:0.1em;background:linear-gradient(135deg,#6c63ff,#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">—</div>
+      <button onclick="copyReferral()" style="padding:8px 14px;background:rgba(108,99,255,0.2);border:1px solid var(--accent);border-radius:var(--radius-sm);color:var(--accent);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font)">Copy</button>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-muted);margin-bottom:.75rem">
+      <span>Friends joined</span>
+      <span id="referral-count" style="color:var(--text-primary);font-weight:600">0</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-muted);margin-bottom:.75rem">
+      <span>VEK Credits earned</span>
+      <span id="vek-credits" style="color:var(--gold);font-weight:600">0</span>
+    </div>
+    <button onclick="shareReferral()" style="width:100%;padding:10px;background:linear-gradient(135deg,#6c63ff,#ec4899);border:none;border-radius:var(--radius-sm);color:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:var(--font)">Share VEKTRA 🔥</button>
+  </div>
 
-<!-- Referral Code -->
-<div style="background:linear-gradient(135deg,#1a1a2e,#16213e);border:1px solid var(--accent);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
-  <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">Your Referral Code</div>
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem">
-    <div id="referral-code" style="font-size:22px;font-weight:800;letter-spacing:0.1em;background:linear-gradient(135deg,#6c63ff,#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">—</div>
-    <button onclick="copyReferral()" style="padding:8px 14px;background:rgba(108,99,255,0.2);border:1px solid var(--accent);border-radius:var(--radius-sm);color:var(--accent);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font)">Copy</button>
-  </div>
-  <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-muted);margin-bottom:.75rem">
-    <span>Friends joined</span>
-    <span id="referral-count" style="color:var(--text-primary);font-weight:600">0</span>
-  </div>
-  <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-muted);margin-bottom:.75rem">
-    <span>VEK Credits earned</span>
-    <span id="vek-credits" style="color:var(--gold);font-weight:600">0</span>
-  </div>
-  <button onclick="shareReferral()" style="width:100%;padding:10px;background:linear-gradient(135deg,#6c63ff,#ec4899);border:none;border-radius:var(--radius-sm);color:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:var(--font)">Share VEKTRA 🔥</button>
 </div>
 
 <!-- SCREEN: GOALS / MILESTONES -->
@@ -946,7 +952,7 @@
 </div>
 
 <!-- SCREEN: TRAJECTORY HISTORY -->
-<div id="history" style="display:none;flex-direction:column;min-height:100vh;padding:1.5rem;max-width:420px;margin:0 auto">
+<div id="trajectory-history" style="display:none;flex-direction:column;min-height:100vh;padding:1.5rem;max-width:420px;margin:0 auto">
 
   <!-- Header -->
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;padding-top:1rem">
@@ -965,12 +971,12 @@
   </div>
 
   <!-- Reports List -->
-  <div id="history-list" style="display:flex;flex-direction:column;gap:12px">
+  <div id="trajectory-history-list" style="display:flex;flex-direction:column;gap:12px">
     <!-- Reports will be rendered here -->
   </div>
 
   <!-- Empty State -->
-  <div id="history-empty" style="display:none;text-align:center;padding:3rem 1.5rem">
+  <div id="trajectory-history-empty" style="display:none;text-align:center;padding:3rem 1.5rem">
     <div style="font-size:48px;margin-bottom:1rem">📜</div>
     <div style="font-size:16px;font-weight:600;color:var(--text-primary);margin-bottom:8px">No reports yet</div>
     <div style="font-size:13px;color:var(--text-muted);margin-bottom:1.5rem">Your trajectory history will appear here</div>
@@ -1064,7 +1070,7 @@
   <div id="history-list" style="display:flex;flex-direction:column;gap:.75rem;margin-bottom:1rem">
     <div style="text-align:center;color:var(--text-muted);font-size:14px;padding:3rem 0">Loading logs...</div>
   </div>
-  <button id="history-load-more" onclick="VEKTRA_UI.loadMoreHistory()" style="display:none;width:100%;padding:12px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-size:14px;font-weight:600;cursor:pointer;font-family:var(--font);margin-bottom:3rem">Load More</button>
+  <button id="history-load-more" onclick="loadMoreHistory()" style="display:none;width:100%;padding:12px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-size:14px;font-weight:600;cursor:pointer;font-family:var(--font);margin-bottom:3rem">Load More</button>
 </div>
 
   <!-- SCREEN: LOG DETAIL -->
@@ -1214,4 +1220,92 @@
 
 </div>
 
-<script type="module" src="js\app.js"></script>
+<!-- ── BOTTOM NAVIGATION CONTAINER ── -->
+<!-- Back into the HTML DOM structure, equipped with safety-validated onclick handlers -->
+<div id="bottom-nav" style="display:none;position:fixed;bottom:0;left:0;right:0;background:var(--bg-card);border-top:1px solid var(--border);padding:12px 20px;z-index:1000">
+  <div style="display:flex;justify-content:space-between;align-items:center;max-width:600px;margin:0 auto">
+    
+    <!-- Home Menu Icon Layout -->
+    <div onclick="navTo('home')" id="nav-home" class="nav-item" style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;color:var(--accent)">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+      <span style="font-size:10px;font-weight:500">Home</span>
+    </div>
+
+    <!-- Reports Menu Icon Layout -->
+    <div onclick="navTo('reports')" id="nav-reports" class="nav-item" style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;color:var(--text-muted)">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+      <span style="font-size:10px;font-weight:500">Reports</span>
+    </div>
+
+    <!-- Analytics Menu Icon Layout -->
+    <div onclick="navTo('analytics')" id="nav-analytics" class="nav-item" style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;color:var(--text-muted)">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+      <span style="font-size:10px;font-weight:500">Analytics</span>
+    </div>
+
+    <!-- Profile Menu Icon Layout -->
+    <div onclick="navTo('profile')" id="nav-profile" class="nav-item" style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;color:var(--text-muted)">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+      <span style="font-size:10px;font-weight:500">Profile</span>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── 1. EMERGENCE HOOK FOR LIVE SERVER ── -->
+<!-- This empty container tricks live server into injecting its script here safely -->
+<div id="live-server-hook"></div>
+
+<script type="module" src="js/app.js"></script>
+
+<!-- Ensure this is the absolute last script block before </body> -->
+<script>
+  // 🌐 Emergency Global Routing Bridge
+  window.goTo = function(screenId) {
+    console.log("Global backup routing engine triggered for ID:", screenId);
+    
+    // 1. Force find and hide the stagnant splash overlay element
+    const splash = document.getElementById('splash');
+    if (splash) {
+      splash.style.opacity = '0';
+      splash.style.display = 'none';
+      splash.style.visibility = 'hidden';
+    }
+
+    // 2. Loop through and hide all sibling view sections inside the app layout
+    const screens = ['welcome', 'login', 'register', 'dashboard', 'onboard-1', 'daily-log'];
+    screens.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = 'none';
+    });
+
+    // 3. Unveil the requested target section container canvas
+    const target = document.getElementById(screenId);
+    if (target) {
+      target.style.display = 'flex';
+      target.style.opacity = '1';
+      console.log(`Successfully forced navigation layout change to: ${screenId}`);
+    } else {
+      console.error(`DOM Error: Screen layout ID '${screenId}' is completely missing from HTML.`);
+    }
+
+    // 4. Toggle the Instagram-style bottom nav visibility rules
+    const nav = document.getElementById('bottom-nav');
+    if (nav) {
+      const authScreens = ['welcome', 'login', 'register'];
+      if (authScreens.includes(screenId)) {
+        nav.style.display = 'none';
+      } else {
+        nav.style.display = 'block';
+      }
+    }
+  };
+
+  // Map your HTML onclick="navTo(...)" items directly to this fallback engine
+  window.navTo = function(screenId) {
+    if (screenId === 'home') window.goTo('dashboard');
+    else if (screenId === 'reports') window.goTo('daily-log');
+    else window.goTo(screenId);
+  };
+</script>
+

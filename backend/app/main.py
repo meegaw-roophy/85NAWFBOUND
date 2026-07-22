@@ -7,8 +7,8 @@ app = FastAPI(title="VEKTRA API")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://127.0.0.1:5504", # Your specific Live Server address
-        "http://localhost:5504",
+        "http://127.0.0.1:5505", # Your specific Live Server address
+        "http://localhost:5505",
         "http://127.0.0.1:5500", # Fallback for default Live Server ports
         "http://localhost:5500"
     ],

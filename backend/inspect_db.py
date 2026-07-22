@@ -1,13 +1,21 @@
 import sqlite3
 import os
 
-db_path = os.path.join("backend", "vektra_dev.db")
-conn = sqlite3.connect(db_path)
-cursor = conn.cursor()
+# Adjusting path to look in the current directory, not 'backend/backend'
+db_path = "vektra_dev.db"
 
-cursor.execute("PRAGMA table_info(snapshots);")
-columns = cursor.fetchall()
-for col in columns:
-    print(col)
-
-conn.close()
+try:
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    cursor.execute("PRAGMA table_info(snapshots);")
+    columns = cursor.fetchall()
+    
+    if not columns:
+        print("No columns found. Does the table 'snapshots' exist?")
+    else:
+        for col in columns:
+            print(col)
+            
+    conn.close()
+except Exception as e:
+    print(f"Error connecting to database: {e}")

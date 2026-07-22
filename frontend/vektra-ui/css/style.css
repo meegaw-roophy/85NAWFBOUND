@@ -30,6 +30,7 @@ body {
   font-family: var(--font);
   min-height: 100vh;
   overflow-x: hidden;
+  padding-bottom: 70px; /* Space for bottom nav */
 }
 
 /* ── SPLASH SCREEN ── */
@@ -84,6 +85,13 @@ body {
   animation: load 1.8s ease forwards;
 }
 
+/* Add this class helper at the bottom of your stylesheet */
+#splash.fade-out {
+  opacity: 0 !important;
+  pointer-events: none !important; /* Drops the invisible glass shield instantly */
+  visibility: hidden !important; /* Tells the browser rendering engine to ignore it */
+}
+
 @keyframes load {
   0% { left: -100%; }
   100% { left: 100%; }
@@ -97,7 +105,7 @@ body {
 
 /* ── WELCOME SCREEN ── */
 #welcome {
-  display: none;
+  display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
@@ -746,4 +754,30 @@ body,
 @keyframes barGrow {
   from { width: 0 !important; }
   to   { width: var(--target-width); }
+}
+
+/* ── Force chart container vertical space ── */
+[id^="chart-"] {
+  height: 120px !important;
+  display: flex !important;
+  align-items: flex-end !important;
+  gap: 4px; /* Reduced gap to fit more bars */
+  padding-bottom: 24px; /* Space for the value labels */
+}
+
+/* Ensure the wrapper of each bar is flexible */
+[id^="chart-"] > div {
+  flex: 1;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  position: relative;
+  height: 100%;
+}
+
+/* This targets the actual bar element specifically */
+[id^="chart-"] > div > div[style*="background"] {
+  width: 80%;
+  min-height: 4px !important; /* Force visibility */
+  transition: height 0.3s ease;
 }

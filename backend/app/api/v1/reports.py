@@ -33,3 +33,15 @@ async def generate_report(user_id: int, payload: Optional[ReportCreate] = None, 
     period_end = payload.period_end if payload else None
     rpt = await generate_and_store_report(db, user_id, period_start=period_start, period_end=period_end)
     return rpt
+
+
+@router.get("/users/{user_id}/reports/{report_id}", response_model=ReportOut)
+async def get_report(user_id: int, report_id: int, db: AsyncSession = Depends(get_session), current_user=Depends(get_current_user)):
+    if current_user.id != user_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not allowed")
+    report = await crud.get_report_by_id(db, report_id)
+    if not report:
+        raise HTTPException(status_code=404, detail="Report not found")
+    if report.user_id != user_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not allowed")
+    return report

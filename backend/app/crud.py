@@ -145,6 +145,11 @@ async def list_reports(db: AsyncSession, user_id: int, limit: int = 100) -> List
     return result.scalars().all()
 
 
+async def get_report_by_id(db: AsyncSession, report_id: int) -> Optional[Report]:
+    result = await db.execute(select(Report).where(Report.id == report_id))
+    return result.scalars().first()
+
+
 async def create_or_update_subscription(db: AsyncSession, user_id: int, subscription_data: dict) -> 'Subscription':
     existing = await db.execute(select(Subscription).where(Subscription.user_id == user_id).where(Subscription.provider == subscription_data.get('provider', 'stripe')).limit(1))
     subscription = existing.scalars().first()

@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app import crud
 from app.core.deps import get_current_user
 from app.services.math_engine import calculate_correlations
+from app.services.vektra_engine import calculate_vektra_score
 
 router = APIRouter()
 
@@ -22,6 +23,11 @@ async def add_snapshot(user_id: int, payload: SnapshotCreate, db: AsyncSession =
         del data['last_trash_talk_sent']
     if 'trash_talk_count' in data:
         del data['trash_talk_count']
+
+    # Auto-calculate Vektra score before saving
+    score_result = calculate_vektra_score(data)
+    data['vektra_score'] = score_result.vektra_score
+
     snap = await crud.create_snapshot(db, user_id, data)
     return snap
 

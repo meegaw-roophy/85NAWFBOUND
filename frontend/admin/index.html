@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VEKTRA Admin Panel</title>
+  <link rel="stylesheet" href="../vektra-ui/css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body style="background:var(--bg-primary);color:var(--text-primary);font-family:var(--font);margin:0;min-height:100vh">
+
+<!-- Login Screen -->
+<div id="admin-login" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:1.5rem;max-width:420px;margin:0 auto">
+  <div style="text-align:center;margin-bottom:2rem">
+    <div style="font-size:48px;margin-bottom:1rem">🛡️</div>
+    <div style="font-size:24px;font-weight:800">VEKTRA Admin</div>
+    <div style="font-size:14px;color:var(--text-muted);margin-top:8px">Platform Control Center</div>
+  </div>
+
+  <div style="width:100%">
+    <div style="margin-bottom:16px">
+      <label style="font-size:12px;color:var(--text-secondary);letter-spacing:0.08em;text-transform:uppercase;display:block;margin-bottom:6px">Username</label>
+      <input id="admin-login-username" type="text" placeholder="Admin username" style="width:100%;padding:14px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:15px;outline:none;font-family:var(--font)">
+    </div>
+
+    <div style="margin-bottom:24px">
+      <label style="font-size:12px;color:var(--text-secondary);letter-spacing:0.08em;text-transform:uppercase;display:block;margin-bottom:6px">Password</label>
+      <input id="admin-login-password" type="password" placeholder="Admin password" style="width:100%;padding:14px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:15px;outline:none;font-family:var(--font)">
+    </div>
+
+    <div id="admin-login-error" style="display:none;color:var(--danger);font-size:13px;margin-bottom:16px;text-align:center"></div>
+
+    <button id="admin-login-btn" class="btn-primary" onclick="adminLogin()">Access Admin Panel</button>
+  </div>
+</div>
+
+<!-- Admin Dashboard -->
+<div id="admin-dashboard" style="display:none;flex-direction:column;min-height:100vh;padding:1.5rem;max-width:800px;margin:0 auto">
+
+  <!-- Header -->
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2rem;padding-top:1rem">
+    <div>
+      <div style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.1em">Admin Panel</div>
+      <div style="font-size:24px;font-weight:800">Platform Control</div>
+    </div>
+    <button onclick="adminLogout()" style="padding:8px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-muted);font-size:13px;cursor:pointer">Logout</button>
+  </div>
+
+  <!-- Stats Cards -->
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1.5rem">
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:1rem">
+      <div style="font-size:10px;color:var(--text-muted);margin-bottom:4px">TOTAL USERS</div>
+      <div id="admin-total-users" style="font-size:24px;font-weight:700">—</div>
+    </div>
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:1rem">
+      <div style="font-size:10px;color:var(--text-muted);margin-bottom:4px">ACTIVE (7D)</div>
+      <div id="admin-active-users" style="font-size:24px;font-weight:700">—</div>
+    </div>
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:1rem">
+      <div style="font-size:10px;color:var(--text-muted);margin-bottom:4px">TOTAL SNAPSHOTS</div>
+      <div id="admin-total-snapshots" style="font-size:24px;font-weight:700">—</div>
+    </div>
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:1rem">
+      <div style="font-size:10px;color:var(--text-muted);margin-bottom:4px">REVENUE</div>
+      <div id="admin-revenue" style="font-size:24px;font-weight:700">—</div>
+    </div>
+  </div>
+
+  <!-- Two Column Layout -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.5rem">
+    
+    <!-- Top Performers -->
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem">
+      <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">Top Performers</div>
+      <div id="admin-top-performers" style="display:flex;flex-direction:column;gap:8px">
+        <!-- Top performers will be rendered here -->
+      </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem">
+      <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">Recent Activity</div>
+      <div id="admin-recent-activity" style="display:flex;flex-direction:column;gap:8px;max-height:200px;overflow-y:auto">
+        <!-- Activity will be rendered here -->
+      </div>
+    </div>
+  </div>
+
+  <!-- User Management -->
+  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:3rem">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+      <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em">User Management</div>
+      <input id="admin-user-search" type="text" placeholder="Search users..." style="padding:8px 12px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:13px;width:200px">
+    </div>
+    <div id="admin-users-list" style="display:flex;flex-direction:column;gap:8px;max-height:400px;overflow-y:auto">
+      <!-- Users will be rendered here -->
+    </div>
+    <button onclick="loadMoreAdminUsers()" id="admin-load-more" style="display:none;width:100%;padding:10px;margin-top:1rem;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-size:13px;cursor:pointer">Load More</button>
+  </div>
+
+</div>
+
+<script type="module" src="admin.js"></script>
+
+</body>
+</html>
