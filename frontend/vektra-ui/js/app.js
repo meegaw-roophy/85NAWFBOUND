@@ -2850,16 +2850,29 @@ function showScoreReveal(snap) {
 
 // ── Settings ──
 function openSettings() {
+  console.log("Initializing account configuration canvas...");
+  
+  // 1. Transition the view section wrapper cleanly
   goTo('settings');
+  
+  // 2. Defensive check to prevent null property selection crashes
   if (currentUser) {
-    document.getElementById('settings-email').value =
-      currentUser.email || '';
+    const emailInput = document.getElementById('settings-email');
+    const reminderInput = document.getElementById('settings-reminder');
 
-    document.getElementById('settings-reminder').value =
-      currentUser.reminder_time || '20:00';
+    if (emailInput) {
+      emailInput.value = currentUser.email || '';
+    } else {
+      console.warn("UI Guardrail: Input field 'settings-email' is missing from the HTML template layout.");
+    }
+
+    if (reminderInput) {
+      reminderInput.value = currentUser.reminder_time || '20:00';
+    }
   }
 }
 
+// Ensure the module boundary bridge stays intact
 window.openSettings = openSettings;
 
 async function updateEmail() {
@@ -2923,24 +2936,30 @@ async function updatePassword() {
   try {
     const res = await fetch(`${API}/api/v1/users/me/change-password`, {
       method: 'POST',
-      headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ current_password: current, new_password: newPass })
+      headers: {
+        'Authorization': `Bearer ${authToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        current_password: current,
+        new_password: newPass
+      })
     });
-    
+
     if (res.ok) {
-      showToast('Password updated successfully', 'success');
       successEl.style.display = 'block';
+      showToast('Password changed successfully', 'success');
       document.getElementById('settings-current-password').value = '';
       document.getElementById('settings-new-password').value = '';
       document.getElementById('settings-confirm-password').value = '';
       setTimeout(() => successEl.style.display = 'none', 3000);
     } else {
-      const data = await res.json().catch(() => ({}));
-      errEl.textContent = data.detail || 'Failed to update password';
+      const data = await res.json();
+      errEl.textContent = data.detail || 'Incorrect current password.';
       errEl.style.display = 'block';
     }
-  } catch (e) {
-    errEl.textContent = 'Failed to update password. Please try again.';
+  } catch(e) {
+    errEl.textContent = 'Could not connect to server.';
     errEl.style.display = 'block';
   }
 }
@@ -3232,6 +3251,7 @@ async function loadMoreHistory() {
         btn.textContent = 'Load More';
     }
 }
+window.loadMoreHistory = loadMoreHistory;
 
 // ── Score trend chart ──
 function renderScoreChart(snapshots) {
@@ -3359,7 +3379,8 @@ function getPricingForCurrency(currency) {
 }
 
 function generateInsight(latest) {
-  const insightEl = document.getElementById('insight-text');
+  const insightEl = document.getElementById('insight-text') || document.getElementById('smart-insight');
+  if (!insightEl) return;
   
   // Logic for the "Truth"
   let message = "Keep logging to calibrate your trajectory.";

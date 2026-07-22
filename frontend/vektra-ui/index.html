@@ -795,9 +795,13 @@
   <div id="profile-success" style="display:none;color:var(--success);font-size:13px;text-align:center;margin-bottom:12px">✓ Profile updated</div>
   <button id="profile-save-btn" class="btn-primary" onclick="saveProfile()">Save Changes</button>
 
-  <!-- Sign Out -->
-  <button class="btn-secondary" style="margin-top:12px" onclick="openSettings()">⚙ Settings</button>
-  <button class="btn-secondary" style="margin-top:12px" onclick="logout()">Sign Out</button>
+
+
+
+
+  <!-- Settings + Sign Out buttons -->
+  <button class="btn-secondary" style="margin-top:12px;width:100%" onclick="openSettings()">⚙ Settings</button>
+  <button class="btn-secondary" style="margin-top:12px;margin-bottom:1rem;width:100%" onclick="logout()">Sign Out</button>
 
   <!-- Referral Code -->
   <div style="background:linear-gradient(135deg,#1a1a2e,#16213e);border:1px solid var(--accent);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem;margin-top:1rem">
@@ -946,11 +950,6 @@
 
 </div>
 
-<div id="ai-insight-card" style="background:var(--bg-card); border:1px solid var(--accent); padding:1.5rem; border-radius:var(--radius); margin-bottom:1rem;">
-  <div style="font-size:11px; color:var(--accent); text-transform:uppercase; letter-spacing:0.1em; margin-bottom:0.5rem;">AI Insight</div>
-  <p id="insight-text" style="font-size:14px; line-height:1.5; color:var(--text);"></p>
-</div>
-
 <!-- SCREEN: TRAJECTORY HISTORY -->
 <div id="trajectory-history" style="display:none;flex-direction:column;min-height:100vh;padding:1.5rem;max-width:420px;margin:0 auto">
 
@@ -982,17 +981,19 @@
     <div style="font-size:13px;color:var(--text-muted);margin-bottom:1.5rem">Your trajectory history will appear here</div>
   </div>
 
-    <!-- SCORE REVEAL -->
-  <div id="score-reveal" style="display:none;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;text-align:center;padding:2rem">
-    <div style="font-size:14px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.15em;margin-bottom:1rem">Today's VEKTRA Score</div>
-    <div id="reveal-score" style="font-size:96px;font-weight:900;background:linear-gradient(135deg,#6c63ff,#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1">0</div>
-    <div id="reveal-message" style="font-size:16px;color:var(--text-secondary);margin-top:1rem;max-width:280px;line-height:1.6"></div>
-    <div id="reveal-metrics" style="display:flex;gap:1.5rem;margin-top:2rem;flex-wrap:wrap;justify-content:center"></div>
-    <button class="btn-primary" style="margin-top:2.5rem;max-width:280px" onclick="goTo('dashboard');loadDashboard()">View Dashboard →</button>
-  </div>
+</div>
 
-    <!-- SCREEN: SETTINGS -->
-  <div id="settings" style="display:none;flex-direction:column;min-height:100vh;padding:1.5rem;max-width:420px;margin:0 auto">
+<!-- SCORE REVEAL -->
+<div id="score-reveal" style="display:none;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;text-align:center;padding:2rem">
+  <div style="font-size:14px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.15em;margin-bottom:1rem">Today's VEKTRA Score</div>
+  <div id="reveal-score" style="font-size:96px;font-weight:900;background:linear-gradient(135deg,#6c63ff,#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1">0</div>
+  <div id="reveal-message" style="font-size:16px;color:var(--text-secondary);margin-top:1rem;max-width:280px;line-height:1.6"></div>
+  <div id="reveal-metrics" style="display:flex;gap:1.5rem;margin-top:2rem;flex-wrap:wrap;justify-content:center"></div>
+  <button class="btn-primary" style="margin-top:2.5rem;max-width:280px" onclick="goTo('dashboard');loadDashboard()">View Dashboard →</button>
+</div>
+
+<!-- SCREEN: SETTINGS -->
+<div id="settings" style="display:none;flex-direction:column;min-height:100vh;padding:1.5rem;max-width:420px;margin:0 auto">
 
     <!-- Header -->
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;padding-top:1rem">
