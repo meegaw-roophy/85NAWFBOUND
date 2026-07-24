@@ -22,6 +22,7 @@ from .insights import router as insights_router
 from .wagers import router as wagers_router
 from .trash_talk import router as trash_talk_router
 from .notifications import router as notifications_router
+from .pricing import router as pricing_router
 
 router = APIRouter()
 
@@ -48,4 +49,4 @@ router.include_router(insights_router, prefix="/insights", tags=["insights"])
 router.include_router(wagers_router, prefix="/wagers", tags=["wagers"])
 router.include_router(trash_talk_router, prefix="/trash-talk", tags=["trash-talk"])
 router.include_router(notifications_router, prefix="/notifications", tags=["notifications"])
-
+router.include_router(pricing_router)

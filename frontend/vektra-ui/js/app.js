@@ -2490,7 +2490,7 @@ async function loadStreakCalendar() {
   if (!currentUser || !authToken) return;
   
   try {
-    const res = await fetch(`${API}/api/v1/achievements/streak-calendar?days=365`, {
+    const res = await fetch(`${API}/api/v1/achievements/streak-calendar?days=366`, {
       headers: { 'Authorization': `Bearer ${authToken}` }
     });
     
@@ -3402,6 +3402,174 @@ function generateInsight(latest) {
   insightEl.textContent = message;
 }
 
+// ── Pricing / Upgrade Screen ──
+let selectedTierUpgrade = 'tier1';
+let currentPriceData = null;
+let priceCalculateTimer = null;
+let priceLockInterval = null;
+let priceLockSeconds = 900; // 15 minutes
+
+async function openUpgrade() {
+  goTo('upgrade');
+  selectedTierUpgrade = 'tier1';
+  document.getElementById('days-slider').value = 30;
+  document.getElementById('days-display').textContent = '30 days';
+  document.getElementById('price-content').style.display = 'none';
+  document.getElementById('price-loading').style.display = 'block';
+  document.getElementById('milestone-badge').style.display = 'none';
+  await calculatePrice(30);
+}
+
+function selectTier(tier) {
+  selectedTierUpgrade = tier;
+  
+  ['tier1','tier2'].forEach(t => {
+    const btn = document.getElementById(`tier-btn-${t}`);
+    if (t === tier) {
+      btn.style.border = '2px solid var(--accent)';
+      btn.style.background = 'rgba(108,99,255,0.15)';
+      btn.style.color = 'var(--text-primary)';
+    } else {
+      btn.style.border = '1px solid var(--border)';
+      btn.style.background = 'transparent';
+      btn.style.color = 'var(--text-secondary)';
+    }
+  });
+
+  const days = parseInt(document.getElementById('days-slider').value);
+  calculatePrice(days);
+}
+
+function onSliderChange(value) {
+  const days = parseInt(value);
+  document.getElementById('days-display').textContent = `${days} days`;
+
+  // Show milestone badge
+  const milestones = [{days:366,badge:'👑 Founder — Max savings + exclusive badge'},{days:180,badge:'⭐⭐⭐ Half Year — +18 bonus days'},{days:90,badge:'⭐⭐ Quarter — +7 bonus days'},{days:60,badge:'⭐ 2 Months — +3 bonus days'}];
+  const milestone = milestones.find(m => days >= m.days);
+  const badgeEl = document.getElementById('milestone-badge');
+  if (milestone) {
+    badgeEl.textContent = milestone.badge;
+    badgeEl.style.display = 'block';
+  } else {
+    badgeEl.style.display = 'none';
+  }
+
+  // Debounce API call
+  clearTimeout(priceCalculateTimer);
+  priceCalculateTimer = setTimeout(() => calculatePrice(days), 300);
+}
+
+async function calculatePrice(days) {
+  if (!currentUser || !authToken) return;
+
+  document.getElementById('price-loading').style.display = 'block';
+  document.getElementById('price-content').style.display = 'none';
+
+  try {
+    const res = await fetch(`${API}/api/v1/pricing/calculate`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${authToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        tier: selectedTierUpgrade,
+        days: days,
+        currency: currentUser.currency || 'USD',
+        country_code: currentUser.current_location ? getCountryCode() : 'DEFAULT'
+      })
+    });
+
+    if (!res.ok) return;
+    currentPriceData = await res.json();
+    renderPriceCard(currentPriceData);
+
+  } catch(e) {
+    console.log('Price calculation error:', e);
+  }
+}
+
+function getCountryCode() {
+  const currencyToCountry = {
+    'KES':'KE','NGN':'NG','GHS':'GH','ZAR':'ZA',
+    'UGX':'UG','TZS':'TZ','GBP':'GB','EUR':'DE',
+    'INR':'IN','BRL':'BR','MXN':'MX','USD':'US'
+  };
+  return currencyToCountry[currentUser.currency] || 'DEFAULT';
+}
+
+function renderPriceCard(data) {
+  const sym = data.symbol;
+  
+  document.getElementById('price-loading').style.display = 'none';
+  document.getElementById('price-content').style.display = 'block';
+
+  document.getElementById('price-total').textContent = `${sym} ${data.total.toLocaleString()}`;
+  document.getElementById('price-monthly-eq').textContent = `${sym} ${data.monthly_equivalent.toLocaleString()}/month equivalent`;
+  
+  document.getElementById('price-subtotal').textContent = `${sym} ${data.subtotal.toLocaleString()}`;
+  document.getElementById('price-tax').textContent = `${sym} ${data.tax_amount.toLocaleString()}`;
+  document.getElementById('tax-pct').textContent = data.tax_rate;
+  document.getElementById('price-fee').textContent = `${sym} ${data.stripe_fee.toLocaleString()}`;
+  document.getElementById('price-final').textContent = `${sym} ${data.total.toLocaleString()}`;
+  document.getElementById('total-days-display').textContent = data.total_days;
+
+  // Expires
+  const expires = new Date(data.expires_at);
+  document.getElementById('price-expires').textContent = expires.toLocaleDateString('en-US', {day:'numeric', month:'short', year:'numeric'});
+
+  // Discount
+  if (data.discount_rate > 0) {
+    document.getElementById('discount-row').style.display = 'flex';
+    document.getElementById('discount-pct').textContent = data.discount_rate;
+    document.getElementById('price-discount').textContent = `-${sym} ${data.discount_amount.toLocaleString()}`;
+  }
+
+  // Savings
+  if (data.saved_amount > 0 || data.bonus_days > 0) {
+    document.getElementById('savings-card').style.display = 'block';
+    document.getElementById('price-saved').textContent = `${sym} ${data.saved_amount.toLocaleString()}`;
+    document.getElementById('price-bonus-days').textContent = data.bonus_days > 0 ? `+${data.bonus_days} FREE bonus days included` : '';
+  } else {
+    document.getElementById('savings-card').style.display = 'none';
+  }
+
+  // Enable checkout button
+  const btn = document.getElementById('checkout-btn');
+  btn.disabled = false;
+  btn.textContent = `Pay ${sym} ${data.total.toLocaleString()} →`;
+
+  // Start price lock countdown
+  startPriceLockCountdown();
+}
+
+function startPriceLockCountdown() {
+  clearInterval(priceLockInterval);
+  priceLockSeconds = 900;
+  
+  priceLockInterval = setInterval(() => {
+    priceLockSeconds--;
+    const mins = Math.floor(priceLockSeconds / 60);
+    const secs = priceLockSeconds % 60;
+    const el = document.getElementById('price-lock-timer');
+    if (el) el.textContent = `Price locked for ${mins}:${secs.toString().padStart(2,'0')}`;
+    
+    if (priceLockSeconds <= 0) {
+      clearInterval(priceLockInterval);
+      if (el) el.textContent = '⚠ Price lock expired — recalculating...';
+      const days = parseInt(document.getElementById('days-slider').value);
+      calculatePrice(days);
+    }
+  }, 1000);
+}
+
+function proceedToCheckout() {
+  if (!currentPriceData) return;
+  // For now show toast — Stripe/M-Pesa integration comes when API keys arrive
+  showToast(`Checkout for ${currentPriceData.symbol} ${currentPriceData.total} — Payment gateway coming soon! 🔥`, 'info', 5000);
+}
+
 window.generateInsight = generateInsight;
 window.login = login;
 window.register = register;
@@ -3421,3 +3589,18 @@ window.currentUser = currentUser;
 window.navTo = navTo;
 window.goTo = goTo;
 window.currentScreen = currentScreen;
+window.selectedTierUpgrade = selectedTierUpgrade;
+window.currentPriceData = currentPriceData;
+window.priceCalculateTimer = priceCalculateTimer;
+window.priceLockInterval = priceLockInterval;
+window.priceLockSeconds = priceLockSeconds;
+
+window.openUpgrade = openUpgrade;
+window.selectTier = selectTier;
+window.onSliderChange = onSliderChange;
+window.calculatePrice = calculatePrice;
+window.getCountryCode = getCountryCode;
+window.renderPriceCard = renderPriceCard;
+window.startPriceLockCountdown = startPriceLockCountdown;
+window.proceedToCheckout = proceedToCheckout;
+

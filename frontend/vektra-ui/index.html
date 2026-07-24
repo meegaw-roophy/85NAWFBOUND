@@ -614,7 +614,7 @@
       <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">CURRENT PLAN</div>
       <div id="profile-tier" style="font-size:18px;font-weight:700;color:var(--accent)">Free</div>
     </div>
-    <button onclick="goTo('welcome')" style="padding:8px 16px;background:linear-gradient(135deg,#6c63ff,#ec4899);border:none;border-radius:var(--radius-sm);color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font)">Upgrade</button>
+    <button onclick="openUpgrade()" style="padding:8px 16px;background:linear-gradient(135deg,#6c63ff,#ec4899);border:none;border-radius:var(--radius-sm);color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font)">Upgrade</button>
   </div>
 
   <!-- Stats Row -->
@@ -1216,6 +1216,119 @@
     <div id="achievements-grid" style="display:flex;flex-direction:column;gap:12px">
       <!-- Achievements will be rendered here -->
     </div>
+
+  </div>
+
+  <!-- SCREEN: UPGRADE / PRICING -->
+  <div id="upgrade" style="display:none;flex-direction:column;min-height:100vh;padding:1.5rem;max-width:420px;margin:0 auto">
+
+    <!-- Header -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;padding-top:1rem">
+      <div>
+        <div style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.1em">Upgrade</div>
+        <div style="font-size:18px;font-weight:700">Choose Your Vector</div>
+      </div>
+      <div onclick="goTo('profile')" style="color:var(--text-muted);cursor:pointer;font-size:13px">← Back</div>
+    </div>
+
+    <!-- Tier Selector -->
+    <div style="display:flex;gap:8px;margin-bottom:1.5rem">
+      <button id="tier-btn-tier1" onclick="selectTier('tier1')" style="flex:1;padding:12px;border-radius:var(--radius-sm);border:2px solid var(--accent);background:rgba(108,99,255,0.15);color:var(--text-primary);cursor:pointer;font-family:var(--font);font-weight:600;font-size:14px">
+        Vector<br><span style="font-size:11px;color:var(--text-muted);font-weight:400">~KES 302/mo</span>
+      </button>
+      <button id="tier-btn-tier2" onclick="selectTier('tier2')" style="flex:1;padding:12px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;font-family:var(--font);font-weight:600;font-size:14px">
+        Apex<br><span style="font-size:11px;color:var(--text-muted);font-weight:400">~KES 1,130/mo</span>
+      </button>
+    </div>
+
+    <!-- Slider Section -->
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
+      <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.5rem">Commitment Period</div>
+      <div style="font-size:13px;color:var(--text-muted);margin-bottom:1rem">Only 30 days? Are we building a legacy or just a hobby? Slide more to commit and save money.</div>
+      
+      <!-- Slider -->
+      <input type="range" id="days-slider" min="30" max="366" value="30" 
+            oninput="onSliderChange(this.value)"
+            style="width:100%;accent-color:var(--accent);cursor:pointer;margin-bottom:.75rem">
+      
+      <!-- Days display -->
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem">
+        <span style="font-size:13px;color:var(--text-muted)">Duration</span>
+        <span id="days-display" style="font-size:20px;font-weight:800;color:var(--text-primary)">30 days</span>
+      </div>
+
+      <!-- Milestone badge -->
+      <div id="milestone-badge" style="display:none;text-align:center;padding:8px;background:rgba(108,99,255,0.1);border:1px solid rgba(108,99,255,0.3);border-radius:var(--radius-sm);margin-bottom:.75rem;font-size:13px;color:var(--accent)"></div>
+
+      <!-- Milestone markers -->
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-muted);margin-bottom:.5rem">
+        <span>30</span>
+        <span>60⭐</span>
+        <span>90⭐⭐</span>
+        <span>180⭐⭐⭐</span>
+        <span>366👑</span>
+      </div>
+    </div>
+
+    <!-- Price Card -->
+    <div style="background:linear-gradient(135deg,#1a1a2e,#16213e);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
+      <div id="price-loading" style="text-align:center;color:var(--text-muted);font-size:14px;padding:1rem">Calculating...</div>
+      
+      <div id="price-content" style="display:none">
+        <!-- Total price big display -->
+        <div style="text-align:center;margin-bottom:1rem">
+          <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">TOTAL PRICE</div>
+          <div id="price-total" style="font-size:48px;font-weight:900;background:linear-gradient(135deg,#6c63ff,#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1">—</div>
+          <div id="price-monthly-eq" style="font-size:13px;color:var(--text-muted);margin-top:4px"></div>
+        </div>
+
+        <!-- Savings highlight -->
+        <div id="savings-card" style="display:none;background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.3);border-radius:var(--radius-sm);padding:.75rem;margin-bottom:1rem;text-align:center">
+          <div style="font-size:12px;color:var(--success);margin-bottom:2px">YOU SAVE</div>
+          <div id="price-saved" style="font-size:20px;font-weight:800;color:var(--success)"></div>
+          <div id="price-bonus-days" style="font-size:12px;color:var(--success);margin-top:2px"></div>
+        </div>
+
+        <!-- Price breakdown -->
+        <div style="display:flex;flex-direction:column;gap:6px;font-size:13px">
+          <div style="display:flex;justify-content:space-between">
+            <span style="color:var(--text-muted)">Subtotal</span>
+            <span id="price-subtotal">—</span>
+          </div>
+          <div id="discount-row" style="display:none;display:flex;justify-content:space-between">
+            <span style="color:var(--success)">Discount (<span id="discount-pct"></span>%)</span>
+            <span id="price-discount" style="color:var(--success)">—</span>
+          </div>
+          <div style="display:flex;justify-content:space-between">
+            <span style="color:var(--text-muted)">VAT (<span id="tax-pct"></span>%)</span>
+            <span id="price-tax">—</span>
+          </div>
+          <div style="display:flex;justify-content:space-between">
+            <span style="color:var(--text-muted)">Processing fee</span>
+            <span id="price-fee">—</span>
+          </div>
+          <div style="border-top:1px solid var(--border);padding-top:6px;display:flex;justify-content:space-between;font-weight:700">
+            <span>Total (<span id="total-days-display"></span> days)</span>
+            <span id="price-final">—</span>
+          </div>
+          <div style="display:flex;justify-content:space-between">
+            <span style="color:var(--text-muted)">Expires</span>
+            <span id="price-expires" style="font-size:12px">—</span>
+          </div>
+        </div>
+
+        <!-- Price lock countdown -->
+        <div style="text-align:center;margin-top:.75rem;font-size:12px;color:var(--text-muted)">
+          🔒 <span id="price-lock-timer">Price locked for 15:00</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- CTA Button -->
+    <button id="checkout-btn" class="btn-primary" onclick="proceedToCheckout()" style="margin-bottom:.75rem" disabled>
+      Select a plan to continue
+    </button>
+    <div style="font-size:12px;color:var(--text-muted);text-align:center">No refunds. You can upgrade anytime. Cancel stops renewal.</div>
 
   </div>
 
