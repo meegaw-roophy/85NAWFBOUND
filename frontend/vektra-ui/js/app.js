@@ -2,7 +2,7 @@
 console.log('VEKTRA app.js loaded successfully');
 
 // ── API base URL ──
-const API = 'http://127.0.0.1:8000';
+const API = 'https://vektra-backend-qic7.onrender.com';
 
 // ── Token storage ──
 let authToken = null; // Ensure this is not declared as a 'const' anywhere!
