@@ -265,8 +265,9 @@ async function loginWithCredentials(username, password) {
     });
 
     if (!tokenRes.ok) {
-      console.error("Token acquisition failed.");
-      return; // Stop execution if credentials are wrong
+        const error = await tokenRes.text();
+        console.error("LOGIN FAILED:", tokenRes.status, error);
+        return;
     }
 
     const tokenData = await tokenRes.json();
@@ -3603,4 +3604,6 @@ window.getCountryCode = getCountryCode;
 window.renderPriceCard = renderPriceCard;
 window.startPriceLockCountdown = startPriceLockCountdown;
 window.proceedToCheckout = proceedToCheckout;
-
+window.onboardStep1 = onboardStep1;
+window.onboardStep2 = onboardStep2;
+window.onboardStep3 = onboardStep3;

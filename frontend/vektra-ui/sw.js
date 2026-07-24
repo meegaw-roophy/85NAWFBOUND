@@ -31,15 +31,26 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   const requestUrl = new URL(e.request.url);
 
-  // 1. DO NOT cache API calls (already handled)
-  // 2. DO NOT cache the root index or service worker updates
-  if (requestUrl.pathname.includes('/api/') || requestUrl.pathname.includes('/sw.js')) {
-    return e.respondWith(fetch(e.request));
+  // 1. ABSOLUTE BYPASS: If it hits your Render API domain, or uses POST/PUT methods, let it go to the internet directly
+  if (
+    requestUrl.hostname === '://onrender.com' || 
+    requestUrl.pathname.includes('/api/v1') || 
+    e.request.method !== 'GET'
+  ) {
+    return; // Returning nothing completely hands control back to the browser network layer, bypassing sw.js entirely
   }
 
-  // 3. For everything else (CSS, JS, images), use network-first or cache-first
-    e.respondWith(
-    caches.match(e.request).then(cachedResponse => cachedResponse || fetch(e.request))
-        );
+  // 2. DO NOT cache the service worker itself
+  if (requestUrl.pathname.includes('/sw.js')) {
+    return;
+  }
+
+  // 3. For static assets (CSS, JS, UI Images), use cache-first strategy
+  e.respondWith(
+    caches.match(e.request).then(cachedResponse => {
+      return cachedResponse || fetch(e.request);
+    })
+  );
 });
+
 
