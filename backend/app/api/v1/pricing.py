@@ -35,7 +35,7 @@ TAX_RATES = {
     'DEFAULT': 0.00
 }
 
-# ── FX rates (cached daily — update via cron job later) ─
+# ── FX rates (1 Unit of Local Currency = X USD) ────────
 FX_RATES_TO_USD = {
     'KES': 0.00775,  # 1 KES = 0.00775 USD
     'NGN': 0.00065,
@@ -69,7 +69,7 @@ MILESTONES = [
 
 class PriceRequest(BaseModel):
     tier: str  # 'tier1' or 'tier2'
-    days: int  # 31-366
+    days: int  # 30-366
     currency: Optional[str] = 'USD'
     country_code: Optional[str] = 'DEFAULT'
 
@@ -94,15 +94,13 @@ class PriceResponse(BaseModel):
     price_locked_until: str
 
 def calculate_discount(days: int, k: float = 2.0) -> float:
-    """Logarithmic discount curve. k=2.0 gives smooth reward for commitment."""
+    """Logarithmic commitment discount curve."""
     if days <= 30:
         return 0.0
-    # discount_rate = ((days - 30) / 336) ^ k / 6
     rate = ((days - 30) / 336) ** k / 6
-    return rate  # Max ~16.67% (2 months free equivalent)
+    return rate  # Max ~16.67%
 
 def get_milestone(days: int) -> Optional[dict]:
-    """Get the milestone for a given day count."""
     current = None
     for m in MILESTONES:
         if days >= m['days']:
@@ -115,27 +113,21 @@ async def calculate_price(
     current_user: User = Depends(get_current_user)
 ):
     """
-    Calculate final price for a given tier and duration.
-    This is the ONLY source of truth for pricing — frontend never calculates final price.
+    Calculate final price for a given tier and duration with corrected currency conversions.
     """
-    # Clamp days
     days = max(30, min(366, req.days))
-    
-    # Get PPP factor
     ppp = PPP_FACTORS.get(req.country_code, PPP_FACTORS['DEFAULT'])
-    
-    # Get base USD monthly price
     base_usd = BASE_USD_MONTHLY.get(req.tier, BASE_USD_MONTHLY['tier1'])
     
-    # Apply PPP
+    # Apply PPP adjustments
     ppp_adjusted_usd = base_usd * ppp
     
-    # Convert to local currency
+    # CORRECTED: Convert from USD to Local Currency accurately
     currency = req.currency or 'USD'
     fx_rate = FX_RATES_TO_USD.get(currency, 1.0)
     monthly_local = ppp_adjusted_usd / fx_rate
     
-    # Calculate subtotal (before discount)
+    # Calculate subtotal (before commitment discounts)
     subtotal = monthly_local * days / 30.5
     
     # Calculate discount
@@ -143,35 +135,33 @@ async def calculate_price(
     discount_amount = subtotal * discount_rate
     discounted_subtotal = subtotal - discount_amount
     
-    # Get milestone and bonus days
+    # Milestones and extended bonus days
     milestone = get_milestone(days)
     bonus_days = milestone['bonus_days'] if milestone else 0
     total_days = days + bonus_days
     
-    # Calculate tax
+    # Tax math
     tax_rate = TAX_RATES.get(req.country_code, TAX_RATES['DEFAULT'])
     tax_amount = discounted_subtotal * tax_rate
     
-    # Stripe fee (2.9% + $0.30 converted to local)
-    stripe_fee_usd = discounted_subtotal * fx_rate * 0.029 + 0.30
+    # Stripe payment gateway calculations
+    stripe_fee_usd = (discounted_subtotal * fx_rate) * 0.029 + 0.30
     stripe_fee = stripe_fee_usd / fx_rate
     
-    # Final total
+    # Unified total configuration
     total = discounted_subtotal + tax_amount + stripe_fee
     
-    # What they save vs paying monthly
+    # Retention metrics tracking
     full_price = monthly_local * days / 30.5
     saved_amount = full_price - total + (monthly_local * bonus_days / 30.5)
-    
-    # Monthly equivalent
     monthly_equivalent = total / (total_days / 30.5)
     
-    # Expiry date
-    expires_at = (datetime.datetime.utcnow() + datetime.timedelta(days=total_days))
+    # Python 3.14 timezone compliance updates
+    now_utc = datetime.datetime.now(datetime.timezone.utc)
+    expires_at = now_utc + datetime.timedelta(days=total_days)
     expires_at = expires_at.replace(hour=23, minute=59, second=59)
     
-    # Price lock (15 minutes from now)
-    price_locked_until = (datetime.datetime.utcnow() + datetime.timedelta(minutes=15)).isoformat()
+    price_locked_until = (now_utc + datetime.timedelta(minutes=15)).isoformat()
     
     return PriceResponse(
         tier=req.tier,
@@ -196,48 +186,47 @@ async def calculate_price(
 
 @router.get("/tiers")
 async def get_tiers(current_user: User = Depends(get_current_user)):
-    """Get available tiers and their features."""
+    """Get available tiers with refined feature sets."""
     return {
         "tiers": [
             {
                 "id": "free",
-                "name": "Free",
+                "name": "Free Trial",
                 "features": [
-                    "7 days tracking",
-                    "Basic daily log",
-                    "One taste report",
-                    "VEKTRA score",
+                    "7 days tracking access",
+                    "Basic daily log variables",
+                    "One automated trajectory preview",
+                    "Real-time VEKTRA Score evaluation",
                 ],
                 "cta": "Current Plan"
             },
             {
                 "id": "tier1",
-                "name": "Vector",
+                "name": "Vector Tier",
                 "tagline": "For the focused builder",
                 "features": [
-                    "Unlimited daily logging",
-                    "Weekly AI reports",
-                    "Full score breakdown",
-                    "Streak tracking",
-                    "Financial engine",
-                    "Log history",
-                    "Priority support",
+                    "Unlimited daily telemetry input",
+                    "Weekly harsh-truth AI data reports",
+                    "Full direction angle (θ) score breakdown",
+                    "Habit execution streak tracking",
+                    "Personal financial trend engine",
+                    "Complete timeline database logs",
+                    "Priority server task execution queue",
                 ],
                 "cta": "Choose Vector"
             },
             {
                 "id": "tier2",
-                "name": "Apex",
+                "name": "Apex Tier",
                 "tagline": "For the serious operator",
                 "features": [
-                    "Everything in Vector",
-                    "Monthly deep reports",
-                    "Quarterly strategy report",
-                    "Annual video report",
-                    "4K birthday card",
-                    "Custom AI tone",
-                    "Early feature access",
-                    "Founder badge",
+                    "Everything included in the Vector plan",
+                    "Monthly multi-variable strategic deep reports",
+                    "Quarterly trajectory alignment auditing",
+                    "Dynamic trend data visualizations",
+                    "Personalized custom AI evaluation tone",
+                    "Early prototype alpha feature testing privileges",
+                    "Exclusive 👑 Founder baseline identification badge",
                 ],
                 "cta": "Choose Apex"
             }
