@@ -1,0 +1,783 @@
+/* ── VEKTRA Design System ── */
+:root {
+  --bg-primary: #0a0a0f;
+  --bg-secondary: #111118;
+  --bg-card: #16161f;
+  --accent: #6c63ff;
+  --accent-glow: rgba(108, 99, 255, 0.3);
+  --gold: #f5c518;
+  --text-primary: #f0f0f5;
+  --text-secondary: #8888aa;
+  --text-muted: #444460;
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --danger: #da0e0e;
+  --border: rgba(255,255,255,0.06);
+  --font: 'Inter', -apple-system, sans-serif;
+  --radius: 16px;
+  --radius-sm: 8px;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font);
+  min-height: 100vh;
+  overflow-x: hidden;
+  padding-bottom: 70px; /* Space for bottom nav */
+}
+
+/* ── SPLASH SCREEN ── */
+#splash {
+  position: fixed;
+  inset: 0;
+  background: var(--bg-primary);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  transition: opacity 0.6s ease;
+}
+
+.splash-logo {
+  font-size: 52px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  background: linear-gradient(135deg, #6c63ff, #a855f7, #ec4899);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 12px;
+}
+
+.splash-tagline {
+  font-size: 13px;
+  color: var(--text-muted);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  margin-bottom: 60px;
+}
+
+.splash-loader {
+  width: 40px;
+  height: 2px;
+  background: var(--text-muted);
+  border-radius: 2px;
+  overflow: hidden;
+  position: relative;
+}
+
+.splash-loader::after {
+  content: '';
+  position: absolute;
+  left: -100%;
+  top: 0;
+  height: 100%;
+  width: 100%;
+  background: linear-gradient(90deg, #6c63ff, #ec4899);
+  animation: load 1.8s ease forwards;
+}
+
+/* Add this class helper at the bottom of your stylesheet */
+#splash.fade-out {
+  opacity: 0 !important;
+  pointer-events: none !important; /* Drops the invisible glass shield instantly */
+  visibility: hidden !important; /* Tells the browser rendering engine to ignore it */
+}
+
+@keyframes load {
+  0% { left: -100%; }
+  100% { left: 100%; }
+}
+
+@keyframes pulse {
+  0% { transform: scale(0.9); opacity: 0.6; }
+  50% { transform: scale(1.1); opacity: 1; }
+  100% { transform: scale(0.9); opacity: 0.6; }
+}
+
+/* ── WELCOME SCREEN ── */
+#welcome {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 2rem;
+  text-align: center;
+}
+
+.welcome-logo {
+  font-size: 36px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  background: linear-gradient(135deg, #6c63ff, #a855f7, #ec4899);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 8px;
+}
+
+.welcome-subtitle {
+  font-size: 13px;
+  color: var(--text-muted);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  margin-bottom: 48px;
+}
+
+.welcome-headline {
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1.2;
+  max-width: 340px;
+  margin-bottom: 16px;
+}
+
+.welcome-headline span {
+  background: linear-gradient(135deg, #6c63ff, #ec4899);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.welcome-desc {
+  font-size: 15px;
+  color: var(--text-secondary);
+  max-width: 300px;
+  line-height: 1.6;
+  margin-bottom: 56px;
+}
+
+/* ── BUTTONS ── */
+.btn-primary {
+  width: 100%;
+  max-width: 320px;
+  padding: 16px;
+  background: linear-gradient(135deg, #6c63ff, #a855f7);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: 12px;
+  letter-spacing: 0.02em;
+  transition: opacity 0.2s, transform 0.2s;
+}
+
+.btn-primary:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.btn-secondary {
+  width: 100%;
+  max-width: 320px;
+  padding: 16px;
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  letter-spacing: 0.02em;
+  transition: all 0.2s;
+}
+
+.btn-secondary:hover {
+  border-color: var(--accent);
+  color: var(--text-primary);
+}
+
+/* ── DAILY LOG ── */
+.log-group {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.slider-field {
+  margin-bottom: 1.25rem;
+}
+
+.slider-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+
+.slider-label span:last-child {
+  font-weight: 700;
+  color: var(--accent);
+}
+
+input[type="range"] {
+  width: 100%;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.text-field {
+  margin-bottom: 1rem;
+}
+
+.text-field label {
+  display: block;
+  font-size: 12px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 6px;
+}
+
+.text-field input,
+.text-field textarea {
+  width: 100%;
+  padding: 12px 14px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 14px;
+  font-family: var(--font);
+  outline: none;
+  resize: vertical;
+}
+
+.text-field textarea {
+  min-height: 80px;
+}
+
+.number-field {
+  margin-bottom: 1rem;
+}
+
+.number-field label {
+  display: block;
+  font-size: 12px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 6px;
+}
+
+.number-field input {
+  width: 100%;
+  padding: 12px 14px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 16px;
+  font-family: var(--font);
+  outline: none;
+}
+
+/* ── ENGINE BARS ── */
+.engine-bar {
+  margin-bottom: .75rem;
+}
+
+/* ── MOBILE RESPONSIVENESS ── */
+@media (max-width: 480px) {
+  
+  /* Welcome screen */
+  .welcome-headline {
+    font-size: 26px;
+  }
+
+  .welcome-desc {
+    font-size: 14px;
+  }
+
+  /* Dashboard */
+  #dashboard {
+    padding: 1rem;
+  }
+
+  /* Daily log */
+  #daily-log {
+    padding: 1rem;
+  }
+
+  /* Reports */
+  #reports {
+    padding: 1rem;
+  }
+
+  /* Buttons full width on mobile */
+  .btn-primary, .btn-secondary {
+    max-width: 100%;
+  }
+
+  /* Splash logo smaller on mobile */
+  .splash-logo {
+    font-size: 40px;
+  }
+
+  /* Score number smaller on mobile */
+  #dash-score {
+    font-size: 52px;
+  }
+}
+
+/* ── SCROLLING ── */
+#daily-log,
+#reports,
+#dashboard {
+  overflow-y: auto;
+  padding-bottom: 2rem;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ── INPUT FOCUS STATES ── */
+.text-field input:focus,
+.text-field textarea:focus,
+.number-field input:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+
+/* ── SMOOTH SCREEN TRANSITIONS ── */
+#app > div {
+  width: 100%;
+}
+
+#app > div[style*="display: flex"] {
+  animation: fadeIn .3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ── MOBILE LAYOUT FIX ── */
+#app {
+  width: 100%;
+  min-height: 100vh;
+  position: relative;
+}
+
+#app > div {
+  width: 100%;
+}
+
+/* Center content on larger screens, full width on mobile */
+#dashboard,
+#daily-log,
+#reports,
+#profile {
+  max-width: 480px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* Screens that should be full viewport centered */
+#splash,
+#welcome,
+#register,
+#login,
+#onboard-1,
+#onboard-2,
+#onboard-3 {
+  width: 100%;
+  min-height: 100vh;
+}
+
+html, body {
+  width: 100%;
+  overflow-x: hidden;
+}
+
+#report-narrative {
+  white-space: pre-wrap;
+  line-height: 1.9;
+  font-size: 14px;
+}
+
+.btn-primary,
+.btn-secondary {
+  touch-action: manipulation;
+}
+
+.text-field input,
+.text-field textarea,
+.number-field input {
+  transition: border-color .2s ease,
+              box-shadow .2s ease;
+}
+
+.text-field input:focus,
+.text-field textarea:focus,
+.number-field input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+html,
+body,
+#app {
+  height: 100%;
+}
+
+/* ── TOAST NOTIFICATIONS ── */
+#toast-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 320px;
+  width: calc(100% - 40px);
+}
+
+.toast {
+  padding: 14px 16px;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-family: var(--font);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+  animation: toastIn 0.3s ease forwards;
+  cursor: pointer;
+}
+
+.toast.success { background: #1a3a2a; border: 1px solid var(--success); color: #4ade80; }
+.toast.error   { background: #3a1a1a; border: 1px solid var(--danger);  color: #f87171; }
+.toast.warning { background: #3a2a1a; border: 1px solid var(--warning); color: #fbbf24; }
+.toast.info    { background: #1a1a3a; border: 1px solid var(--accent);  color: #a78bfa; }
+
+.toast.hiding {
+  animation: toastOut 0.3s ease forwards;
+}
+
+@keyframes toastIn {
+  from { opacity: 0; transform: translateX(100%); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes toastOut {
+  from { opacity: 1; transform: translateX(0); }
+  to   { opacity: 0; transform: translateX(100%); }
+}
+
+/* ── LOADING SPINNER ── */
+#global-loader {
+  position: fixed;
+  inset: 0;
+  background: rgba(10,10,15,0.8);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 9998;
+  flex-direction: column;
+  gap: 16px;
+}
+
+#global-loader.active {
+  display: flex;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.spinner-sm {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  display: inline-block;
+}
+
+.loader-text {
+  color: var(--text-secondary);
+  font-size: 14px;
+  letter-spacing: 0.05em;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── MOBILE RESPONSIVENESS ── */
+@media (max-width: 480px) {
+  #toast-container {
+    top: 10px;
+    right: 10px;
+    left: 10px;
+    width: calc(100% - 20px);
+    max-width: none;
+  }
+  
+  .toast {
+    font-size: 13px;
+    padding: 12px 14px;
+  }
+  
+  .splash-logo {
+    font-size: 42px;
+  }
+  
+  .welcome-headline {
+    font-size: 24px;
+  }
+  
+  .welcome-desc {
+    font-size: 14px;
+  }
+  
+  .btn-primary,
+  .btn-secondary {
+    padding: 14px 20px;
+    font-size: 15px;
+  }
+  
+  /* Adjust dashboard cards for mobile */
+  #dashboard > div[style*="grid"] {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px;
+  }
+  
+  /* Adjust report stats grid */
+  #reports > div[style*="grid-template-columns:repeat(4,1fr)"] {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  
+  /* Adjust profile stats grid */
+  #profile > div[style*="grid-template-columns:repeat(3,1fr)"] {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+  }
+  
+  /* Smaller padding on mobile */
+  #dashboard,
+  #reports,
+  #profile,
+  #daily-log {
+    padding: 1rem !important;
+  }
+  
+  /* Adjust log groups for mobile */
+  .log-group {
+    padding: 1rem;
+  }
+  
+  /* Smaller text on mobile */
+  .slider-label,
+  .text-field label,
+  .number-field label {
+    font-size: 11px;
+  }
+  
+  /* Adjust input sizes */
+  input[type="range"] {
+    height: 32px;
+  }
+  
+  textarea {
+    font-size: 14px !important;
+  }
+}
+
+@media (max-width: 360px) {
+  .splash-logo {
+    font-size: 36px;
+  }
+  
+  .welcome-headline {
+    font-size: 20px;
+  }
+  
+  /* Single column for very small screens */
+  #dashboard > div[style*="grid"] {
+    grid-template-columns: 1fr !important;
+  }
+  
+  #reports > div[style*="grid-template-columns:repeat(2,1fr)"] {
+    grid-template-columns: 1fr !important;
+  }
+  
+  #profile > div[style*="grid-template-columns:repeat(3,1fr)"] {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+#insight-text {
+  font-family: 'Courier New', Courier, monospace; /* Makes it feel like code/data */
+  font-weight: 500;
+  border-left: 2px solid var(--accent);
+  padding-left: 10px;
+}
+
+/* ── PREMIUM VISUAL UPGRADES ── */
+
+/* Glassmorphism cards */
+.log-group,
+#dashboard .card,
+.feature-card {
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+/* Gradient border on score card */
+.score-card-wrapper {
+  background: linear-gradient(135deg, #6c63ff, #ec4899);
+  padding: 2px;
+  border-radius: var(--radius);
+  margin-bottom: 1rem;
+}
+
+.score-card-inner {
+  background: #12121a;
+  border-radius: calc(var(--radius) - 2px);
+  padding: 1.5rem;
+  text-align: center;
+}
+
+/* Glowing accent on score number */
+#dash-score {
+  text-shadow: 0 0 40px rgba(108, 99, 255, 0.5);
+  filter: drop-shadow(0 0 20px rgba(236, 72, 153, 0.3));
+}
+
+/* Premium card hover effect */
+#history-list > div,
+.log-group {
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+#history-list > div:hover {
+  transform: translateY(-2px);
+  border-color: rgba(108, 99, 255, 0.4);
+}
+
+/* Premium gradient text for section labels */
+.log-group > div:first-child {
+  background: linear-gradient(135deg, #6c63ff, #a855f7);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Better input focus glow */
+.text-field input:focus,
+.text-field textarea:focus,
+.number-field input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(108, 99, 255, 0.15);
+}
+
+/* Premium button glow on hover */
+.btn-primary:hover {
+  box-shadow: 0 8px 25px rgba(108, 99, 255, 0.4);
+  transform: translateY(-1px);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+/* Score reveal premium feel */
+#reveal-score {
+  text-shadow: 0 0 60px rgba(108, 99, 255, 0.6);
+  filter: drop-shadow(0 0 30px rgba(236, 72, 153, 0.4));
+}
+
+/* Streak fire glow */
+#dash-streak {
+  text-shadow: 0 0 20px rgba(245, 158, 11, 0.4);
+}
+
+/* North star italic glow */
+#dash-northstar {
+  border-left: 2px solid var(--accent);
+  padding-left: 10px;
+  font-style: italic;
+}
+
+/* Chart container premium */
+#score-chart {
+  filter: drop-shadow(0 4px 12px rgba(108, 99, 255, 0.2));
+}
+
+/* Onboarding step bars premium */
+.step-bar {
+  height: 3px;
+  width: 60px;
+  background: var(--border);
+  border-radius: 2px;
+  transition: background 0.3s ease;
+}
+
+.step-bar.active {
+  background: linear-gradient(90deg, #6c63ff, #ec4899);
+}
+
+/* Toast premium shadow */
+.toast {
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255,255,255,0.05);
+}
+
+/* Landing page score bars animation */
+.bar-fill {
+  animation: barGrow 1.5s ease forwards;
+  transform-origin: left;
+}
+
+@keyframes barGrow {
+  from { width: 0 !important; }
+  to   { width: var(--target-width); }
+}
+
+/* ── Force chart container vertical space ── */
+[id^="chart-"] {
+  height: 120px !important;
+  display: flex !important;
+  align-items: flex-end !important;
+  gap: 4px; /* Reduced gap to fit more bars */
+  padding-bottom: 24px; /* Space for the value labels */
+}
+
+/* Ensure the wrapper of each bar is flexible */
+[id^="chart-"] > div {
+  flex: 1;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  position: relative;
+  height: 100%;
+}
+
+/* This targets the actual bar element specifically */
+[id^="chart-"] > div > div[style*="background"] {
+  width: 80%;
+  min-height: 4px !important; /* Force visibility */
+  transition: height 0.3s ease;
+}

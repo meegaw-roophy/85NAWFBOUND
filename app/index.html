@@ -1,0 +1,1425 @@
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<link rel="stylesheet" href="css/style.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#6c63ff">
+
+<!-- Toast container -->
+<div id="toast-container"></div>
+
+<!-- Global loader -->
+<div id="global-loader">
+  <div class="spinner"></div>
+  <div class="loader-text" id="loader-text">Loading...</div>
+</div>
+
+<div id="app">
+
+  <!-- SCREEN 2: WELCOME -->
+  <div id="welcome">
+    <div class="welcome-logo">VEKTRA</div>
+    <div class="welcome-subtitle">Vector = Magnitude × Direction</div>
+    <div class="welcome-headline">Know your <span>trajectory.</span> Own your path.</div>
+    <div class="welcome-desc">Track what matters. Measure what moves. Get the harsh truth your progress deserves.</div>
+    <button class="btn-primary" onclick="goTo('register')">Get Started</button>
+    <button class="btn-secondary" onclick="goTo('login')">I already have an account</button>
+  </div>
+
+<!-- SCREEN 3: REGISTER -->
+<div id="register" style="display:none;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:2rem;">
+  
+  <div class="welcome-logo" style="margin-bottom:4px">VEKTRA</div>
+  <div style="font-size:13px;color:var(--text-muted);margin-bottom:36px">Create your account</div>
+
+  <div style="width:100%;max-width:320px">
+    
+    <div style="margin-bottom:16px">
+      <label style="font-size:12px;color:var(--text-secondary);letter-spacing:0.08em;text-transform:uppercase;display:block;margin-bottom:6px">Full Name</label>
+      <input id="reg-name" type="text" placeholder="Elvis Obulemire" style="width:100%;padding:14px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:15px;outline:none;font-family:var(--font)">
+    </div>
+
+    <div style="margin-bottom:16px">
+      <label style="font-size:12px;color:var(--text-secondary);letter-spacing:0.08em;text-transform:uppercase;display:block;margin-bottom:6px">Username</label>
+      <input id="reg-username" type="text" placeholder="roophy" style="width:100%;padding:14px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:15px;outline:none;font-family:var(--font)">
+    </div>
+
+    <div style="margin-bottom:16px">
+      <label style="font-size:12px;color:var(--text-secondary);letter-spacing:0.08em;text-transform:uppercase;display:block;margin-bottom:6px">Email</label>
+      <input id="reg-email" type="email" placeholder="you@email.com" style="width:100%;padding:14px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:15px;outline:none;font-family:var(--font)">
+    </div>
+
+    <div style="margin-bottom:24px">
+      <label style="font-size:12px;color:var(--text-secondary);letter-spacing:0.08em;text-transform:uppercase;display:block;margin-bottom:6px">Password</label>
+      <input id="reg-password" type="password" placeholder="Min 8 chars + symbol" style="width:100%;padding:14px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:15px;outline:none;font-family:var(--font)">
+    </div>
+
+    <div id="reg-error" style="display:none;color:var(--danger);font-size:13px;margin-bottom:16px;text-align:center"></div>
+
+    <button id="reg-btn" class="btn-primary" onclick="register()">Create Account</button>
+    
+    <div style="text-align:center;margin-top:20px;font-size:14px;color:var(--text-muted)">
+      Already have an account? 
+      <span onclick="goTo('login')" style="color:var(--accent);cursor:pointer">Sign in</span>
+    </div>
+
+  </div>
+</div>
+
+<!-- ONBOARDING STEP 1: NORTH STAR -->
+<div id="onboard-1" style="display:none;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:2rem;">
+  
+  <div style="width:100%;max-width:320px">
+    
+    <div style="text-align:center;margin-bottom:2rem">
+      <div style="font-size:11px;color:var(--text-muted);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:8px">Step 1 of 3</div>
+      <div style="display:flex;gap:6px;justify-content:center;margin-bottom:24px">
+        <div style="height:3px;width:60px;background:var(--accent);border-radius:2px"></div>
+        <div style="height:3px;width:60px;background:var(--border);border-radius:2px"></div>
+        <div style="height:3px;width:60px;background:var(--border);border-radius:2px"></div>
+      </div>
+      <div style="font-size:26px;font-weight:700;margin-bottom:8px">What's your <span style="background:linear-gradient(135deg,#6c63ff,#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">North Star?</span></div>
+      <div style="font-size:14px;color:var(--text-secondary);line-height:1.6">The one thing you're building toward. Be specific. Include a deadline.</div>
+    </div>
+
+    <div class="text-field" style="margin-bottom:16px">
+      <label>Your primary goal</label>
+      <textarea id="ob-goal" placeholder="e.g. Become the youngest black self-made billionaire from Kenya by age 21" style="min-height:100px"></textarea>
+    </div>
+
+    <div class="text-field" style="margin-bottom:24px">
+      <label>Deadline</label>
+      <input type="date" id="ob-deadline" style="width:100%;padding:12px 14px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;font-family:var(--font);outline:none">
+    </div>
+
+    <div id="ob1-error" style="display:none;color:var(--danger);font-size:13px;margin-bottom:12px;text-align:center"></div>
+
+    <button id="ob1-btn" class="btn-primary" onclick="onboardStep1()">Set My North Star →</button>
+    <div style="text-align:center;margin-top:16px">
+      <span onclick="goTo('dashboard')" style="font-size:13px;color:var(--text-muted);cursor:pointer">Skip for now</span>
+    </div>
+  </div>
+</div>
+
+<!-- ONBOARDING STEP 2: FINANCIAL BASELINE -->
+<div id="onboard-2" style="display:none;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:2rem;">
+  
+  <div style="width:100%;max-width:320px">
+    
+    <div style="text-align:center;margin-bottom:2rem">
+      <div style="font-size:11px;color:var(--text-muted);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:8px">Step 2 of 3</div>
+      <div style="display:flex;gap:6px;justify-content:center;margin-bottom:24px">
+        <div style="height:3px;width:60px;background:var(--accent);border-radius:2px"></div>
+        <div style="height:3px;width:60px;background:var(--accent);border-radius:2px"></div>
+        <div style="height:3px;width:60px;background:var(--border);border-radius:2px"></div>
+      </div>
+      <div style="font-size:26px;font-weight:700;margin-bottom:8px">Where are you <span style="background:linear-gradient(135deg,#6c63ff,#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">starting from?</span></div>
+      <div style="font-size:14px;color:var(--text-secondary);line-height:1.6">Your current net worth — everything you own minus everything you owe. Be honest. This is your baseline.</div>
+    </div>
+
+    <div class="number-field" style="margin-bottom:16px">
+      <label>Current net worth</label>
+      <input type="number" id="ob-networth" placeholder="0" style="width:100%;padding:12px 14px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;font-family:var(--font);outline:none">
+    </div>
+
+    <div class="number-field" style="margin-bottom:24px">
+      <label>Liquid capital (cash available now)</label>
+      <input type="number" id="ob-capital" placeholder="0" style="width:100%;padding:12px 14px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;font-family:var(--font);outline:none">
+    </div>
+
+    <div id="ob2-error" style="display:none;color:var(--danger);font-size:13px;margin-bottom:12px;text-align:center"></div>
+
+    <button id="ob2-btn" class="btn-primary" onclick="onboardStep2()">Continue →</button>
+    <div style="text-align:center;margin-top:16px">
+      <span onclick="goTo('onboard-1')" style="font-size:13px;color:var(--text-muted);cursor:pointer">← Back</span>
+    </div>
+  </div>
+</div>
+
+<!-- ONBOARDING STEP 3: PREFERENCES -->
+<div id="onboard-3" style="display:none;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:2rem;">
+  
+  <div style="width:100%;max-width:320px">
+    
+    <div style="text-align:center;margin-bottom:2rem">
+      <div style="font-size:11px;color:var(--text-muted);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:8px">Step 3 of 3</div>
+      <div style="display:flex;gap:6px;justify-content:center;margin-bottom:24px">
+        <div style="height:3px;width:60px;background:var(--accent);border-radius:2px"></div>
+        <div style="height:3px;width:60px;background:var(--accent);border-radius:2px"></div>
+        <div style="height:3px;width:60px;background:var(--accent);border-radius:2px"></div>
+      </div>
+      <div style="font-size:26px;font-weight:700;margin-bottom:8px">How should VEKTRA <span style="background:linear-gradient(135deg,#6c63ff,#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">talk to you?</span></div>
+      <div style="font-size:14px;color:var(--text-secondary);line-height:1.6">Your reports will match your preferred tone. You can change this anytime.</div>
+    </div>
+
+    <div style="margin-bottom:1.5rem">
+      <label style="font-size:12px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.08em;display:block;margin-bottom:10px">Report tone</label>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div id="tone-harsh" onclick="selectTone('Harsh')" style="padding:14px;border:1px solid var(--border);border-radius:var(--radius-sm);cursor:pointer;transition:all .2s">
+          <div style="font-weight:600;font-size:14px">Harsh 🔥</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:2px">Brutally direct. No softening. Call out failures clearly.</div>
+        </div>
+        <div id="tone-balanced" onclick="selectTone('Balanced')" style="padding:14px;border:1px solid var(--accent);border-radius:var(--radius-sm);cursor:pointer;background:rgba(108,99,255,0.1);transition:all .2s">
+          <div style="font-weight:600;font-size:14px">Balanced ⚖️</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:2px">Honest but constructive. Balance wins with areas to improve.</div>
+        </div>
+        <div id="tone-gentle" onclick="selectTone('Gentle')" style="padding:14px;border:1px solid var(--border);border-radius:var(--radius-sm);cursor:pointer;transition:all .2s">
+          <div style="font-weight:600;font-size:14px">Gentle 🌱</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:2px">Encouraging. Frame challenges as opportunities.</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="ob3-error" style="display:none;color:var(--danger);font-size:13px;margin-bottom:12px;text-align:center"></div>
+
+    <button id="ob3-btn" class="btn-primary" onclick="onboardStep3()">Launch VEKTRA 🚀</button>
+    <div style="text-align:center;margin-top:16px">
+      <span onclick="goTo('onboard-2')" style="font-size:13px;color:var(--text-muted);cursor:pointer">← Back</span>
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN: LOGIN -->
+<div id="login" style="display:none;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:2rem;">
+  
+  <div class="welcome-logo" style="margin-bottom:4px">VEKTRA</div>
+  <div style="font-size:13px;color:var(--text-muted);margin-bottom:36px">Welcome back</div>
+
+  <div style="width:100%;max-width:320px">
+
+    <div style="margin-bottom:16px">
+      <label style="font-size:12px;color:var(--text-secondary);letter-spacing:0.08em;text-transform:uppercase;display:block;margin-bottom:6px">Username</label>
+      <input id="login-username" type="text" placeholder="roophy" style="width:100%;padding:14px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:15px;outline:none;font-family:var(--font)">
+    </div>
+
+    <div style="margin-bottom:24px">
+      <label style="font-size:12px;color:var(--text-secondary);letter-spacing:0.08em;text-transform:uppercase;display:block;margin-bottom:6px">Password</label>
+      <input id="login-password" type="password" placeholder="Your password" style="width:100%;padding:14px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:15px;outline:none;font-family:var(--font)">
+    </div>
+
+    <div id="login-error" style="display:none;color:var(--danger);font-size:13px;margin-bottom:16px;text-align:center"></div>
+
+    <button id="login-btn" class="btn-primary" onclick="login()">Sign In</button>
+
+    <div style="text-align:center;margin-top:20px;font-size:14px;color:var(--text-muted)">
+      Don't have an account? 
+      <span onclick="goTo('register')" style="color:var(--accent);cursor:pointer">Get Started</span>
+    </div>
+
+  </div>
+</div>
+
+<!-- SCREEN 4: DASHBOARD -->
+<div id="dashboard" style="display:none;flex-direction:column;min-height:100vh;padding:1.5rem 1.5rem 6.5rem 1.5rem;max-width:420px;margin:0 auto">
+  
+  <!-- Header Layout Elements -->
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2rem;padding-top:1rem">
+    <div>
+      <div id="dash-greeting" style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.12em">Good morning</div>
+      <div id="dash-username" style="font-size:22px;font-weight:800;color:var(--text-primary);letter-spacing:-0.02em;margin-top:2px">—</div>
+      <div id="dash-date" style="font-size:12px;color:var(--text-muted);margin-top:4px">—</div>
+    </div>
+    <div style="display:flex;gap:16px;align-items:center">
+      <div style="font-size:22px;cursor:pointer;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.2))" onclick="navTo('analytics')" title="Analytics">📊</div>
+      <div style="font-size:22px;cursor:pointer;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.2))" onclick="openProfile()" title="Profile">⚙️</div>
+    </div>
+  </div>
+
+  <!-- VEKTRA Premium Vector Score Card Container -->
+  <div class="score-card-wrapper" style="margin-bottom:1.25rem">
+    <div class="score-card-inner" style="position: relative; overflow: hidden; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.12em;">VEKTRA Trajectory Score</div>
+        <div id="dash-vector-badge" style="font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 20px; background: rgba(108,99,255,0.15); color: #6c63ff;">STABLE</div>
+      </div>
+      <div id="dash-score" style="font-size:64px;font-weight:800;background:linear-gradient(135deg,#6c63ff,#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1;letter-spacing:-0.03em;">—</div>
+      <div style="font-size:11px;color:var(--text-muted);margin-top:4px">INDEX SCALE / 100</div>
+
+      <!-- Micro-Vector Metrics Divider Row Module -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.05);">
+        <div>
+          <div style="font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Direction Angle</div>
+          <div id="dash-vector-angle" style="font-size: 13px; font-weight: 600; color: var(--text-primary);">0.0° (θ)</div>
+        </div>
+        <div>
+          <div style="font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">AI Verification</div>
+          <div id="dash-vector-accuracy" style="font-size: 13px; font-weight: 600; color: var(--text-primary);">0% Match</div>
+        </div>
+      </div>
+      <div id="dash-trajectory" style="margin-top:14px;font-size:12px;color:var(--text-secondary);line-height:1.4;">Log today to update your score vector displacement.</div>
+    </div>
+  </div>
+
+  <!-- Smart Insight Container Card -->
+  <div id="smart-insight-card" style="background:linear-gradient(135deg,rgba(108,99,255,0.08),rgba(236,72,153,0.08));border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
+    <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">Today's Insight</div>
+    <div id="smart-insight" style="font-size:14px;color:var(--text-primary);line-height:1.5">Log your first snapshot to unlock personalized insights</div>
+    <div id="silent-killers-container" style="display:flex;flex-direction:column;gap:0.5rem;margin-top:0.75rem"></div>
+  </div>
+
+  <!-- Quick Stats Grid Row Profile -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:1rem">
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:1rem">
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.05em;">NET WORTH</div>
+      <div id="dash-networth" style="font-size:18px;font-weight:700;color:var(--text-primary);">—</div>
+    </div>
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:1rem">
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.05em;">SURVIVAL RUNWAY</div>
+      <div id="dash-runway" style="font-size:18px;font-weight:700;color:var(--text-primary);">— days</div>
+    </div>
+  </div>
+
+  <!-- Score Trend Native SVG Grid -->
+  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:1rem;margin-bottom:1rem">
+    <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">7-Day Trajectory</div>
+    <svg id="score-chart" viewBox="0 0 300 80" style="width:100%;height:80px"></svg>
+    <div id="chart-labels" style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-muted);margin-top:4px"></div>
+  </div>
+
+  <!-- Streak Metrics Container Card -->
+  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:1rem;margin-bottom:1rem;display:flex;align-items:center;justify-content:space-between">
+    <div>
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">CURRENT STREAK</div>
+      <div id="dash-streak" style="font-size:24px;font-weight:700">🔥 0 days</div>
+    </div>
+    <div style="font-size:11px;color:var(--text-muted);text-align:right;line-height:1.4">Log daily<br>to keep it alive</div>
+  </div>
+
+  <!-- Weekly Tracking Variables Meta Row -->
+  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:1rem;margin-bottom:1rem">
+    <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.08em">This week summary</div>
+    <div id="dash-week-summary" style="font-size:16px;font-weight:700;color:var(--text-primary)">0 logs • 0 unique days</div>
+    <div id="dash-week-status" style="font-size:13px;color:var(--text-secondary);margin-top:4px">Keep logging to unlock richer weekly insights</div>
+  </div>
+
+  <!-- Real-time Pulse Metric -->
+  <div style="background:linear-gradient(135deg,rgba(108,99,255,0.06),rgba(236,72,153,0.06));border:1px solid var(--border);border-radius:var(--radius-sm);padding:1rem;margin-bottom:1rem">
+    <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.08em">Today’s pulse</div>
+    <div id="dash-lastlog" style="font-size:14px;font-weight:600;color:var(--text-primary)">No logs yet</div>
+    <div id="dash-status" style="font-size:13px;color:var(--text-secondary);margin-top:4px">Start logging to build momentum</div>
+  </div>
+
+  <!-- Target North Star Parameter Row -->
+  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:1rem;margin-bottom:1.5rem">
+    <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.05em;">NORTH STAR</div>
+    <div id="dash-northstar" style="font-size:14px;color:var(--text-secondary);font-style:italic">Not set yet</div>
+  </div>
+
+  <!-- First Time Onboarding Prompt Banner -->
+  <div id="first-log-prompt" style="display:none;background:linear-gradient(135deg,rgba(108,99,255,0.15),rgba(236,72,153,0.15));border:1px solid var(--accent);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem;text-align:center">
+    <div style="font-size:24px;margin-bottom:8px">🚀</div>
+    <div style="font-weight:700;margin-bottom:6px">Your vector is set.</div>
+    <div style="font-size:13px;color:var(--text-secondary);margin-bottom:12px">Log your first day to activate your VEKTRA score.</div>
+    <button class="btn-primary" onclick="openDailyLog()" style="width:100%">Log Your First Day</button>
+  </div>
+
+  <!-- Operational Core System Navigation Action Toggles -->
+  <button class="btn-primary" onclick="openDailyLog()">+ Log Today</button>
+
+  <button type="button" class="btn-secondary" style="margin-top:12px" onclick="event.preventDefault(); event.stopPropagation(); generateReport(event)">
+    View Weekly Report
+  </button>
+
+  <button class="btn-secondary" style="margin-top:12px; margin-bottom: 1rem;" onclick="openHistory()">📋 View Log History</button>
+
+</div>
+
+<!-- SCREEN 5: DAILY LOG -->
+<div id="daily-log" style="display:none;flex-direction:column;min-height:100vh;padding:1.5rem;max-width:420px;margin:0 auto">
+
+  <!-- Header -->
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;padding-top:1rem">
+    <div>
+      <div id="log-date" style="font-size:18px;font-weight:700">Today</div>
+    </div>
+    <div onclick="goTo('dashboard')" style="color:var(--text-muted);cursor:pointer;font-size:13px">← Back</div>
+  </div>
+
+  <!-- Progress bar -->
+  <div style="background:var(--bg-card);border-radius:4px;height:4px;margin-bottom:1rem;overflow:hidden">
+    <div id="log-progress" style="height:100%;background:linear-gradient(90deg,#6c63ff,#ec4899);width:0%;transition:width .3s"></div>
+  </div>
+
+  <div id="daily-log-status" style="display:none;background:rgba(108,99,255,0.1);border:1px solid rgba(108,99,255,0.3);border-radius:var(--radius-sm);padding:.75rem;margin-bottom:1rem;font-size:13px;color:var(--text-secondary);text-align:center"></div>
+
+  <!-- GROUP 1: MENTAL -->
+  <div class="log-group" id="group-mental">
+    <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:1rem">Mental & Emotional</div>
+
+    <div class="slider-field">
+      <div class="slider-label"><span>Mood</span><span id="val-mood">5</span></div>
+      <input type="range" min="1" max="10" value="5" id="inp-mood" oninput="updateSlider('mood')">
+    </div>
+
+    <div class="slider-field">
+      <div class="slider-label"><span>Energy</span><span id="val-energy">5</span></div>
+      <input type="range" min="1" max="10" value="5" id="inp-energy" oninput="updateSlider('energy')">
+    </div>
+
+    <div class="slider-field">
+      <div class="slider-label"><span>Focus Level</span><span id="val-focus">5</span></div>
+      <input type="range" min="1" max="10" value="5" id="inp-focus" oninput="updateSlider('focus')">
+    </div>
+
+    <div class="slider-field">
+      <div class="slider-label"><span>Social Battery</span><span id="val-social">5</span></div>
+      <input type="range" min="1" max="10" value="5" id="inp-social" oninput="updateSlider('social')">
+    </div>
+
+    <div class="slider-field">
+      <div class="slider-label"><span>Health Battery</span><span id="val-health">5</span></div>
+      <input type="range" min="1" max="10" value="5" id="inp-health" oninput="updateSlider('health')">
+    </div>
+
+    <div class="text-field">
+      <label>Uncomfortable moments today</label>
+      <textarea id="inp-uncomfortable" placeholder="What made you uneasy and how did you react?"></textarea>
+    </div>
+  </div>
+
+  <!-- GROUP 2: FINANCE -->
+  <div class="log-group" id="group-finance">
+    <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:1rem">Finance</div>
+
+    <div class="number-field">
+      <label>Daily Income <span style="color:var(--text-muted)">(${currentUser?.currency || 'KES'})</span></label>
+      <input type="number" id="inp-income" placeholder="0" min="0">
+    </div>
+
+    <div class="number-field">
+      <label>Expenses</label>
+      <input type="number" id="inp-expenses" placeholder="0" min="0">
+    </div>
+
+    <div class="number-field">
+      <label>Saved / Invested</label>
+      <input type="number" id="inp-savings" placeholder="0" min="0">
+    </div>
+
+    <div class="text-field">
+      <label>Any emergency? <span style="color:var(--text-muted)">(optional)</span></label>
+      <input type="text" id="inp-emergency" placeholder="Unexpected expense — describe it">
+    </div>
+  </div>
+
+  <!-- GROUP 3: GOALS -->
+  <div class="log-group" id="group-goals">
+    <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:1rem">Goals & Decisions</div>
+
+    <div class="text-field">
+      <label>Tomorrow's main goal</label>
+      <input type="text" id="inp-tomorrow" placeholder="The one thing you must do tomorrow">
+    </div>
+
+    <div id="goal-hit-section" style="margin-bottom:1rem">
+      <label style="font-size:13px;color:var(--text-secondary);display:block;margin-bottom:8px">Did you hit yesterday's goal?</label>
+      <div style="display:flex;gap:10px">
+        <button id="btn-hit-yes" onclick="setGoalHit(true)" style="flex:1;padding:10px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;font-family:var(--font);font-size:14px">✓ Yes</button>
+        <button id="btn-hit-no" onclick="setGoalHit(false)" style="flex:1;padding:10px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;font-family:var(--font);font-size:14px">✗ No</button>
+      </div>
+    </div>
+
+    <div class="text-field">
+      <label>Best decision today</label>
+      <input type="text" id="inp-best" placeholder="Best call you made">
+    </div>
+
+    <div class="text-field">
+      <label>Worst decision today</label>
+      <input type="text" id="inp-worst" placeholder="Biggest mistake or regret">
+    </div>
+
+    <div class="text-field">
+      <label>What did you avoid and why?</label>
+      <textarea id="inp-avoided" placeholder="Tasks you dodged + plan to do them"></textarea>
+    </div>
+  </div>
+
+  <!-- GROUP 4: BODY -->
+  <div class="log-group" id="group-body">
+    <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:1rem">Body & Health</div>
+
+    <div class="slider-field">
+      <div class="slider-label"><span>Sleep Hours</span><span id="val-sleep">7</span></div>
+      <input type="range" min="0" max="12" step="0.5" value="7" id="inp-sleep" oninput="updateSlider('sleep')">
+    </div>
+
+    <div class="number-field">
+      <label>Screen Time (hours)</label>
+      <input type="number" id="inp-screen" placeholder="0" min="0" max="24" step="0.5">
+    </div>
+
+    <div class="text-field">
+      <label>Diet / how body felt</label>
+      <textarea id="inp-diet" placeholder="What you ate + how your body felt"></textarea>
+    </div>
+  </div>
+
+  <!-- GROUP 5: GROWTH -->
+  <div class="log-group" id="group-growth">
+    <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:1rem">Learning & Growth</div>
+
+    <div class="text-field">
+      <label>Skills learned today</label>
+      <textarea id="inp-skills" placeholder="New knowledge or skill gained"></textarea>
+    </div>
+
+    <div class="text-field">
+      <label>New ideas / thoughts</label>
+      <textarea id="inp-ideas" placeholder="Capture ideas before they disappear"></textarea>
+    </div>
+
+    <div class="text-field">
+      <label>Gratitude line</label>
+      <input type="text" id="inp-gratitude" placeholder="One thing you're grateful for">
+    </div>
+
+    <div class="text-field">
+      <label>Funny line 😄</label>
+      <input type="text" id="inp-funny" placeholder="Something that made you laugh">
+    </div>
+  </div>
+
+  <!-- GROUP 6: PERFORMANCE -->
+  <div class="log-group" id="group-performance">
+    <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:1rem">Performance & Focus</div>
+
+    <div class="slider-field">
+      <div class="slider-label"><span>Focus Hours (deep work)</span><span id="val-focushours">0</span></div>
+      <input type="range" min="0" max="12" step="0.5" value="0" id="inp-focushours" oninput="updateSlider('focushours')">
+    </div>
+
+    <div class="slider-field">
+      <div class="slider-label"><span>Environment Rating</span><span id="val-env">5</span></div>
+      <input type="range" min="1" max="10" value="5" id="inp-env" oninput="updateSlider('env')">
+    </div>
+
+    <div class="text-field">
+      <label>Focus hours on specific task</label>
+      <input type="number" id="inp-oppcost" placeholder="Hours on low value tasks" min="0" step="0.5">
+    </div>
+  </div>
+
+  <!-- Submit -->
+  <div style="margin-top:1.5rem;margin-bottom:3rem">
+    <div id="log-error" style="display:none;color:var(--danger);font-size:13px;margin-bottom:12px;text-align:center"></div>
+    <button class="btn-primary" id="submit-log-btn" onclick="submitLog()">Submit Today's Log 🔥</button>
+  </div>
+
+  <!-- Empty State (shown when no data) -->
+  <div id="daily-log-empty" style="display:none;text-align:center;padding:3rem 1.5rem">
+    <div style="font-size:48px;margin-bottom:1rem">📝</div>
+    <div style="font-size:16px;font-weight:600;color:var(--text-primary);margin-bottom:8px">Start your first daily log</div>
+    <div style="font-size:13px;color:var(--text-muted);margin-bottom:1.5rem">Track your mood, sleep, and progress to build your trajectory</div>
+    <button class="btn-primary" onclick="document.getElementById('daily-log-empty').style.display='none';document.querySelector('#daily-log > div:not(#daily-log-empty)').style.display='block'">Begin Logging →</button>
+  </div>
+
+</div>
+
+<!-- SCREEN: REPORTS -->
+<div id="reports" style="display:none;flex-direction:column;min-height:100vh;padding:1.5rem;max-width:420px;margin:0 auto">
+
+  <!-- Header -->
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;padding-top:1rem">
+    <div>
+      <div style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.1em">Weekly Report</div>
+      <div id="report-period" style="font-size:18px;font-weight:700">This Week</div>
+    </div>
+    <div style="display:flex;gap:12px;align-items:center">
+      <div style="font-size:20px;cursor:pointer" onclick="openTrajectoryHistory()" title="History">📜</div>
+      <div onclick="goTo('dashboard')" style="color:var(--text-muted);cursor:pointer;font-size:13px">← Back</div>
+    </div>
+  </div>
+
+  <!-- Weekly Comparison -->
+  <div id="weekly-comparison" style="background:linear-gradient(135deg,#1a1a2e,#16213e);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
+    <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">vs Last Week</div>
+    <div id="comparison-metrics" style="display:flex;flex-direction:column;gap:8px">
+      <div style="display:flex;align-items:center;justify-content:center;height:40px;color:var(--text-muted);font-size:13px">Loading comparison...</div>
+    </div>
+  </div>
+
+  <!-- Score Card -->
+  <div style="background:linear-gradient(135deg,#1a1a2e,#16213e);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem;margin-bottom:1rem;text-align:center">
+    <div style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px">Composite VEKTRA Score</div>
+    <div id="report-score" style="font-size:56px;font-weight:800;background:linear-gradient(135deg,#6c63ff,#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1">—</div>
+    <div style="font-size:12px;color:var(--text-muted);margin-top:4px">out of 100</div>
+  </div>
+
+  <!-- Quick Stats -->
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:1rem">
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:.75rem;text-align:center">
+      <div style="font-size:10px;color:var(--text-muted);margin-bottom:4px">UNIQUE DAYS</div>
+      <div id="report-days" style="font-size:20px;font-weight:700">—</div>
+    </div>
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:.75rem;text-align:center">
+      <div style="font-size:10px;color:var(--text-muted);margin-bottom:4px">REPORT TIMER</div>
+      <div id="report-timer" style="font-size:20px;font-weight:700">—</div>
+    </div>
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:.75rem;text-align:center">
+      <div style="font-size:10px;color:var(--text-muted);margin-bottom:4px">CASH FLOW</div>
+      <div id="report-cashflow" style="font-size:16px;font-weight:700">—</div>
+    </div>
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:.75rem;text-align:center">
+      <div style="font-size:10px;color:var(--text-muted);margin-bottom:4px">GOALS HIT</div>
+      <div id="report-goals" style="font-size:20px;font-weight:700">—</div>
+    </div>
+  </div>
+
+  <div id="report-readiness" style="display:block;background:rgba(236,72,153,0.08);border:1px solid rgba(236,72,153,0.3);border-radius:var(--radius-sm);padding:.85rem;margin-bottom:1rem;font-size:13px;color:var(--text-secondary)"></div>
+
+  <!-- AI Narrative -->
+  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
+    <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">VEKTRA Analysis</div>
+    <div id="report-narrative" style="font-size:14px;color:var(--text-secondary);line-height:1.8;white-space:pre-wrap">Generating your report...</div>
+    <div id="report-empty" style="display:none;text-align:center;padding:2rem">
+      <div style="font-size:48px;margin-bottom:1rem">📊</div>
+      <div style="font-size:16px;font-weight:600;color:var(--text-primary);margin-bottom:8px">Not enough data yet</div>
+      <div style="font-size:13px;color:var(--text-muted)">Log at least 3 days to unlock your first weekly report</div>
+    </div>
+  </div>
+
+  <!-- Engine Breakdown -->
+  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
+    <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">Signal Breakdown</div>
+    
+    <div class="engine-bar" id="bar-financial" data-label="Financial" data-color="#22c55e"></div>
+    <div class="engine-bar" id="bar-mental" data-label="Mental" data-color="#6c63ff"></div>
+    <div class="engine-bar" id="bar-execution" data-label="Execution" data-color="#ec4899"></div>
+    <div class="engine-bar" id="bar-body" data-label="Body" data-color="#f59e0b"></div>
+    <div class="engine-bar" id="bar-growth" data-label="Growth" data-color="#06b6d4"></div>
+  </div>
+
+  <!-- Regenerate -->
+  <button class="btn-secondary" style="margin-bottom:3rem" onclick="loadReport()">↺ Regenerate Report</button>
+
+</div>
+
+<!-- SCREEN: PROFILE -->
+<div id="profile" style="display:none;flex-direction:column;min-height:100vh;padding:1.5rem;max-width:420px;margin:0 auto">
+
+  <!-- Header -->
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;padding-top:1rem">
+    <div>
+      <div style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.1em">Profile</div>
+      <div id="profile-username" style="font-size:18px;font-weight:700">—</div>
+    </div>
+    <div onclick="goTo('dashboard')" style="color:var(--text-muted);cursor:pointer;font-size:13px">← Back</div>
+  </div>
+
+  <!-- Tier Badge -->
+  <div style="background:linear-gradient(135deg,#1a1a2e,#16213e);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem;display:flex;justify-content:space-between;align-items:center">
+    <div>
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">CURRENT PLAN</div>
+      <div id="profile-tier" style="font-size:18px;font-weight:700;color:var(--accent)">Free</div>
+    </div>
+    <button onclick="openUpgrade()" style="padding:8px 16px;background:linear-gradient(135deg,#6c63ff,#ec4899);border:none;border-radius:var(--radius-sm);color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font)">Upgrade</button>
+  </div>
+
+  <!-- Stats Row -->
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:1rem">
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:.75rem;text-align:center">
+      <div style="font-size:10px;color:var(--text-muted);margin-bottom:4px">STREAK</div>
+      <div id="profile-streak" style="font-size:20px;font-weight:700">—</div>
+    </div>
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:.75rem;text-align:center">
+      <div style="font-size:10px;color:var(--text-muted);margin-bottom:4px">SCORE</div>
+      <div id="profile-score" style="font-size:20px;font-weight:700">—</div>
+    </div>
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:.75rem;text-align:center">
+      <div style="font-size:10px;color:var(--text-muted);margin-bottom:4px">LOGS</div>
+      <div id="profile-logs" style="font-size:20px;font-weight:700">—</div>
+    </div>
+  </div>
+
+  <!-- Update North Star -->
+  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
+    <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">North Star</div>
+    <textarea id="profile-northstar" style="width:100%;padding:12px 14px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;font-family:var(--font);outline:none;resize:vertical;min-height:80px"></textarea>
+  </div>
+
+  <!-- Goal Progress -->
+  <div style="background:linear-gradient(135deg,#1a1a2e,#16213e);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
+    <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">North Star Progress</div>
+    <div style="margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+        <span style="font-size:13px;color:var(--text-secondary)">Overall Progress</span>
+        <span id="goal-progress-pct" style="font-size:13px;font-weight:700;color:var(--accent)">0%</span>
+      </div>
+      <div style="height:8px;background:var(--bg-secondary);border-radius:4px;overflow:hidden">
+        <div id="goal-progress-bar" style="height:100%;background:linear-gradient(90deg,#6c63ff,#ec4899);width:0%;transition:width 0.5s ease"></div>
+      </div>
+    </div>
+    <div id="next-milestone" style="font-size:13px;color:var(--text-muted)">No milestones set yet</div>
+    <button onclick="goTo('goals')" style="margin-top:12px;padding:8px 16px;background:rgba(108,99,255,0.2);border:1px solid var(--accent);border-radius:var(--radius-sm);color:var(--accent);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font)">Manage Milestones →</button>
+  </div>
+
+  <!-- Subscription Upgrade Button -->
+  <div onclick="goTo('subscriptions')" style="background:linear-gradient(135deg,rgba(108,99,255,0.15),rgba(236,72,153,0.15));border:1px solid var(--accent);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem;cursor:pointer;transition:all 0.2s ease" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <div>
+        <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px">Upgrade</div>
+        <div style="font-size:14px;font-weight:600;color:var(--text-primary)">Unlock Premium Features</div>
+      </div>
+      <div style="font-size:20px">⚡</div>
+    </div>
+  </div>
+
+  <!-- Achievements Section -->
+  <div onclick="goTo('achievements')" style="background:linear-gradient(135deg,rgba(108,99,255,0.12),rgba(236,72,153,0.12));border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem;cursor:pointer;transition:all 0.2s ease" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <div>
+        <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px">Achievements</div>
+        <div id="achievement-count" style="font-size:14px;font-weight:600;color:var(--text-primary)">Loading...</div>
+      </div>
+      <div style="font-size:20px">🏆</div>
+    </div>
+  </div>
+
+  <!-- Goal Prediction -->
+  <div id="goal-prediction-card" style="background:linear-gradient(135deg,rgba(108,99,255,0.12),rgba(236,72,153,0.12));border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
+    <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">Goal Prediction</div>
+    <div id="prediction-content" style="font-size:13px;color:var(--text-primary);line-height:1.5">Loading prediction...</div>
+  </div>
+
+  <!-- Personalization Settings -->
+  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
+    <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">Personalization</div>
+    
+    <!-- Metric Thresholds -->
+    <div style="margin-bottom:16px">
+      <label style="font-size:12px;color:var(--text-muted);margin-bottom:6px;display:block">Target VEKTRA Score</label>
+      <input type="number" id="target-score" value="80" min="0" max="100" style="width:100%;padding:10px 12px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;font-family:var(--font);outline:none">
+    </div>
+    
+    <div style="margin-bottom:16px">
+      <label style="font-size:12px;color:var(--text-muted);margin-bottom:6px;display:block">Minimum Sleep Hours</label>
+      <input type="number" id="min-sleep" value="7" min="0" max="12" step="0.5" style="width:100%;padding:10px 12px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;font-family:var(--font);outline:none">
+    </div>
+    
+    <div style="margin-bottom:16px">
+      <label style="font-size:12px;color:var(--text-muted);margin-bottom:6px;display:block">Target Focus Hours</label>
+      <input type="number" id="target-focus" value="4" min="0" max="16" step="0.5" style="width:100%;padding:10px 12px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;font-family:var(--font);outline:none">
+    </div>
+    
+    <!-- Dashboard Preferences -->
+    <div style="margin-bottom:12px">
+      <label style="font-size:12px;color:var(--text-muted);margin-bottom:8px;display:block">Dashboard Cards</label>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+          <input type="checkbox" id="show-score-card" checked style="accent-color:var(--accent)">
+          <span style="font-size:13px;color:var(--text-secondary)">Show VEKTRA Score Card</span>
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+          <input type="checkbox" id="show-insight-card" checked style="accent-color:var(--accent)">
+          <span style="font-size:13px;color:var(--text-secondary)">Show Smart Insight Card</span>
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+          <input type="checkbox" id="show-comparison-card" checked style="accent-color:var(--accent)">
+          <span style="font-size:13px;color:var(--text-secondary)">Show Weekly Comparison</span>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <!-- Data Export -->
+  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
+    <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">Data Export</div>
+    <div style="font-size:13px;color:var(--text-muted);margin-bottom:12px">Download your VEKTRA data</div>
+    <div style="display:flex;gap:8px">
+      <button onclick="exportData('csv')" style="flex:1;padding:12px;background:rgba(108,99,255,0.2);border:1px solid var(--accent);border-radius:var(--radius-sm);color:var(--accent);font-size:14px;font-weight:600;cursor:pointer;font-family:var(--font)">Export CSV</button>
+      <button onclick="exportData('json')" style="flex:1;padding:12px;background:rgba(108,99,255,0.2);border:1px solid var(--accent);border-radius:var(--radius-sm);color:var(--accent);font-size:14px;font-weight:600;cursor:pointer;font-family:var(--font)">Export JSON</button>
+    </div>
+  </div>
+
+  <!-- Financial Health -->
+  <div style="background:linear-gradient(135deg,rgba(108,99,255,0.12),rgba(236,72,153,0.12));border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
+    <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">Financial Health</div>
+    <div id="financial-health-content" style="font-size:13px;color:var(--text-primary);line-height:1.5">Loading financial data...</div>
+  </div>
+
+  <!-- Monthly Replay -->
+  <div style="background:linear-gradient(135deg,rgba(108,99,255,0.12),rgba(236,72,153,0.12));border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
+    <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">Monthly Replay</div>
+    <div style="display:flex;gap:8px;margin-bottom:12px">
+      <select id="replay-month" onchange="loadMonthlyReplay()" style="flex:1;padding:10px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;font-family:var(--font);outline:none">
+        <option value="1">January</option>
+        <option value="2">February</option>
+        <option value="3">March</option>
+        <option value="4">April</option>
+        <option value="5">May</option>
+        <option value="6">June</option>
+        <option value="7">July</option>
+        <option value="8">August</option>
+        <option value="9">September</option>
+        <option value="10">October</option>
+        <option value="11">November</option>
+        <option value="12">December</option>
+      </select>
+      <select id="replay-year" onchange="loadMonthlyReplay()" style="flex:1;padding:10px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;font-family:var(--font);outline:none">
+        <option value="2024">2024</option>
+        <option value="2025">2025</option>
+        <option value="2026">2026</option>
+      </select>
+    </div>
+    <div id="monthly-replay-content" style="font-size:13px;color:var(--text-primary);line-height:1.5">Select a month to view replay...</div>
+  </div>
+
+  <!-- Feedback Tone -->
+  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
+    <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">Report Tone</div>
+    <div style="display:flex;gap:8px">
+      <button id="ptone-harsh" onclick="setProfileTone('Harsh')" style="flex:1;padding:10px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;font-family:var(--font);font-size:13px">🔥 Harsh</button>
+      <button id="ptone-balanced" onclick="setProfileTone('Balanced')" style="flex:1;padding:10px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;font-family:var(--font);font-size:13px">⚖️ Balanced</button>
+      <button id="ptone-gentle" onclick="setProfileTone('Gentle')" style="flex:1;padding:10px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;font-family:var(--font);font-size:13px">🌱 Gentle</button>
+    </div>
+  </div>
+
+  <!-- Daily Reminder -->
+  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
+    <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">Daily Reminder</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <span style="font-size:13px;color:var(--text-secondary)">Enable notifications</span>
+      <button id="notification-toggle" onclick="toggleNotifications()" style="padding:8px 16px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;font-size:13px;font-family:var(--font)">Enable</button>
+    </div>
+    <div id="reminder-time-container" style="display:none">
+      <label style="font-size:12px;color:var(--text-muted);margin-bottom:6px;display:block">Reminder time</label>
+      <input type="time" id="reminder-time" value="20:00" style="width:100%;padding:10px 12px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;font-family:var(--font);outline:none">
+    </div>
+    <div id="notification-status" style="font-size:12px;color:var(--text-muted);margin-top:8px">Notifications not enabled</div>
+  </div>
+
+  <!-- Save Button -->
+  <div id="profile-error" style="display:none;color:var(--danger);font-size:13px;text-align:center;margin-bottom:8px"></div>
+  <div id="profile-success" style="display:none;color:var(--success);font-size:13px;text-align:center;margin-bottom:12px">✓ Profile updated</div>
+  <button id="profile-save-btn" class="btn-primary" onclick="saveProfile()">Save Changes</button>
+
+
+
+
+
+  <!-- Settings + Sign Out buttons -->
+  <button class="btn-secondary" style="margin-top:12px;width:100%" onclick="openSettings()">⚙ Settings</button>
+  <button class="btn-secondary" style="margin-top:12px;margin-bottom:1rem;width:100%" onclick="logout()">Sign Out</button>
+
+  <!-- Referral Code -->
+  <div style="background:linear-gradient(135deg,#1a1a2e,#16213e);border:1px solid var(--accent);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem;margin-top:1rem">
+    <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">Your Referral Code</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem">
+      <div id="referral-code" style="font-size:22px;font-weight:800;letter-spacing:0.1em;background:linear-gradient(135deg,#6c63ff,#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">—</div>
+      <button onclick="copyReferral()" style="padding:8px 14px;background:rgba(108,99,255,0.2);border:1px solid var(--accent);border-radius:var(--radius-sm);color:var(--accent);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font)">Copy</button>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-muted);margin-bottom:.75rem">
+      <span>Friends joined</span>
+      <span id="referral-count" style="color:var(--text-primary);font-weight:600">0</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-muted);margin-bottom:.75rem">
+      <span>VEK Credits earned</span>
+      <span id="vek-credits" style="color:var(--gold);font-weight:600">0</span>
+    </div>
+    <button onclick="shareReferral()" style="width:100%;padding:10px;background:linear-gradient(135deg,#6c63ff,#ec4899);border:none;border-radius:var(--radius-sm);color:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:var(--font)">Share VEKTRA 🔥</button>
+  </div>
+
+</div>
+
+<!-- SCREEN: GOALS / MILESTONES -->
+<div id="goals" style="display:none;flex-direction:column;min-height:100vh;padding:1.5rem;max-width:420px;margin:0 auto">
+
+  <!-- Header -->
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;padding-top:1rem">
+    <div>
+      <div style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.1em">Milestones</div>
+      <div style="font-size:18px;font-weight:700">North Star Breakdown</div>
+    </div>
+    <div onclick="goTo('profile')" style="color:var(--text-muted);cursor:pointer;font-size:13px">← Back</div>
+  </div>
+
+  <!-- Progress Overview -->
+  <div style="background:linear-gradient(135deg,#1a1a2e,#16213e);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
+    <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">Overall Progress</div>
+    <div style="margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+        <span style="font-size:13px;color:var(--text-secondary)">Milestones Completed</span>
+        <span id="goals-completed" style="font-size:13px;font-weight:700;color:var(--accent)">0/0</span>
+      </div>
+      <div style="height:8px;background:var(--bg-secondary);border-radius:4px;overflow:hidden">
+        <div id="goals-progress-bar" style="height:100%;background:linear-gradient(90deg,#6c63ff,#ec4899);width:0%;transition:width 0.5s ease"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add New Milestone -->
+  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
+    <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">Add New Milestone</div>
+    <div class="text-field" style="margin-bottom:12px">
+      <label>Milestone Title</label>
+      <input type="text" id="goal-title" placeholder="e.g. Launch MVP product" style="width:100%;padding:12px 14px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;font-family:var(--font);outline:none">
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+      <div class="number-field">
+        <label>Intensity (1-10)</label>
+        <input type="number" id="goal-intensity" placeholder="5" min="1" max="10" style="width:100%;padding:12px 14px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;font-family:var(--font);outline:none">
+      </div>
+      <div class="number-field">
+        <label>Effort (1-10)</label>
+        <input type="number" id="goal-effort" placeholder="5" min="1" max="10" style="width:100%;padding:12px 14px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;font-family:var(--font);outline:none">
+      </div>
+    </div>
+    <div class="text-field" style="margin-bottom:12px">
+      <label>Target Date</label>
+      <input type="date" id="goal-deadline" style="width:100%;padding:12px 14px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;font-family:var(--font);outline:none">
+    </div>
+    <div id="goal-error" style="display:none;color:var(--danger);font-size:13px;margin-bottom:8px;text-align:center"></div>
+    <button id="goal-add-btn" class="btn-primary" onclick="addGoal()">Add Milestone</button>
+  </div>
+
+  <!-- Milestones List -->
+  <div id="goals-list" style="display:flex;flex-direction:column;gap:12px">
+    <!-- Goals will be rendered here -->
+  </div>
+
+  <!-- Empty State -->
+  <div id="goals-empty" style="display:none;text-align:center;padding:3rem 1.5rem">
+    <div style="font-size:48px;margin-bottom:1rem">🎯</div>
+    <div style="font-size:16px;font-weight:600;color:var(--text-primary);margin-bottom:8px">No milestones yet</div>
+    <div style="font-size:13px;color:var(--text-muted);margin-bottom:1.5rem">Break your North Star into smaller achievable steps</div>
+  </div>
+
+</div>
+
+<!-- SCREEN: ANALYTICS -->
+<div id="analytics" style="display:none;flex-direction:column;min-height:100vh;padding:1.5rem;max-width:420px;margin:0 auto">
+
+  <!-- Header -->
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;padding-top:1rem">
+    <div>
+      <div style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.1em">Analytics</div>
+      <div style="font-size:18px;font-weight:700">Historical Trends</div>
+    </div>
+    <div onclick="goTo('dashboard')" style="color:var(--text-muted);cursor:pointer;font-size:13px">← Back</div>
+  </div>
+
+  <!-- Period Selector -->
+  <div style="display:flex;gap:8px;margin-bottom:1.5rem">
+    <button onclick="loadAnalytics('7d')" id="period-7d" class="period-btn" style="flex:1;padding:10px;border-radius:var(--radius-sm);border:1px solid var(--accent);background:rgba(108,99,255,0.2);color:var(--accent);cursor:pointer;font-size:13px;font-family:var(--font)">7D</button>
+    <button onclick="loadAnalytics('30d')" id="period-30d" class="period-btn" style="flex:1;padding:10px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;font-size:13px;font-family:var(--font)">30D</button>
+    <button onclick="loadAnalytics('90d')" id="period-90d" class="period-btn" style="flex:1;padding:10px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;font-size:13px;font-family:var(--font)">90D</button>
+    <button onclick="loadAnalytics('1y')" id="period-1y" class="period-btn" style="flex:1;padding:10px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;font-size:13px;font-family:var(--font)">1Y</button>
+  </div>
+
+  <!-- VEKTRA Score Chart -->
+  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
+    <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">VEKTRA Score</div>
+    <div id="chart-vektra" style="height:150px;position:relative">
+      <div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-muted);font-size:13px">Loading...</div>
+    </div>
+  </div>
+
+  <!-- Net Worth Chart -->
+  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
+    <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">Net Worth</div>
+    <div id="chart-networth" style="height:150px;position:relative">
+      <div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-muted);font-size:13px">Loading...</div>
+    </div>
+  </div>
+
+  <!-- Sleep Chart -->
+  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
+    <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">Sleep Hours</div>
+    <div id="chart-sleep" style="height:150px;position:relative">
+      <div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-muted);font-size:13px">Loading...</div>
+    </div>
+  </div>
+
+  <!-- Mood Chart -->
+  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
+    <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">Mood</div>
+    <div id="chart-mood" style="height:150px;position:relative">
+      <div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-muted);font-size:13px">Loading...</div>
+    </div>
+  </div>
+
+  <!-- Focus Chart -->
+  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
+    <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">Focus Hours</div>
+    <div id="chart-focus" style="height:150px;position:relative">
+      <div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-muted);font-size:13px">Loading...</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- SCREEN: TRAJECTORY HISTORY -->
+<div id="trajectory-history" style="display:none;flex-direction:column;min-height:100vh;padding:1.5rem;max-width:420px;margin:0 auto">
+
+  <!-- Header -->
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;padding-top:1rem">
+    <div>
+      <div style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.1em">History</div>
+      <div style="font-size:18px;font-weight:700">Trajectory Reports</div>
+    </div>
+    <div onclick="goTo('reports')" style="color:var(--text-muted);cursor:pointer;font-size:13px">← Back</div>
+  </div>
+
+  <!-- Filter Tabs -->
+  <div style="display:flex;gap:8px;margin-bottom:1.5rem">
+    <button onclick="filterHistory('all')" id="hist-filter-all" class="hist-filter-btn" style="flex:1;padding:10px;border-radius:var(--radius-sm);border:1px solid var(--accent);background:rgba(108,99,255,0.2);color:var(--accent);cursor:pointer;font-size:13px;font-family:var(--font)">All</button>
+    <button onclick="filterHistory('weekly')" id="hist-filter-weekly" class="hist-filter-btn" style="flex:1;padding:10px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;font-size:13px;font-family:var(--font)">Weekly</button>
+    <button onclick="filterHistory('monthly')" id="hist-filter-monthly" class="hist-filter-btn" style="flex:1;padding:10px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;font-size:13px;font-family:var(--font)">Monthly</button>
+  </div>
+
+  <!-- Reports List -->
+  <div id="trajectory-history-list" style="display:flex;flex-direction:column;gap:12px">
+    <!-- Reports will be rendered here -->
+  </div>
+
+  <!-- Empty State -->
+  <div id="trajectory-history-empty" style="display:none;text-align:center;padding:3rem 1.5rem">
+    <div style="font-size:48px;margin-bottom:1rem">📜</div>
+    <div style="font-size:16px;font-weight:600;color:var(--text-primary);margin-bottom:8px">No reports yet</div>
+    <div style="font-size:13px;color:var(--text-muted);margin-bottom:1.5rem">Your trajectory history will appear here</div>
+  </div>
+
+</div>
+
+<!-- SCORE REVEAL -->
+<div id="score-reveal" style="display:none;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;text-align:center;padding:2rem">
+  <div style="font-size:14px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.15em;margin-bottom:1rem">Today's VEKTRA Score</div>
+  <div id="reveal-score" style="font-size:96px;font-weight:900;background:linear-gradient(135deg,#6c63ff,#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1">0</div>
+  <div id="reveal-message" style="font-size:16px;color:var(--text-secondary);margin-top:1rem;max-width:280px;line-height:1.6"></div>
+  <div id="reveal-metrics" style="display:flex;gap:1.5rem;margin-top:2rem;flex-wrap:wrap;justify-content:center"></div>
+  <button class="btn-primary" style="margin-top:2.5rem;max-width:280px" onclick="goTo('dashboard');loadDashboard()">View Dashboard →</button>
+</div>
+
+<!-- SCREEN: SETTINGS -->
+<div id="settings" style="display:none;flex-direction:column;min-height:100vh;padding:1.5rem;max-width:420px;margin:0 auto">
+
+    <!-- Header -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;padding-top:1rem">
+      <div>
+        <div style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.1em">Settings</div>
+        <div style="font-size:18px;font-weight:700">Account</div>
+      </div>
+      <div onclick="goTo('profile')" style="color:var(--text-muted);cursor:pointer;font-size:13px">← Back</div>
+    </div>
+
+    <!-- Change Email -->
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
+      <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">Email Address</div>
+      <div class="text-field">
+        <label>New Email</label>
+        <input type="email" id="settings-email" placeholder="your@email.com">
+      </div>
+      <div id="settings-email-success" style="display:none;color:var(--success);font-size:13px;margin-bottom:8px">✓ Email updated</div>
+      <button class="btn-primary" onclick="updateEmail()" style="margin-top:.5rem">Update Email</button>
+    </div>
+
+    <!-- Change Password -->
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
+      <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">Password</div>
+      <div class="text-field">
+        <label>Current Password</label>
+        <input type="password" id="settings-current-password" placeholder="Current password">
+      </div>
+      <div class="text-field">
+        <label>New Password</label>
+        <input type="password" id="settings-new-password" placeholder="Min 8 chars + symbol">
+      </div>
+      <div class="text-field">
+        <label>Confirm New Password</label>
+        <input type="password" id="settings-confirm-password" placeholder="Repeat new password">
+      </div>
+      <div id="settings-password-error" style="display:none;color:var(--danger);font-size:13px;margin-bottom:8px"></div>
+      <div id="settings-password-success" style="display:none;color:var(--success);font-size:13px;margin-bottom:8px">✓ Password updated</div>
+      <button class="btn-primary" onclick="updatePassword()" style="margin-top:.5rem">Update Password</button>
+    </div>
+
+    <!-- Reminder Time -->
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
+      <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">Daily Reminder</div>
+      <div class="text-field">
+        <label>Reminder Time</label>
+        <input type="time" id="settings-reminder" style="width:100%;padding:12px 14px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;font-family:var(--font);outline:none">
+      </div>
+      <div id="settings-reminder-success" style="display:none;color:var(--success);font-size:13px;margin-bottom:8px">✓ Reminder updated</div>
+      <button class="btn-primary" onclick="updateReminder()" style="margin-top:.5rem">Save Reminder</button>
+    </div>
+
+    <!-- Danger Zone -->
+    <div style="background:rgba(239,68,68,0.05);border:1px solid rgba(239,68,68,0.2);border-radius:var(--radius);padding:1.25rem;margin-bottom:3rem">
+      <div style="font-size:11px;color:var(--danger);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">Danger Zone</div>
+      <div style="font-size:13px;color:var(--text-secondary);margin-bottom:1rem">Deleting your account is permanent. All your logs, scores and reports will be lost forever.</div>
+      <button onclick="confirmDeleteAccount()" style="width:100%;padding:12px;background:transparent;border:1px solid var(--danger);border-radius:var(--radius-sm);color:var(--danger);font-size:14px;font-weight:600;cursor:pointer;font-family:var(--font)">Delete Account</button>
+    </div>
+
+  </div>
+
+  <!-- SCREEN: LOG HISTORY -->
+<div id="history" style="display:none;flex-direction:column;min-height:100vh;padding:1.5rem;max-width:420px;margin:0 auto">
+
+  <!-- Header -->
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;padding-top:1rem">
+    <div>
+      <div style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.1em">History</div>
+      <div style="font-size:18px;font-weight:700">Past Logs</div>
+    </div>
+    <div onclick="goTo('dashboard')" style="color:var(--text-muted);cursor:pointer;font-size:13px">← Back</div>
+  </div>
+
+    <!-- Log list -->
+  <div id="history-list" style="display:flex;flex-direction:column;gap:.75rem;margin-bottom:1rem">
+    <div style="text-align:center;color:var(--text-muted);font-size:14px;padding:3rem 0">Loading logs...</div>
+  </div>
+  <button id="history-load-more" onclick="loadMoreHistory()" style="display:none;width:100%;padding:12px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-size:14px;font-weight:600;cursor:pointer;font-family:var(--font);margin-bottom:3rem">Load More</button>
+</div>
+
+  <!-- SCREEN: LOG DETAIL -->
+  <div id="log-detail" style="display:none;flex-direction:column;min-height:100vh;padding:1.5rem;max-width:420px;margin:0 auto">
+
+    <!-- Header -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;padding-top:1rem">
+      <div>
+        <div style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.1em">Log Detail</div>
+        <div id="detail-date" style="font-size:18px;font-weight:700">—</div>
+      </div>
+      <div onclick="goTo('history')" style="color:var(--text-muted);cursor:pointer;font-size:13px">← Back</div>
+    </div>
+
+    <!-- Score -->
+    <div style="background:linear-gradient(135deg,#1a1a2e,#16213e);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem;text-align:center">
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px">VEKTRA SCORE</div>
+      <div id="detail-score" style="font-size:56px;font-weight:900;background:linear-gradient(135deg,#6c63ff,#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1">—</div>
+    </div>
+
+    <!-- Detail sections -->
+    <div id="detail-content" style="display:flex;flex-direction:column;gap:.75rem;margin-bottom:3rem"></div>
+  </div>
+
+  <!-- SCREEN: SUBSCRIPTIONS -->
+  <div id="subscriptions" style="display:none;flex-direction:column;min-height:100vh;padding:1.5rem;max-width:420px;margin:0 auto">
+
+    <!-- Header -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;padding-top:1rem">
+      <div>
+        <div style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.1em">Upgrade</div>
+        <div style="font-size:18px;font-weight:700">Subscription Plans</div>
+      </div>
+      <div onclick="goTo('profile')" style="color:var(--text-muted);cursor:pointer;font-size:13px">← Back</div>
+    </div>
+
+    <!-- Current Plan -->
+    <div id="current-plan-card" style="background:linear-gradient(135deg,#1a1a2e,#16213e);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1.5rem">
+      <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">Current Plan</div>
+      <div id="current-plan-name" style="font-size:20px;font-weight:700;color:var(--text-primary)">Loading...</div>
+      <div id="current-plan-status" style="font-size:13px;color:var(--text-muted);margin-top:4px">Loading status...</div>
+    </div>
+
+    <!-- Plans Grid -->
+    <div id="plans-container" style="display:flex;flex-direction:column;gap:12px;margin-bottom:1.5rem">
+      <!-- Plans will be rendered here -->
+    </div>
+
+    <!-- Payment Section -->
+    <div id="payment-section" style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;display:none">
+      <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">Payment Method</div>
+      
+      <div style="display:flex;gap:8px;margin-bottom:12px">
+        <button id="pay-stripe-btn" onclick="selectPaymentMethod('stripe')" style="flex:1;padding:12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:transparent;color:var(--text-secondary);cursor:pointer;font-size:13px;font-family:var(--font)">💳 Stripe</button>
+        <button id="pay-mpesa-btn" onclick="selectPaymentMethod('mpesa')" style="flex:1;padding:12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:transparent;color:var(--text-secondary);cursor:pointer;font-size:13px;font-family:var(--font)">📱 M-Pesa</button>
+      </div>
+
+      <!-- Stripe Form -->
+      <div id="stripe-form" style="display:none">
+        <label style="font-size:12px;color:var(--text-muted);margin-bottom:6px;display:block">Card Number</label>
+        <input type="text" id="stripe-card" placeholder="4242 4242 4242 4242" style="width:100%;padding:10px 12px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;font-family:var(--font);outline:none;margin-bottom:12px">
+        
+        <div style="display:flex;gap:8px;margin-bottom:12px">
+          <div style="flex:1">
+            <label style="font-size:12px;color:var(--text-muted);margin-bottom:6px;display:block">Expiry</label>
+            <input type="text" id="stripe-expiry" placeholder="MM/YY" style="width:100%;padding:10px 12px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;font-family:var(--font);outline:none">
+          </div>
+          <div style="flex:1">
+            <label style="font-size:12px;color:var(--text-muted);margin-bottom:6px;display:block">CVC</label>
+            <input type="text" id="stripe-cvc" placeholder="123" style="width:100%;padding:10px 12px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;font-family:var(--font);outline:none">
+          </div>
+        </div>
+      </div>
+
+      <!-- M-Pesa Form -->
+      <div id="mpesa-form" style="display:none">
+        <label style="font-size:12px;color:var(--text-muted);margin-bottom:6px;display:block">Phone Number</label>
+        <input type="tel" id="mpesa-phone" placeholder="+254700000000" style="width:100%;padding:10px 12px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;font-family:var(--font);outline:none;margin-bottom:12px">
+      </div>
+
+      <button id="pay-button" onclick="processPayment()" style="width:100%;padding:12px;background:linear-gradient(135deg,#6c63ff,#ec4899);border:none;border-radius:var(--radius-sm);color:white;font-size:14px;font-weight:600;cursor:pointer;font-family:var(--font)">Pay Now</button>
+    </div>
+
+  </div>
+
+  <!-- SCREEN: ACHIEVEMENTS -->
+  <div id="achievements" style="display:none;flex-direction:column;min-height:100vh;padding:1.5rem;max-width:420px;margin:0 auto">
+
+    <!-- Header -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;padding-top:1rem">
+      <div>
+        <div style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.1em">Gamification</div>
+        <div style="font-size:18px;font-weight:700">Achievements</div>
+      </div>
+      <div onclick="goTo('profile')" style="color:var(--text-muted);cursor:pointer;font-size:13px">← Back</div>
+    </div>
+
+    <!-- Stats -->
+    <div style="display:flex;gap:12px;margin-bottom:1.5rem">
+      <div style="flex:1;background:linear-gradient(135deg,#1a1a2e,#16213e);border:1px solid var(--border);border-radius:var(--radius);padding:1rem;text-align:center">
+        <div id="total-achievements" style="font-size:24px;font-weight:700;color:var(--accent)">0</div>
+        <div style="font-size:11px;color:var(--text-muted)">Unlocked</div>
+      </div>
+      <div style="flex:1;background:linear-gradient(135deg,#1a1a2e,#16213e);border:1px solid var(--border);border-radius:var(--radius);padding:1rem;text-align:center">
+        <div id="total-available" style="font-size:24px;font-weight:700;color:var(--text-primary)">0</div>
+        <div style="font-size:11px;color:var(--text-muted)">Available</div>
+      </div>
+    </div>
+
+    <!-- Streak Stats -->
+    <div style="display:flex;gap:12px;margin-bottom:1.5rem">
+      <div style="flex:1;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1rem;text-align:center">
+        <div id="current-streak" style="font-size:24px;font-weight:700;color:var(--accent)">0</div>
+        <div style="font-size:11px;color:var(--text-muted)">Current Streak</div>
+      </div>
+      <div style="flex:1;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1rem;text-align:center">
+        <div id="longest-streak" style="font-size:24px;font-weight:700;color:var(--text-primary)">0</div>
+        <div style="font-size:11px;color:var(--text-muted)">Longest Streak</div>
+      </div>
+      <div style="flex:1;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1rem;text-align:center">
+        <div id="total-logged" style="font-size:24px;font-weight:700;color:var(--text-primary)">0</div>
+        <div style="font-size:11px;color:var(--text-muted)">Days Logged</div>
+      </div>
+    </div>
+
+    <!-- Streak Calendar -->
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1.5rem">
+      <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">Streak Calendar</div>
+      <div id="streak-calendar" style="display:grid;grid-template-columns:repeat(53,1fr);gap:3px">
+        <!-- Calendar will be rendered here -->
+      </div>
+      <div style="display:flex;gap:16px;margin-top:12px;justify-content:center;font-size:10px;color:var(--text-muted)">
+        <div style="display:flex;align-items:center;gap:4px"><div style="width:10px;height:10px;background:var(--bg-secondary);border-radius:2px"></div> No data</div>
+        <div style="display:flex;align-items:center;gap:4px"><div style="width:10px;height:10px;background:#4ade80;border-radius:2px"></div> Low</div>
+        <div style="display:flex;align-items:center;gap:4px"><div style="width:10px;height:10px;background:#22c55e;border-radius:2px"></div> Medium</div>
+        <div style="display:flex;align-items:center;gap:4px"><div style="width:10px;height:10px;background:#16a34a;border-radius:2px"></div> High</div>
+        <div style="display:flex;align-items:center;gap:4px"><div style="width:10px;height:10px;background:#15803d;border-radius:2px"></div> Perfect</div>
+      </div>
+    </div>
+
+    <!-- Achievements Grid -->
+    <div id="achievements-grid" style="display:flex;flex-direction:column;gap:12px">
+      <!-- Achievements will be rendered here -->
+    </div>
+
+  </div>
+
+  <!-- SCREEN: UPGRADE / PRICING -->
+  <div id="upgrade" style="display:none;flex-direction:column;min-height:100vh;padding:1.5rem;max-width:420px;margin:0 auto">
+
+    <!-- Header -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;padding-top:1rem">
+      <div>
+        <div style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.1em">Upgrade</div>
+        <div style="font-size:18px;font-weight:700">Choose Your Vector</div>
+      </div>
+      <div onclick="goTo('profile')" style="color:var(--text-muted);cursor:pointer;font-size:13px">← Back</div>
+    </div>
+
+    <!-- Tier Selector -->
+    <div style="display:flex;gap:8px;margin-bottom:1.5rem">
+      <button id="tier-btn-tier1" onclick="selectTier('tier1')" style="flex:1;padding:12px;border-radius:var(--radius-sm);border:2px solid var(--accent);background:rgba(108,99,255,0.15);color:var(--text-primary);cursor:pointer;font-family:var(--font);font-weight:600;font-size:14px">
+        Vector<br><span style="font-size:11px;color:var(--text-muted);font-weight:400">~KES 302/mo</span>
+      </button>
+      <button id="tier-btn-tier2" onclick="selectTier('tier2')" style="flex:1;padding:12px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;font-family:var(--font);font-weight:600;font-size:14px">
+        Apex<br><span style="font-size:11px;color:var(--text-muted);font-weight:400">~KES 1,130/mo</span>
+      </button>
+    </div>
+
+    <!-- Slider Section -->
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
+      <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.5rem">Commitment Period</div>
+      <div style="font-size:13px;color:var(--text-muted);margin-bottom:1rem">Only 30 days? Are we building a legacy or just a hobby? Slide more to commit and save money.</div>
+      
+      <!-- Slider -->
+      <input type="range" id="days-slider" min="30" max="366" value="30" 
+            oninput="onSliderChange(this.value)"
+            style="width:100%;accent-color:var(--accent);cursor:pointer;margin-bottom:.75rem">
+      
+      <!-- Days display -->
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem">
+        <span style="font-size:13px;color:var(--text-muted)">Duration</span>
+        <span id="days-display" style="font-size:20px;font-weight:800;color:var(--text-primary)">30 days</span>
+      </div>
+
+      <!-- Milestone badge -->
+      <div id="milestone-badge" style="display:none;text-align:center;padding:8px;background:rgba(108,99,255,0.1);border:1px solid rgba(108,99,255,0.3);border-radius:var(--radius-sm);margin-bottom:.75rem;font-size:13px;color:var(--accent)"></div>
+
+      <!-- Milestone markers -->
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-muted);margin-bottom:.5rem">
+        <span>30</span>
+        <span>60⭐</span>
+        <span>90⭐⭐</span>
+        <span>180⭐⭐⭐</span>
+        <span>366👑</span>
+      </div>
+    </div>
+
+    <!-- Price Card -->
+    <div style="background:linear-gradient(135deg,#1a1a2e,#16213e);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
+      <div id="price-loading" style="text-align:center;color:var(--text-muted);font-size:14px;padding:1rem">Calculating...</div>
+      
+      <div id="price-content" style="display:none">
+        <!-- Total price big display -->
+        <div style="text-align:center;margin-bottom:1rem">
+          <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">TOTAL PRICE</div>
+          <div id="price-total" style="font-size:48px;font-weight:900;background:linear-gradient(135deg,#6c63ff,#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1">—</div>
+          <div id="price-monthly-eq" style="font-size:13px;color:var(--text-muted);margin-top:4px"></div>
+        </div>
+
+        <!-- Savings highlight -->
+        <div id="savings-card" style="display:none;background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.3);border-radius:var(--radius-sm);padding:.75rem;margin-bottom:1rem;text-align:center">
+          <div style="font-size:12px;color:var(--success);margin-bottom:2px">YOU SAVE</div>
+          <div id="price-saved" style="font-size:20px;font-weight:800;color:var(--success)"></div>
+          <div id="price-bonus-days" style="font-size:12px;color:var(--success);margin-top:2px"></div>
+        </div>
+
+        <!-- Price breakdown -->
+        <div style="display:flex;flex-direction:column;gap:6px;font-size:13px">
+          <div style="display:flex;justify-content:space-between">
+            <span style="color:var(--text-muted)">Subtotal</span>
+            <span id="price-subtotal">—</span>
+          </div>
+          <div id="discount-row" style="display:none;display:flex;justify-content:space-between">
+            <span style="color:var(--success)">Discount (<span id="discount-pct"></span>%)</span>
+            <span id="price-discount" style="color:var(--success)">—</span>
+          </div>
+          <div style="display:flex;justify-content:space-between">
+            <span style="color:var(--text-muted)">VAT (<span id="tax-pct"></span>%)</span>
+            <span id="price-tax">—</span>
+          </div>
+          <div style="display:flex;justify-content:space-between">
+            <span style="color:var(--text-muted)">Processing fee</span>
+            <span id="price-fee">—</span>
+          </div>
+          <div style="border-top:1px solid var(--border);padding-top:6px;display:flex;justify-content:space-between;font-weight:700">
+            <span>Total (<span id="total-days-display"></span> days)</span>
+            <span id="price-final">—</span>
+          </div>
+          <div style="display:flex;justify-content:space-between">
+            <span style="color:var(--text-muted)">Expires</span>
+            <span id="price-expires" style="font-size:12px">—</span>
+          </div>
+        </div>
+
+        <!-- Price lock countdown -->
+        <div style="text-align:center;margin-top:.75rem;font-size:12px;color:var(--text-muted)">
+          🔒 <span id="price-lock-timer">Price locked for 15:00</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- CTA Button -->
+    <button id="checkout-btn" class="btn-primary" onclick="proceedToCheckout()" style="margin-bottom:.75rem" disabled>
+      Select a plan to continue
+    </button>
+    <div style="font-size:12px;color:var(--text-muted);text-align:center">No refunds. You can upgrade anytime. Cancel stops renewal.</div>
+
+  </div>
+
+</div>
+
+<!-- ── BOTTOM NAVIGATION CONTAINER ── -->
+<!-- Back into the HTML DOM structure, equipped with safety-validated onclick handlers -->
+<div id="bottom-nav" style="display:none;position:fixed;bottom:0;left:0;right:0;background:var(--bg-card);border-top:1px solid var(--border);padding:12px 20px;z-index:1000">
+  <div style="display:flex;justify-content:space-between;align-items:center;max-width:600px;margin:0 auto">
+    
+    <!-- Home Menu Icon Layout -->
+    <div onclick="navTo('home')" id="nav-home" class="nav-item" style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;color:var(--accent)">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+      <span style="font-size:10px;font-weight:500">Home</span>
+    </div>
+
+    <!-- Reports Menu Icon Layout -->
+    <div onclick="navTo('reports')" id="nav-reports" class="nav-item" style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;color:var(--text-muted)">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+      <span style="font-size:10px;font-weight:500">Reports</span>
+    </div>
+
+    <!-- Analytics Menu Icon Layout -->
+    <div onclick="navTo('analytics')" id="nav-analytics" class="nav-item" style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;color:var(--text-muted)">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+      <span style="font-size:10px;font-weight:500">Analytics</span>
+    </div>
+
+    <!-- Profile Menu Icon Layout -->
+    <div onclick="navTo('profile')" id="nav-profile" class="nav-item" style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;color:var(--text-muted)">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+      <span style="font-size:10px;font-weight:500">Profile</span>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── 1. EMERGENCE HOOK FOR LIVE SERVER ── -->
+<!-- This empty container tricks live server into injecting its script here safely -->
+<div id="live-server-hook"></div>
+
+<script type="module" src="js/app.js"></script>
+
+<!-- Ensure this is the absolute last script block before </body> -->
+<script>
+  // 🌐 Emergency Global Routing Bridge
+  window.goTo = function(screenId) {
+    console.log("Global backup routing engine triggered for ID:", screenId);
+    
+    // 1. Force find and hide the stagnant splash overlay element
+    const splash = document.getElementById('splash');
+    if (splash) {
+      splash.style.opacity = '0';
+      splash.style.display = 'none';
+      splash.style.visibility = 'hidden';
+    }
+
+    // 2. Loop through and hide all sibling view sections inside the app layout
+    const screens = ['welcome', 'login', 'register', 'dashboard', 'onboard-1', 'daily-log'];
+    screens.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = 'none';
+    });
+
+    // 3. Unveil the requested target section container canvas
+    const target = document.getElementById(screenId);
+    if (target) {
+      target.style.display = 'flex';
+      target.style.opacity = '1';
+      console.log(`Successfully forced navigation layout change to: ${screenId}`);
+    } else {
+      console.error(`DOM Error: Screen layout ID '${screenId}' is completely missing from HTML.`);
+    }
+
+    // 4. Toggle the Instagram-style bottom nav visibility rules
+    const nav = document.getElementById('bottom-nav');
+    if (nav) {
+      const authScreens = ['welcome', 'login', 'register'];
+      if (authScreens.includes(screenId)) {
+        nav.style.display = 'none';
+      } else {
+        nav.style.display = 'block';
+      }
+    }
+  };
+
+  // Map your HTML onclick="navTo(...)" items directly to this fallback engine
+  window.navTo = function(screenId) {
+    if (screenId === 'home') window.goTo('dashboard');
+    else if (screenId === 'reports') window.goTo('daily-log');
+    else window.goTo(screenId);
+  };
+</script>
+
