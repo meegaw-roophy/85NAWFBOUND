@@ -1146,7 +1146,7 @@ function copyReferral() {
 
 function shareReferral() {
   const code = currentUser?.username?.toUpperCase() || 'VEKTRA';
-  const message = `I've been tracking my trajectory with VEKTRA — the AI-powered self-tracking app that gives you harsh truths about your progress.\n\nUse my code ${code} to get started:\nhttps://vektra.app\n\nVector = Magnitude × Direction 🔥`;
+  const message = `I've been tracking my trajectory with VEKTRA — the AI-powered self-tracking app that gives you harsh truths about your progress.\n\nUse my referral code ${code} to get started free:\nhttps://meegaw-roophy.github.io/85NAWFBOUND/app/\n\nVector = Magnitude × Direction 🔥`;
   
   // Always use clipboard on desktop, share sheet on mobile
   const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
@@ -2842,6 +2842,26 @@ function showScoreReveal(snap) {
   }
   requestAnimationFrame(update);
 
+  // Add share button to reveal screen
+  const btn = document.querySelector('#score-reveal .btn-primary');
+  if (btn) {
+    const shareBtn = document.createElement('button');
+    shareBtn.className = 'btn-secondary';
+    shareBtn.style.cssText = 'margin-top:12px;max-width:280px';
+    shareBtn.textContent = `Share my score 🔥`;
+    shareBtn.onclick = () => {
+      const message = `Just logged my day on VEKTRA and scored ${score}/100! 🔥\n\nKnow your trajectory:\nhttps://meegaw-roophy.github.io/85NAWFBOUND/app/\n\nVector = Magnitude × Direction`;
+      if (navigator.share) {
+        navigator.share({ title: 'My VEKTRA Score', text: message });
+      } else {
+        navigator.clipboard.writeText(message).then(() => {
+          showToast('Score copied to clipboard! Share it anywhere 🔥', 'success');
+        });
+      }
+    };
+    btn.parentNode.insertBefore(shareBtn, btn.nextSibling);
+  }
+  
   // Auto-go to dashboard after 5 seconds
   setTimeout(() => {
     goTo('dashboard');
