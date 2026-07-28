@@ -19,8 +19,8 @@ PPP_FACTORS = {
 
 # ── Base USD prices per month ──────────────────────────
 BASE_USD_MONTHLY = {
-    'tier1': 3.99,
-    'tier2': 14.99,
+    'tier1': 15.49,
+    'tier2': 44.99,
 }
 
 # ── Tax rates by country ───────────────────────────────

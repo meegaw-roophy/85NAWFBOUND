@@ -84,20 +84,20 @@
     </div>
 
     <div class="text-field" style="margin-bottom:16px">
-      <label>Your primary goal</label>
+      <label>Your primary goal <span style="color:var(--text-muted);font-weight:400">(optional)</span></label>
       <textarea id="ob-goal" placeholder="e.g. Become the youngest black self-made billionaire from Kenya by age 21" style="min-height:100px"></textarea>
     </div>
 
     <div class="text-field" style="margin-bottom:24px">
-      <label>Deadline</label>
+      <label>Deadline <span style="color:var(--text-muted);font-weight:400">(optional)</span></label>
       <input type="date" id="ob-deadline" style="width:100%;padding:12px 14px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;font-family:var(--font);outline:none">
     </div>
 
     <div id="ob1-error" style="display:none;color:var(--danger);font-size:13px;margin-bottom:12px;text-align:center"></div>
 
-    <button id="ob1-btn" class="btn-primary" onclick="onboardStep1()">Set My North Star →</button>
-    <div style="text-align:center;margin-top:16px">
-      <span onclick="goTo('dashboard')" style="font-size:13px;color:var(--text-muted);cursor:pointer">Skip for now</span>
+    <button id="ob1-btn" class="btn-primary" onclick="onboardStep1()">Continue →</button>
+    <div style="text-align:center;margin-top:16px;display:flex;flex-direction:column;gap:8px">
+      <span onclick="goTo('dashboard')" style="font-size:13px;color:var(--text-muted);cursor:pointer">Skip onboarding → Start using VEKTRA</span>
     </div>
   </div>
 </div>
@@ -119,20 +119,21 @@
     </div>
 
     <div class="number-field" style="margin-bottom:16px">
-      <label>Current net worth</label>
+      <label>Current net worth <span style="color:var(--text-muted);font-weight:400">(optional)</span></label>
       <input type="number" id="ob-networth" placeholder="0" style="width:100%;padding:12px 14px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;font-family:var(--font);outline:none">
     </div>
 
     <div class="number-field" style="margin-bottom:24px">
-      <label>Liquid capital (cash available now)</label>
+      <label>Liquid capital (cash available now) <span style="color:var(--text-muted);font-weight:400">(optional)</span></label>
       <input type="number" id="ob-capital" placeholder="0" style="width:100%;padding:12px 14px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;font-family:var(--font);outline:none">
     </div>
 
     <div id="ob2-error" style="display:none;color:var(--danger);font-size:13px;margin-bottom:12px;text-align:center"></div>
 
     <button id="ob2-btn" class="btn-primary" onclick="onboardStep2()">Continue →</button>
-    <div style="text-align:center;margin-top:16px">
+    <div style="text-align:center;margin-top:16px;display:flex;flex-direction:column;gap:8px">
       <span onclick="goTo('onboard-1')" style="font-size:13px;color:var(--text-muted);cursor:pointer">← Back</span>
+      <span onclick="goTo('onboard-3')" style="font-size:13px;color:var(--text-muted);cursor:pointer">Skip this step →</span>
     </div>
   </div>
 </div>
@@ -154,7 +155,7 @@
     </div>
 
     <div style="margin-bottom:1.5rem">
-      <label style="font-size:12px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.08em;display:block;margin-bottom:10px">Report tone</label>
+      <label style="font-size:12px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.08em;display:block;margin-bottom:10px">Report tone <span style="color:var(--text-muted);font-weight:400">(optional - can change later)</span></label>
       <div style="display:flex;flex-direction:column;gap:8px">
         <div id="tone-harsh" onclick="selectTone('Harsh')" style="padding:14px;border:1px solid var(--border);border-radius:var(--radius-sm);cursor:pointer;transition:all .2s">
           <div style="font-weight:600;font-size:14px">Harsh 🔥</div>
@@ -174,8 +175,9 @@
     <div id="ob3-error" style="display:none;color:var(--danger);font-size:13px;margin-bottom:12px;text-align:center"></div>
 
     <button id="ob3-btn" class="btn-primary" onclick="onboardStep3()">Launch VEKTRA 🚀</button>
-    <div style="text-align:center;margin-top:16px">
+    <div style="text-align:center;margin-top:16px;display:flex;flex-direction:column;gap:8px">
       <span onclick="goTo('onboard-2')" style="font-size:13px;color:var(--text-muted);cursor:pointer">← Back</span>
+      <span onclick="goTo('dashboard')" style="font-size:13px;color:var(--text-muted);cursor:pointer">Skip → Start using VEKTRA</span>
     </div>
   </div>
 </div>
@@ -723,6 +725,42 @@
     </div>
   </div>
 
+  <!-- Subscription & Receipts -->
+  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
+    <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">Subscription & Receipts</div>
+    
+    <!-- Current Plan Info -->
+    <div id="subscription-info" style="margin-bottom:1rem;padding-bottom:1rem;border-bottom:1px solid var(--border)">
+      <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+        <span style="font-size:13px;color:var(--text-muted)">Plan</span>
+        <span id="sub-plan" style="font-size:13px;font-weight:600;color:var(--text-primary)">Free</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+        <span style="font-size:13px;color:var(--text-muted)">Status</span>
+        <span id="sub-status" style="font-size:13px;font-weight:600;color:var(--success)">Active</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+        <span style="font-size:13px;color:var(--text-muted)">Expires</span>
+        <span id="sub-expires" style="font-size:13px;color:var(--text-primary)">—</span>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:12px">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+          <input type="checkbox" id="auto-renew" style="accent-color:var(--accent)">
+          <span style="font-size:12px;color:var(--text-secondary)">Auto-renew</span>
+        </label>
+        <button onclick="goTo('upgrade')" style="padding:6px 12px;background:rgba(108,99,255,0.2);border:1px solid var(--accent);border-radius:var(--radius-sm);color:var(--accent);font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font)">Upgrade</button>
+      </div>
+    </div>
+    
+    <!-- Payment History -->
+    <div>
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px">Payment History</div>
+      <div id="payment-history" style="display:flex;flex-direction:column;gap:8px">
+        <div style="font-size:13px;color:var(--text-muted);text-align:center;padding:1rem">No payments yet</div>
+      </div>
+    </div>
+  </div>
+
   <!-- Data Export -->
   <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
     <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">Data Export</div>
@@ -1263,9 +1301,10 @@
       <!-- Milestone markers -->
       <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-muted);margin-bottom:.5rem">
         <span>30</span>
-        <span>60⭐</span>
-        <span>90⭐⭐</span>
-        <span>180⭐⭐⭐</span>
+        <span>61⭐</span>
+        <span>91⭐⭐</span>
+        <span>183⭐⭐⭐</span>
+        <span>274⭐⭐⭐⭐</span>
         <span>366👑</span>
       </div>
     </div>
@@ -1324,11 +1363,20 @@
       </div>
     </div>
 
+    <!-- T&Cs Checkbox -->
+    <div style="display:flex;align-items:start;gap:8px;margin-bottom:.75rem">
+      <input type="checkbox" id="terms-checkbox" style="margin-top:3px;accent-color:var(--accent);cursor:pointer">
+      <label for="terms-checkbox" style="font-size:12px;color:var(--text-muted);cursor:pointer;line-height:1.4">
+        I agree to the <span style="color:var(--accent)">Terms of Service</span> and understand that:
+        no refunds, upgrades are prorated, cancellation stops renewal at period end.
+      </label>
+    </div>
+
     <!-- CTA Button -->
     <button id="checkout-btn" class="btn-primary" onclick="proceedToCheckout()" style="margin-bottom:.75rem" disabled>
       Select a plan to continue
     </button>
-    <div style="font-size:12px;color:var(--text-muted);text-align:center">No refunds. You can upgrade anytime. Cancel stops renewal.</div>
+    <div style="font-size:12px;color:var(--text-muted);text-align:center">Secure payment via Stripe (global) or M-Pesa (Kenya)</div>
 
   </div>
 
