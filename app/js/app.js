@@ -244,7 +244,7 @@ async function register() {
     }
     await loginWithCredentials(username, password);
   } catch (err) {
-    errEl.textContent = 'Could not connect to server. Is the backend running?';
+    errEl.textContent = 'Connecting to server... please try again in 30 seconds.';
     errEl.style.display = 'block';
   } finally {
     if (btnEl) {
@@ -347,7 +347,7 @@ async function login() {
       errEl.style.display = 'block';
     }
   } catch (err) {
-    errEl.textContent = 'Could not connect to server.';
+    errEl.textContent = 'Connecting to server... please try again in 30 seconds.';
     errEl.style.display = 'block';
   } finally {
     if (btnEl) {
@@ -1028,6 +1028,99 @@ function setProfileTone(tone) {
   });
 }
 
+async function loadSubscriptionInfo() {
+  if (!currentUser || !authToken) return;
+  
+  try {
+    // Load subscription info
+    const subRes = await fetch(`${API}/api/v1/users/${currentUser.id}/subscriptions`, {
+      headers: { 'Authorization': `Bearer ${authToken}` }
+    });
+    
+    if (subRes.ok) {
+      const subscriptions = await subRes.json();
+      if (subscriptions && subscriptions.length > 0) {
+        const sub = subscriptions[0];
+        document.getElementById('sub-plan').textContent = sub.tier || 'Free';
+        document.getElementById('sub-status').textContent = sub.status || 'Active';
+        
+        if (sub.expires_at) {
+          const expires = new Date(sub.expires_at);
+          document.getElementById('sub-expires').textContent = expires.toLocaleDateString('en-US', {day:'numeric', month:'short', year:'numeric'});
+        }
+        
+        // Auto-renew checkbox
+        const autoRenewCheckbox = document.getElementById('auto-renew');
+        if (autoRenewCheckbox) {
+          autoRenewCheckbox.checked = sub.auto_renew || false;
+          autoRenewCheckbox.addEventListener('change', () => toggleAutoRenew(autoRenewCheckbox.checked, sub.id));
+        }
+      }
+    }
+    
+    // Load payment history
+    const payRes = await fetch(`${API}/api/v1/users/${currentUser.id}/payments`, {
+      headers: { 'Authorization': `Bearer ${authToken}` }
+    });
+    
+    if (payRes.ok) {
+      const payments = await payRes.json();
+      const historyContainer = document.getElementById('payment-history');
+      
+      if (payments && payments.length > 0) {
+        historyContainer.innerHTML = payments.map(payment => {
+          const date = new Date(payment.created_at);
+          const statusColor = payment.status === 'completed' ? 'var(--success)' : 
+                            payment.status === 'pending' ? 'var(--warning)' : 'var(--error)';
+          return `
+            <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;display:flex;justify-content:space-between;align-items:center">
+              <div>
+                <div style="font-size:13px;font-weight:600;color:var(--text-primary)">${payment.currency || 'USD'} ${payment.amount?.toLocaleString() || '0'}</div>
+                <div style="font-size:11px;color:var(--text-muted)">${date.toLocaleDateString('en-US', {day:'numeric', month:'short', year:'numeric'})}</div>
+              </div>
+              <div style="text-align:right">
+                <div style="font-size:12px;font-weight:600;color:${statusColor}">${payment.status || 'Unknown'}</div>
+                <div style="font-size:10px;color:var(--text-muted)">${payment.provider || 'Unknown'}</div>
+              </div>
+            </div>
+          `;
+        }).join('');
+      } else {
+        historyContainer.innerHTML = '<div style="font-size:13px;color:var(--text-muted);text-align:center;padding:1rem">No payments yet</div>';
+      }
+    }
+  } catch(e) {
+    console.error('Subscription info load error:', e);
+  }
+}
+
+async function toggleAutoRenew(enabled, subscriptionId) {
+  if (!currentUser || !authToken) return;
+  
+  try {
+    const res = await fetch(`${API}/api/v1/users/${currentUser.id}/subscriptions/${subscriptionId}`, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `Bearer ${authToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ auto_renew: enabled })
+    });
+    
+    if (res.ok) {
+      showToast(enabled ? 'Auto-renew enabled' : 'Auto-renew disabled', 'success');
+    } else {
+      showToast('Failed to update auto-renew setting', 'error');
+      // Revert checkbox
+      document.getElementById('auto-renew').checked = !enabled;
+    }
+  } catch(e) {
+    console.error('Auto-renew toggle error:', e);
+    showToast('Connection error', 'error');
+    document.getElementById('auto-renew').checked = !enabled;
+  }
+}
+
 async function openProfile() {
   goTo('profile');
   if (!currentUser) return;
@@ -1072,6 +1165,9 @@ async function openProfile() {
   
   // Load financial health
   loadFinancialHealth();
+  
+  // Load subscription and payment info
+  loadSubscriptionInfo();
   
   // Initialize monthly replay with current month
   const today = new Date();
@@ -2861,7 +2957,7 @@ function showScoreReveal(snap) {
     };
     btn.parentNode.insertBefore(shareBtn, btn.nextSibling);
   }
-  
+
   // Auto-go to dashboard after 5 seconds
   setTimeout(() => {
     goTo('dashboard');
@@ -3012,6 +3108,7 @@ function confirmDeleteAccount() {
     showToast('Account deletion coming soon. Contact support.', 'warning');
   }
 }
+window.confirmDeleteAccount = confirmDeleteAccount;
 // This function handles the actual data fetching and UI updating
 async function fetchHarshTruths() {
   showLoader('Consulting the Vector Oracle...');
@@ -3055,6 +3152,8 @@ window.openProfile = openProfile;
 window.saveProfile = saveProfile;
 window.copyReferral = copyReferral;
 window.shareReferral = shareReferral;
+window.loadSubscriptionInfo = loadSubscriptionInfo;
+window.toggleAutoRenew = toggleAutoRenew;
 
 // Expose functions to the window so HTML 'onclick' and 'oninput' can find them
 window.updateSlider = updateSlider;
@@ -3545,6 +3644,8 @@ function renderPriceCard(data) {
     document.getElementById('discount-row').style.display = 'flex';
     document.getElementById('discount-pct').textContent = data.discount_rate;
     document.getElementById('price-discount').textContent = `-${sym} ${data.discount_amount.toLocaleString()}`;
+  } else {
+    document.getElementById('discount-row').style.display = 'none';
   }
 
   // Savings
@@ -3556,10 +3657,11 @@ function renderPriceCard(data) {
     document.getElementById('savings-card').style.display = 'none';
   }
 
-  // Enable checkout button
+  // Enable checkout button only if T&Cs checked
   const btn = document.getElementById('checkout-btn');
-  btn.disabled = false;
-  btn.textContent = `Pay ${sym} ${data.total.toLocaleString()} →`;
+  const termsChecked = document.getElementById('terms-checkbox').checked;
+  btn.disabled = !termsChecked;
+  btn.textContent = termsChecked ? `Pay ${sym} ${data.total.toLocaleString()} →` : 'Accept Terms to Continue';
 
   // Start price lock countdown
   startPriceLockCountdown();
@@ -3587,8 +3689,22 @@ function startPriceLockCountdown() {
 
 function proceedToCheckout() {
   if (!currentPriceData) return;
-  // For now show toast — Stripe/M-Pesa integration comes when API keys arrive
-  showToast(`Checkout for ${currentPriceData.symbol} ${currentPriceData.total} — Payment gateway coming soon! 🔥`, 'info', 5000);
+  
+  const termsChecked = document.getElementById('terms-checkbox').checked;
+  if (!termsChecked) {
+    showToast('Please accept the Terms of Service to continue', 'warning');
+    return;
+  }
+  
+  // Determine payment gateway based on currency
+  const isKenyan = currentPriceData.currency === 'KES';
+  const gateway = isKenyan ? 'M-Pesa' : 'Stripe';
+  
+  showToast(`Initiating ${gateway} checkout for ${currentPriceData.symbol} ${currentPriceData.total}...`, 'info');
+  
+  // TODO: Integrate actual payment gateway when API keys available
+  // For Kenya: Call M-Pesa STK push endpoint
+  // For global: Call Stripe Checkout session creation
 }
 
 window.generateInsight = generateInsight;
@@ -3610,6 +3726,18 @@ window.currentUser = currentUser;
 window.navTo = navTo;
 window.goTo = goTo;
 window.currentScreen = currentScreen;
+
+// Terms checkbox listener
+document.addEventListener('DOMContentLoaded', () => {
+  const termsCheckbox = document.getElementById('terms-checkbox');
+  if (termsCheckbox) {
+    termsCheckbox.addEventListener('change', () => {
+      if (currentPriceData) {
+        renderPriceCard(currentPriceData); // Re-render to update button state
+      }
+    });
+  }
+});
 window.selectedTierUpgrade = selectedTierUpgrade;
 window.currentPriceData = currentPriceData;
 window.priceCalculateTimer = priceCalculateTimer;
@@ -3628,3 +3756,63 @@ window.onboardStep1 = onboardStep1;
 window.onboardStep2 = onboardStep2;
 window.onboardStep3 = onboardStep3;
 window.selectTone = selectTone;
+
+// ── Keep backend alive (ping every 10 minutes) ──
+function keepBackendAlive() {
+  fetch(`${API}/api/v1/health`)
+    .then(() => console.log('Backend alive'))
+    .catch(() => console.log('Backend sleeping - will wake on next request'));
+}
+
+// Ping immediately on load, then every 10 minutes
+keepBackendAlive();
+setInterval(keepBackendAlive, 10 * 60 * 1000);
+window.keepBackendAlive = keepBackendAlive;
+
+// ── Forgot Password ──
+function showForgotPassword() {
+  goTo('forgot-password');
+}
+
+async function submitForgotPassword() {
+  const username = document.getElementById('forgot-username').value.trim();
+  const email = document.getElementById('forgot-email').value.trim();
+  const errEl = document.getElementById('forgot-error');
+  const successEl = document.getElementById('forgot-success');
+
+  errEl.style.display = 'none';
+  successEl.style.display = 'none';
+
+  if (!username || !email) {
+    errEl.textContent = 'Please fill in both fields.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  try {
+    const res = await fetch('https://formspree.io/f/xeebwojj', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        type: 'PASSWORD_RESET_REQUEST',
+        username,
+        email,
+        date: new Date().toISOString()
+      })
+    });
+
+    if (res.ok) {
+      successEl.style.display = 'block';
+      document.getElementById('forgot-username').value = '';
+      document.getElementById('forgot-email').value = '';
+    } else {
+      errEl.textContent = 'Could not send request. Try again.';
+      errEl.style.display = 'block';
+    }
+  } catch(e) {
+    errEl.textContent = 'Could not connect. Try again.';
+    errEl.style.display = 'block';
+  }
+}
+window.showForgotPassword = showForgotPassword;
+window.submitForgotPassword = submitForgotPassword;

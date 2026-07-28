@@ -203,6 +203,9 @@
     <div id="login-error" style="display:none;color:var(--danger);font-size:13px;margin-bottom:16px;text-align:center"></div>
 
     <button id="login-btn" class="btn-primary" onclick="login()">Sign In</button>
+    <div style="text-align:center;margin-top:12px">
+      <span onclick="showForgotPassword()" style="font-size:13px;color:var(--text-muted);cursor:pointer">Forgot password?</span>
+    </div>
 
     <div style="text-align:center;margin-top:20px;font-size:14px;color:var(--text-muted)">
       Don't have an account? 
@@ -1378,6 +1381,38 @@
     </button>
     <div style="font-size:12px;color:var(--text-muted);text-align:center">Secure payment via Stripe (global) or M-Pesa (Kenya)</div>
 
+  </div>
+
+  <!-- SCREEN: FORGOT PASSWORD -->
+  <div id="forgot-password" style="display:none;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:2rem">
+    <div style="width:100%;max-width:320px">
+      <div style="text-align:center;margin-bottom:2rem">
+        <div class="welcome-logo">VEKTRA</div>
+        <div style="font-size:13px;color:var(--text-muted);margin-top:8px">Password Reset</div>
+      </div>
+
+      <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem;font-size:14px;color:var(--text-secondary);line-height:1.6">
+        Enter your email and username. We'll manually reset your password within 24 hours and email you the new one.
+      </div>
+
+      <div class="text-field" style="margin-bottom:12px">
+        <label>Username</label>
+        <input type="text" id="forgot-username" placeholder="Your username" style="width:100%;padding:12px 14px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;font-family:var(--font);outline:none">
+      </div>
+
+      <div class="text-field" style="margin-bottom:20px">
+        <label>Email</label>
+        <input type="email" id="forgot-email" placeholder="your@email.com" style="width:100%;padding:12px 14px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;font-family:var(--font);outline:none">
+      </div>
+
+      <div id="forgot-success" style="display:none;color:var(--success);font-size:13px;margin-bottom:12px;text-align:center">✓ Request sent! Check your email within 24 hours.</div>
+      <div id="forgot-error" style="display:none;color:var(--danger);font-size:13px;margin-bottom:12px;text-align:center"></div>
+
+      <button class="btn-primary" onclick="submitForgotPassword()">Send Reset Request</button>
+      <div style="text-align:center;margin-top:16px">
+        <span onclick="goTo('login')" style="font-size:13px;color:var(--text-muted);cursor:pointer">← Back to login</span>
+      </div>
+    </div>
   </div>
 
 </div>

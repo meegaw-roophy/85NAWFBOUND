@@ -3768,3 +3768,51 @@ function keepBackendAlive() {
 keepBackendAlive();
 setInterval(keepBackendAlive, 10 * 60 * 1000);
 window.keepBackendAlive = keepBackendAlive;
+
+// ── Forgot Password ──
+function showForgotPassword() {
+  goTo('forgot-password');
+}
+
+async function submitForgotPassword() {
+  const username = document.getElementById('forgot-username').value.trim();
+  const email = document.getElementById('forgot-email').value.trim();
+  const errEl = document.getElementById('forgot-error');
+  const successEl = document.getElementById('forgot-success');
+
+  errEl.style.display = 'none';
+  successEl.style.display = 'none';
+
+  if (!username || !email) {
+    errEl.textContent = 'Please fill in both fields.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  try {
+    const res = await fetch('https://formspree.io/f/xeebwojj', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        type: 'PASSWORD_RESET_REQUEST',
+        username,
+        email,
+        date: new Date().toISOString()
+      })
+    });
+
+    if (res.ok) {
+      successEl.style.display = 'block';
+      document.getElementById('forgot-username').value = '';
+      document.getElementById('forgot-email').value = '';
+    } else {
+      errEl.textContent = 'Could not send request. Try again.';
+      errEl.style.display = 'block';
+    }
+  } catch(e) {
+    errEl.textContent = 'Could not connect. Try again.';
+    errEl.style.display = 'block';
+  }
+}
+window.showForgotPassword = showForgotPassword;
+window.submitForgotPassword = submitForgotPassword;
