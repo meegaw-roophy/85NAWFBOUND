@@ -7,9 +7,10 @@ import datetime
 import json
 import os
 
+# EXACT MATCH: Keeps prefix as /pricing to align with app.js [source: 1]
 router = APIRouter(prefix="/pricing", tags=["pricing"])
 
-# ── Production-Grade Dynamic Cache Loader ────────────────
+# ── Dynamic File System Cache Loader ─────────────────────
 def load_cached_fx_rates() -> dict:
     """
     Sourced daily via a background worker cron job that fetches 
@@ -17,7 +18,7 @@ def load_cached_fx_rates() -> dict:
     """
     cache_path = "fx-cache.json"
     
-    # Fallback production baselines if local filesystem sync breaks
+    # Baseline fallback dict structure
     default_rates = {
         'KES': 129.00,  # 1 USD = 129 KES
         'NGN': 1500.00,
@@ -36,119 +37,218 @@ def load_cached_fx_rates() -> dict:
             return default_rates
     return default_rates
 
-PPP_FACTORS = {'KE': 0.55, 'NG': 0.45, 'GH': 0.50, 'ZA': 0.65, 'US': 1.00, 'DEFAULT': 0.70}
-BASE_USD_MONTHLY = {'tier1': 15.49, 'tier2': 44.99}
-TAX_RATES = {'KE': 0.16, 'ZA': 0.15, 'NG': 0.075, 'GH': 0.125, 'GB': 0.20, 'DEFAULT': 0.00}
-CURRENCY_SYMBOLS = {'KES': 'KES', 'NGN': '₦', 'GHS': '₵', 'ZAR': 'R', 'GBP': '£', 'EUR': '€', 'USD': '$'}
+PPP_FACTORS = {
+    'KE': 0.55, 'NG': 0.45, 'GH': 0.50, 'ZA': 0.65,
+    'UG': 0.40, 'TZ': 0.42, 'ET': 0.35, 'RW': 0.38,
+    'US': 1.00, 'GB': 0.95, 'EU': 0.90, 'CA': 0.88,
+    'AU': 0.85, 'IN': 0.30, 'PK': 0.28, 'BR': 0.55,
+    'MX': 0.60, 'DEFAULT': 0.70
+}
 
-class SliderCalculationRequest(BaseModel):
-    tier: str
-    days: int
-    country_code: str
+BASE_USD_MONTHLY = {
+    'tier1': 15.49,
+    'tier2': 44.99,
+}
 
+TAX_RATES = {
+    'KE': 0.16,  # Kenya VAT 16%
+    'ZA': 0.15,  # South Africa VAT 15%
+    'NG': 0.075, # Nigeria VAT 7.5%
+    'GH': 0.125, # Ghana VAT 12.5%
+    'GB': 0.20,  # UK VAT 20%
+    'DE': 0.19,  # Germany VAT 19%
+    'FR': 0.20,  # France VAT 20%
+    'DEFAULT': 0.00
+}
+
+CURRENCY_SYMBOLS = {
+    'KES': 'KES', 'NGN': '₦', 'GHS': '₵', 'ZAR': 'R',
+    'UGX': 'UGX', 'TZS': 'TZS', 'GBP': '£', 'EUR': '€',
+    'INR': '₹', 'BRL': 'R$', 'MXN': '$', 'USD': '$',
+}
+
+MILESTONES = [
+    {'days': 30,  'label': 'Monthly',      'stars': 0,  'bonus_days': 0,  'badge': None},
+    {'days': 60,  'label': '2 Months',     'stars': 1,  'bonus_days': 3,  'badge': '⭐'},
+    {'days': 90,  'label': 'Quarter',      'stars': 2,  'bonus_days': 7,  'badge': '⭐⭐'},
+    {'days': 180, 'label': 'Half Year',    'stars': 3,  'bonus_days': 18, 'badge': '⭐⭐⭐'},
+    {'days': 366, 'label': 'Full Year',    'stars': 4,  'bonus_days': 45, 'badge': '👑 Founder'},
+]
+
+class PriceRequest(BaseModel):
+    tier: str  
+    days: int  
+    currency: Optional[str] = 'USD'
+    country_code: Optional[str] = 'DEFAULT'
+
+# EXACT MATCH: Reverted all Pydantic parameters to match variables in app.js [source: 1]
 class PriceResponse(BaseModel):
     tier: str
-    days_selected: int
-    bonus_days: int
-    total_access_days: int
+    days: int
     currency: str
     symbol: str
-    badge: str
     subtotal: float
+    discount_rate: float
     discount_amount: float
+    bonus_days: int
+    tax_rate: float
     tax_amount: float
-    gateway_fee: float
-    total_checkout_amount: float
+    stripe_fee: float
+    total: float
+    total_days: int
+    saved_amount: float
+    monthly_equivalent: float
     expires_at: str
+    milestone: Optional[dict] = None
     price_locked_until: str
 
+def calculate_discount(days: int, k: float = 1.8) -> float:
+    """Logarithmic commitment discount curve (optimized k factor)."""
+    if days <= 30:
+        return 0.0
+    rate = (((days - 30) / 336) ** k) / 6
+    return rate  
+
+def get_milestone(days: int) -> Optional[dict]:
+    current = None
+    for m in MILESTONES:
+        if days >= m['days']:
+            current = m
+    return current
+
+# EXACT MATCH: Reverted endpoint to /calculate to match app.js POST requests [source: 1]
 @router.post("/calculate", response_model=PriceResponse)
-async def preview_slider_price(
-    req: SliderCalculationRequest, 
+async def calculate_price(
+    req: PriceRequest,
     current_user: User = Depends(get_current_user)
 ):
-    """
-    Triggered instantly by frontend JavaScript animations every time the user moves the slider.
-    Calculates numbers completely server-side to prevent client manipulation.
-    """
-    if req.days < 30 or req.days > 366:
-        raise HTTPException(status_code=400, detail="Commitment window must be between 30 and 366 days.")
-        
-    if req.tier not in BASE_USD_MONTHLY:
-        raise HTTPException(status_code=400, detail="Invalid target tier selected.")
-
-    # 1. Evaluate PPP Basis
-    country = req.country_code.upper()
-    ppp = PPP_FACTORS.get(country, PPP_FACTORS['DEFAULT'])
-    base_usd = BASE_USD_MONTHLY[req.tier]
+    days = max(30, min(366, req.days))
+    ppp = PPP_FACTORS.get(req.country_code, PPP_FACTORS['DEFAULT'])
+    base_usd = BASE_USD_MONTHLY.get(req.tier, BASE_USD_MONTHLY['tier1'])
+    
+    # 1. Apply PPP Adjustments
     ppp_adjusted_usd = base_usd * ppp
-
-    # 2. Extract Currency Routing
-    currency_map = {'KE': 'KES', 'NG': 'NGN', 'GH': 'GHS', 'ZA': 'ZAR', 'US': 'USD'}
-    currency = currency_map.get(country, 'USD')
     
-    fx_rates = load_cached_fx_rates()
-    local_currency_per_usd = fx_rates.get(currency, 1.0)
+    # 2. Extract Currency Routing from Live File Cache Loop
+    live_fx = load_cached_fx_rates()
+    currency = req.currency or 'USD'
     
-    # Base monthly price in local currency after PPP conversion
+    # Convert traditional base system mapping to handle inverted rates safely
+    local_currency_per_usd = live_fx.get(currency, 1.0)
     monthly_local = ppp_adjusted_usd * local_currency_per_usd
     
-    # 3. Apply Logarithmic Discount Curve (k = 1.8 for balanced commitment optimization)
-    k = 1.8 
-    discount_rate = 0.0
-    if req.days > 30:
-        discount_rate = (((req.days - 30) / 336) ** k) / 6  # Caps beautifully near ~16.67%
-
-    subtotal_local = monthly_local * (req.days / 30.5)
-    discount_amount_local = subtotal_local * discount_rate
-    discounted_subtotal = subtotal_local - discount_amount_local
-
-    # 4. Tax Routing Matrix
-    tax_rate = TAX_RATES.get(country, TAX_RATES['DEFAULT'])
-    net_needed_with_tax = discounted_subtotal * (1 + tax_rate)
-
-    # 5. Gateway Surcharge Engineering (Stripe Pass-Through vs M-Pesa)
-    if country == 'KE':
-        gateway_fee = 50.00  # Local carrier insurance markup
-        total_charged = net_needed_with_tax + gateway_fee
-        tax_amount = discounted_subtotal * tax_rate
+    # 3. Calculate Base Subtotal
+    subtotal = monthly_local * (days / 30.5)
+    
+    # 4. Process Commitment Discount Curves
+    discount_rate = calculate_discount(days)
+    discount_amount = subtotal * discount_rate
+    discounted_subtotal = subtotal - discount_amount
+    
+    # 5. Fetch Milestones and Extended Bonus Tracking Intervals
+    milestone = get_milestone(days)
+    bonus_days = milestone['bonus_days'] if milestone else 0
+    total_days = days + bonus_days
+    
+    # 6. Process Regional Tax Matrices
+    tax_rate_raw = TAX_RATES.get(req.country_code, TAX_RATES['DEFAULT'])
+    net_needed = discounted_subtotal * (1 + tax_rate_raw)
+    
+    # 7. Surcharge Reverse Payout Calculations (M-Pesa vs Stripe)
+    if req.country_code == 'KE':
+        # Localized M-Pesa STK tariff offset mapping
+        stripe_fee = 50.00  
+        total = net_needed + stripe_fee
+        tax_amount = discounted_subtotal * tax_rate_raw
     else:
-        # Global Stripe Absorption Formula to guarantee 100% net payout preservation
+        # Global Stripe Absorption Formula
         stripe_fixed_usd = 0.30
         stripe_fixed_local = stripe_fixed_usd * local_currency_per_usd
         stripe_percentage = 0.029
         
-        total_charged = (net_needed_with_tax + stripe_fixed_local) / (1 - stripe_percentage)
-        gateway_fee = total_charged * stripe_percentage + stripe_fixed_local
-        tax_amount = discounted_subtotal * tax_rate
-
-    # 6. Time and Milestones Configuration
-    bonus_days = 0
-    badge = "Hobbyist"
-    if req.days >= 366: bonus_days = 45; badge = "👑 Founder"
-    elif req.days >= 180: bonus_days = 18; badge = "⭐⭐⭐ Operator"
-    elif req.days >= 90: bonus_days = 7; badge = "⭐⭐ Builder"
-    elif req.days >= 60: bonus_days = 3; badge = "⭐ Committed"
-
+        total = (net_needed + stripe_fixed_local) / (1 - stripe_percentage)
+        stripe_fee = total * stripe_percentage + stripe_fixed_local
+        tax_amount = discounted_subtotal * tax_rate_raw
+    
+    # 8. Calculate Financial Retention Metrics
+    full_price = monthly_local * (days / 30.5)
+    saved_amount = full_price - total + (monthly_local * (bonus_days / 30.5))
+    monthly_equivalent = total / (total_days / 30.5)
+    
+    # 9. Timezone Sync
     now_utc = datetime.datetime.now(datetime.timezone.utc)
-    expiration_date = now_utc + datetime.timedelta(days=(req.days + bonus_days))
-    expiration_date = expiration_date.replace(hour=23, minute=59, second=59)
+    expires_at = now_utc + datetime.timedelta(days=total_days)
+    expires_at = expires_at.replace(hour=23, minute=59, second=59)
+    
     price_locked_until = (now_utc + datetime.timedelta(minutes=15)).isoformat()
-
-    # CRITICAL FIX: Returning actual validated Pydantic Instance instead of raw dict
+    
     return PriceResponse(
         tier=req.tier,
-        days_selected=req.days,
-        bonus_days=bonus_days,
-        total_access_days=req.days + bonus_days,
+        days=days,
         currency=currency,
         symbol=CURRENCY_SYMBOLS.get(currency, '$'),
-        badge=badge,
-        subtotal=round(subtotal_local, 2),
-        discount_amount=round(discount_amount_local, 2),
+        subtotal=round(subtotal, 2),
+        discount_rate=round(discount_rate * 100, 2), # Matches frontend display expect [source: 1]
+        discount_amount=round(discount_amount, 2),
+        bonus_days=bonus_days,
+        tax_rate=round(tax_rate_raw * 100, 2),        # Matches data.tax_rate layout [source: 1]
         tax_amount=round(tax_amount, 2),
-        gateway_fee=round(gateway_fee, 2),
-        total_checkout_amount=round(total_charged, 2),
-        expires_at=expiration_date.strftime("%Y-%m-%d %H:%M:%S UTC"),
-        price_locked_until=price_locked_until
+        stripe_fee=round(stripe_fee, 2),
+        total=round(total, 2),
+        total_days=total_days,
+        saved_amount=round(max(saved_amount, 0), 2),
+        monthly_equivalent=round(monthly_equivalent, 2),
+        expires_at=expires_at.isoformat(),
+        milestone=milestone,
+        price_locked_until=price_locked_until,
     )
+
+@router.get("/tiers")
+async def get_tiers(current_user: User = Depends(get_current_user)):
+    """Get available tiers with refined feature sets."""
+    return {
+        "tiers": [
+            {
+                "id": "free",
+                "name": "Free Trial",
+                "features": [
+                    "7 days tracking access",
+                    "Basic daily log variables",
+                    "One automated trajectory preview",
+                    "Real-time VEKTRA Score evaluation",
+                ],
+                "cta": "Current Plan"
+            },
+            {
+                "id": "tier1",
+                "name": "Vector Tier",
+                "tagline": "For the focused builder",
+                "features": [
+                    "Unlimited daily telemetry input",
+                    "Weekly harsh-truth AI data reports",
+                    "Full direction angle (θ) score breakdown",
+                    "Habit execution streak tracking",
+                    "Personal financial trend engine",
+                    "Complete timeline database logs",
+                    "Priority server task execution queue",
+                ],
+                "cta": "Choose Vector"
+            },
+            {
+                "id": "tier2",
+                "name": "Apex Tier",
+                "tagline": "For the serious operator",
+                "features": [
+                    "Everything included in the Vector plan",
+                    "Monthly multi-variable strategic deep reports",
+                    "Quarterly trajectory alignment auditing",
+                    "Dynamic trend data visualizations",
+                    "Personalized custom AI evaluation tone",
+                    "Early prototype alpha feature testing privileges",
+                    "Exclusive 👑 Founder baseline identification badge",
+                ],
+                "cta": "Choose Apex"
+            }
+        ],
+        "milestones": MILESTONES
+    }
