@@ -3565,7 +3565,13 @@ function onSliderChange(value) {
   document.getElementById('days-display').textContent = `${days} days`;
 
   // Show milestone badge
-  const milestones = [{days:366,badge:'👑 Founder — Max savings + exclusive badge'},{days:180,badge:'⭐⭐⭐ Half Year — +18 bonus days'},{days:90,badge:'⭐⭐ Quarter — +7 bonus days'},{days:60,badge:'⭐ 2 Months — +3 bonus days'}];
+  const milestones = [
+    {days:366, badge:'👑 Founder — Max savings + 61 FREE bonus days'},
+    {days:274, badge:'⭐⭐⭐⭐ 9 Months — +42 bonus days'},
+    {days:183, badge:'⭐⭐⭐ Half Year — +25 bonus days'},
+    {days:91,  badge:'⭐⭐ Quarter — +10 bonus days'},
+    {days:61,  badge:'⭐ 2 Months — +4 bonus days'}
+  ];
   const milestone = milestones.find(m => days >= m.days);
   const badgeEl = document.getElementById('milestone-badge');
   if (milestone) {

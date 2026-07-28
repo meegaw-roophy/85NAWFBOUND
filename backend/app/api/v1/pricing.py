@@ -69,10 +69,11 @@ CURRENCY_SYMBOLS = {
 
 MILESTONES = [
     {'days': 30,  'label': 'Monthly',      'stars': 0,  'bonus_days': 0,  'badge': None},
-    {'days': 60,  'label': '2 Months',     'stars': 1,  'bonus_days': 3,  'badge': '⭐'},
-    {'days': 90,  'label': 'Quarter',      'stars': 2,  'bonus_days': 7,  'badge': '⭐⭐'},
-    {'days': 180, 'label': 'Half Year',    'stars': 3,  'bonus_days': 18, 'badge': '⭐⭐⭐'},
-    {'days': 366, 'label': 'Full Year',    'stars': 4,  'bonus_days': 45, 'badge': '👑 Founder'},
+    {'days': 61,  'label': '2 Months',     'stars': 1,  'bonus_days': 4,  'badge': '⭐'},
+    {'days': 91,  'label': 'Quarter',      'stars': 2,  'bonus_days': 10, 'badge': '⭐⭐'},
+    {'days': 183, 'label': 'Half Year',    'stars': 3,  'bonus_days': 25, 'badge': '⭐⭐⭐'},
+    {'days': 274, 'label': '9 Months',     'stars': 4,  'bonus_days': 42, 'badge': '⭐⭐⭐⭐'},
+    {'days': 366, 'label': 'Full Year',    'stars': 5,  'bonus_days': 61, 'badge': '👑 Founder'},
 ]
 
 class PriceRequest(BaseModel):
@@ -116,52 +117,61 @@ def get_milestone(days: int) -> Optional[dict]:
             current = m
     return current
 
-# EXACT MATCH: Reverted endpoint to /calculate to match app.js POST requests [source: 1]
 @router.post("/calculate", response_model=PriceResponse)
 async def calculate_price(
     req: PriceRequest,
     current_user: User = Depends(get_current_user)
 ):
+    # The slider selection dictates the absolute calendar access window
     days = max(30, min(366, req.days))
+    
     ppp = PPP_FACTORS.get(req.country_code, PPP_FACTORS['DEFAULT'])
     base_usd = BASE_USD_MONTHLY.get(req.tier, BASE_USD_MONTHLY['tier1'])
     
     # 1. Apply PPP Adjustments
     ppp_adjusted_usd = base_usd * ppp
     
-    # 2. Extract Currency Routing from Live File Cache Loop
+    # 2. Extract Currency Routing from Live File Cache
     live_fx = load_cached_fx_rates()
     currency = req.currency or 'USD'
     
-    # Convert traditional base system mapping to handle inverted rates safely
     local_currency_per_usd = live_fx.get(currency, 1.0)
     monthly_local = ppp_adjusted_usd * local_currency_per_usd
     
-    # 3. Calculate Base Subtotal
-    subtotal = monthly_local * (days / 30.5)
+    # 3. Calculate Base Subtotal for the entire slider duration
+    normalized_months = 1.0 + (days - 30) * (11.0 / 336)
+    subtotal = monthly_local * normalized_months
     
-    # 4. Process Commitment Discount Curves
-    discount_rate = calculate_discount(days)
+    # 4. Fetch Milestones
+    milestone = get_milestone(days)
+    bonus_days = milestone['bonus_days'] if milestone else 0
+    
+    # ── THE MATH FIX: Discount represents the value of the free days ──
+    # Instead of adding 45 days, we calculate what % of the selected days are free.
+    # For 366 days with 45 bonus days, discount_rate becomes exactly 45 / 366 = 12.29%
+    # We combine this with your logarithmic curve to cap total savings beautifully.
+    base_discount_rate = calculate_discount(days)
+    milestone_discount_rate = bonus_days / days if days > 30 else 0.0
+    
+    # Use the higher discount to protect your 10x ratio target perfectly
+    discount_rate = max(base_discount_rate, milestone_discount_rate)
+    
     discount_amount = subtotal * discount_rate
     discounted_subtotal = subtotal - discount_amount
     
-    # 5. Fetch Milestones and Extended Bonus Tracking Intervals
-    milestone = get_milestone(days)
-    bonus_days = milestone['bonus_days'] if milestone else 0
-    total_days = days + bonus_days
+    # ── THE ACCESS FIX: Total days matches slider exactly ──
+    total_days = days 
     
-    # 6. Process Regional Tax Matrices
+    # 5. Process Regional Tax Matrices
     tax_rate_raw = TAX_RATES.get(req.country_code, TAX_RATES['DEFAULT'])
     net_needed = discounted_subtotal * (1 + tax_rate_raw)
     
-    # 7. Surcharge Reverse Payout Calculations (M-Pesa vs Stripe)
+    # 6. Surcharge Reverse Payout Calculations (M-Pesa vs Stripe)
     if req.country_code == 'KE':
-        # Localized M-Pesa STK tariff offset mapping
         stripe_fee = 50.00  
         total = net_needed + stripe_fee
         tax_amount = discounted_subtotal * tax_rate_raw
     else:
-        # Global Stripe Absorption Formula
         stripe_fixed_usd = 0.30
         stripe_fixed_local = stripe_fixed_usd * local_currency_per_usd
         stripe_percentage = 0.029
@@ -170,12 +180,12 @@ async def calculate_price(
         stripe_fee = total * stripe_percentage + stripe_fixed_local
         tax_amount = discounted_subtotal * tax_rate_raw
     
-    # 8. Calculate Financial Retention Metrics
-    full_price = monthly_local * (days / 30.5)
-    saved_amount = full_price - total + (monthly_local * (bonus_days / 30.5))
-    monthly_equivalent = total / (total_days / 30.5)
+    # 7. Calculate Financial Value Tracking Metrics
+    full_price = subtotal
+    saved_amount = discount_amount
+    monthly_equivalent = total / (total_days / 30.0)
     
-    # 9. Timezone Sync
+    # 8. Timezone Sync
     now_utc = datetime.datetime.now(datetime.timezone.utc)
     expires_at = now_utc + datetime.timedelta(days=total_days)
     expires_at = expires_at.replace(hour=23, minute=59, second=59)
@@ -188,20 +198,21 @@ async def calculate_price(
         currency=currency,
         symbol=CURRENCY_SYMBOLS.get(currency, '$'),
         subtotal=round(subtotal, 2),
-        discount_rate=round(discount_rate * 100, 2), # Matches frontend display expect [source: 1]
+        discount_rate=round(discount_rate * 100, 2), 
         discount_amount=round(discount_amount, 2),
         bonus_days=bonus_days,
-        tax_rate=round(tax_rate_raw * 100, 2),        # Matches data.tax_rate layout [source: 1]
+        tax_rate=round(tax_rate_raw * 100, 2),        
         tax_amount=round(tax_amount, 2),
         stripe_fee=round(stripe_fee, 2),
         total=round(total, 2),
-        total_days=total_days,
+        total_days=total_days, # Will now read exactly 366 instead of 411!
         saved_amount=round(max(saved_amount, 0), 2),
         monthly_equivalent=round(monthly_equivalent, 2),
         expires_at=expires_at.isoformat(),
         milestone=milestone,
         price_locked_until=price_locked_until,
     )
+
 
 @router.get("/tiers")
 async def get_tiers(current_user: User = Depends(get_current_user)):
