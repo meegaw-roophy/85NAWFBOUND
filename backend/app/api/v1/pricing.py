@@ -7,7 +7,7 @@ import datetime
 import json
 import os
 
-router = APIRouter(prefix="/billing", tags=["billing"])
+router = APIRouter(prefix="/pricing", tags=["pricing"])
 
 # ── Production-Grade Dynamic Cache Loader ────────────────
 def load_cached_fx_rates() -> dict:
@@ -62,7 +62,7 @@ class PriceResponse(BaseModel):
     expires_at: str
     price_locked_until: str
 
-@router.post("/preview-price", response_model=PriceResponse)
+@router.post("/calculate", response_model=PriceResponse)
 async def preview_slider_price(
     req: SliderCalculationRequest, 
     current_user: User = Depends(get_current_user)
