@@ -9,6 +9,82 @@ let authToken = null; // Ensure this is not declared as a 'const' anywhere!
 let currentUser = {};
 let currentScreen = 'welcome';
 
+// ── Performance Utilities ──
+
+// Debounce function to limit rapid API calls
+function debounce(func, wait) {
+  let timeout;
+  return function executedFunction(...args) {
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
+    };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
+}
+
+// Local storage cache with TTL
+const Cache = {
+  set(key, data, ttlMinutes = 30) {
+    try {
+      const item = {
+        data,
+        expiry: Date.now() + (ttlMinutes * 60 * 1000)
+      };
+      localStorage.setItem(`vektra_${key}`, JSON.stringify(item));
+    } catch(e) {
+      console.warn('Cache set failed:', e);
+    }
+  },
+  
+  get(key) {
+    try {
+      const itemStr = localStorage.getItem(`vektra_${key}`);
+      if (!itemStr) return null;
+      
+      const item = JSON.parse(itemStr);
+      if (Date.now() > item.expiry) {
+        localStorage.removeItem(`vektra_${key}`);
+        return null;
+      }
+      return item.data;
+    } catch(e) {
+      console.warn('Cache get failed:', e);
+      return null;
+    }
+  },
+  
+  clear() {
+    try {
+      Object.keys(localStorage)
+        .filter(k => k.startsWith('vektra_'))
+        .forEach(k => localStorage.removeItem(k));
+    } catch(e) {
+      console.warn('Cache clear failed:', e);
+    }
+  }
+};
+
+// Request deduplication - prevents duplicate concurrent calls
+const pendingRequests = new Map();
+
+async function dedupedFetch(url, options = {}) {
+  const cacheKey = `${options.method || 'GET'}_${url}_${JSON.stringify(options.body || '')}`;
+  
+  if (pendingRequests.has(cacheKey)) {
+    return pendingRequests.get(cacheKey);
+  }
+  
+  const promise = fetch(url, options)
+    .finally(() => {
+      pendingRequests.delete(cacheKey);
+    });
+  
+  pendingRequests.set(cacheKey, promise);
+  return promise;
+}
+
 // ── Toast notifications ──
 function showToast(message, type = 'info', duration = 3000) {
   const container = document.getElementById('toast-container');
@@ -31,17 +107,61 @@ function removeToast(toast) {
 
 // ── Loading spinner ──
 function showLoader(text = 'Loading...') {
-  document.getElementById('loader-text').textContent = text;
-  document.getElementById('global-loader').classList.add('active');
+  const loader = document.getElementById('global-loader');
+  const loaderText = document.getElementById('loader-text');
+  if (loader && loaderText) {
+    loaderText.textContent = text;
+    loader.classList.add('active');
+  }
 }
 
 function hideLoader() {
-  document.getElementById('global-loader').classList.remove('active');
+  const loader = document.getElementById('global-loader');
+  if (loader) {
+    loader.classList.remove('active');
+  }
+}
+
+// ── Error handling helper ──
+function showError(message, containerId = null) {
+  if (containerId) {
+    const container = document.getElementById(containerId);
+    if (container) {
+      container.innerHTML = `
+        <div style="text-align:center;padding:3rem 1.5rem">
+          <div style="font-size:48px;margin-bottom:1rem">⚠️</div>
+          <div style="font-size:16px;font-weight:600;color:var(--text-primary);margin-bottom:8px">Something went wrong</div>
+          <div style="font-size:13px;color:var(--text-muted);margin-bottom:1.5rem">${message}</div>
+          <button class="btn-primary" onclick="location.reload()">Try Again</button>
+        </div>
+      `;
+    }
+  } else {
+    showToast(message, 'error');
+  }
+}
+
+// ── Empty state helper ──
+function showEmptyState(containerId, icon, title, subtitle, actionText = null, actionCallback = null) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  
+  let actionHtml = '';
+  if (actionText && actionCallback) {
+    actionHtml = `<button class="btn-primary" onclick="${actionCallback}">${actionText}</button>`;
+  }
+  
+  container.innerHTML = `
+    <div style="text-align:center;padding:3rem 1.5rem">
+      <div style="font-size:48px;margin-bottom:1rem">${icon}</div>
+      <div style="font-size:16px;font-weight:600;color:var(--text-primary);margin-bottom:8px">${title}</div>
+      <div style="font-size:13px;color:var(--text-muted);margin-bottom:1.5rem">${subtitle}</div>
+      ${actionHtml}
+    </div>
+  `;
 }
 
 // ── Screen navigation ──
-// ── 1. CORE ROUTING ENGINE ──
-// ── 1. CORE ROUTING ENGINE ──
 function goTo(screen) {
   console.log(`Routing Engine Active -> Transitioning to: ${screen}`);
   
@@ -285,6 +405,9 @@ async function loginWithCredentials(username, password) {
       currentUser = {}; // Ensure it's never null to prevent layout crashes
     }
 
+    // Clear cache on fresh login
+    Cache.clear();
+
     // 2. Safely auto-detect and sync PPP localization matrix
     if (location && currentUser) {
       const locationRes = await fetch(`${API}/api/v1/users/me`, {
@@ -362,6 +485,7 @@ function logout() {
   authToken = null;
   currentUser = null;
   localStorage.removeItem('vektra_token');
+  Cache.clear();
   goTo('welcome');
 }
 
@@ -533,6 +657,116 @@ async function loadDashboard() {
   }
 }
 
+// ── NOTIFICATION SYSTEM ──
+let notifications = [];
+
+function addNotification(type, title, message) {
+  const notification = {
+    id: Date.now(),
+    type,
+    title,
+    message,
+    timestamp: new Date().toISOString(),
+    read: false
+  };
+  
+  notifications.unshift(notification);
+  updateNotificationBell();
+  saveNotifications();
+}
+
+function updateNotificationBell() {
+  const bell = document.getElementById('notification-bell');
+  const badge = document.getElementById('notification-badge');
+  const unreadCount = notifications.filter(n => !n.read).length;
+  
+  if (unreadCount > 0) {
+    bell.style.display = 'block';
+    badge.style.display = 'flex';
+    badge.textContent = unreadCount > 9 ? '9+' : unreadCount;
+  } else {
+    bell.style.display = 'none';
+    badge.style.display = 'none';
+  }
+}
+
+function showNotifications() {
+  const panel = document.getElementById('notification-panel');
+  const list = document.getElementById('notification-list');
+  
+  if (panel.style.display === 'block') {
+    panel.style.display = 'none';
+    return;
+  }
+  
+  panel.style.display = 'block';
+  renderNotifications();
+  
+  // Mark all as read
+  notifications.forEach(n => n.read = true);
+  updateNotificationBell();
+  saveNotifications();
+}
+
+function renderNotifications() {
+  const list = document.getElementById('notification-list');
+  
+  if (notifications.length === 0) {
+    list.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--text-muted);font-size:13px">No notifications yet</div>';
+    return;
+  }
+  
+  list.innerHTML = notifications.map(n => `
+    <div style="background:var(--bg-secondary);border-radius:var(--radius-sm);padding:12px;border-left:3px solid ${getNotificationColor(n.type)}">
+      <div style="font-size:13px;font-weight:600;color:var(--text-primary);margin-bottom:4px">${n.title}</div>
+      <div style="font-size:12px;color:var(--text-secondary);margin-bottom:8px">${n.message}</div>
+      <div style="font-size:10px;color:var(--text-muted)">${formatNotificationTime(n.timestamp)}</div>
+    </div>
+  `).join('');
+}
+
+function getNotificationColor(type) {
+  switch(type) {
+    case 'achievement': return 'var(--success)';
+    case 'streak': return 'var(--warning)';
+    case 'milestone': return 'var(--accent)';
+    default: return 'var(--border)';
+  }
+}
+
+function formatNotificationTime(timestamp) {
+  const date = new Date(timestamp);
+  const now = new Date();
+  const diff = now - date;
+  
+  if (diff < 60000) return 'Just now';
+  if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
+  if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
+  return date.toLocaleDateString();
+}
+
+function clearNotifications() {
+  notifications = [];
+  updateNotificationBell();
+  saveNotifications();
+  renderNotifications();
+}
+
+function saveNotifications() {
+  localStorage.setItem('vektra_notifications', JSON.stringify(notifications));
+}
+
+function loadNotifications() {
+  const saved = localStorage.getItem('vektra_notifications');
+  if (saved) {
+    notifications = JSON.parse(saved);
+    updateNotificationBell();
+  }
+}
+
+// Load notifications on startup
+loadNotifications();
+
 // ── Daily log helpers ──
 let goalHit = null;
 
@@ -541,6 +775,36 @@ function updateSlider(name) {
   const val = document.getElementById(`val-${name}`);
   if (input && val) val.textContent = input.value;
   updateProgress();
+}
+
+function quickSetMood(value) {
+  const input = document.getElementById('inp-mood');
+  const val = document.getElementById('val-mood');
+  if (input && val) {
+    input.value = value;
+    val.textContent = value;
+    updateProgress();
+  }
+}
+
+function quickSetSleep(value) {
+  const input = document.getElementById('inp-sleep');
+  const val = document.getElementById('val-sleep');
+  if (input && val) {
+    input.value = value;
+    val.textContent = value;
+    updateProgress();
+  }
+}
+
+function quickSetFocus(value) {
+  const input = document.getElementById('inp-focushours');
+  const val = document.getElementById('val-focushours');
+  if (input && val) {
+    input.value = value;
+    val.textContent = value;
+    updateProgress();
+  }
 }
 
 function setGoalHit(hit) {
@@ -721,6 +985,9 @@ async function submitLog() {
   
   showScoreReveal(snap);
       clearDraft();
+      
+      // Invalidate snapshots cache since new data was added
+      Cache.set(`snapshots_${currentUser.id}`, null, 0);
     } else {
       const data = await res.json();
       errEl.textContent = data.detail || 'Failed to submit. Try again.';
@@ -1031,66 +1298,90 @@ function setProfileTone(tone) {
 async function loadSubscriptionInfo() {
   if (!currentUser || !authToken) return;
   
+  // Try cache first
+  const cachedSubs = Cache.get(`subscriptions_${currentUser.id}`);
+  if (cachedSubs) {
+    renderSubscriptionData(cachedSubs);
+  }
+  
   try {
     // Load subscription info
-    const subRes = await fetch(`${API}/api/v1/users/${currentUser.id}/subscriptions`, {
+    const subRes = await dedupedFetch(`${API}/api/v1/users/${currentUser.id}/subscriptions`, {
       headers: { 'Authorization': `Bearer ${authToken}` }
     });
     
     if (subRes.ok) {
       const subscriptions = await subRes.json();
-      if (subscriptions && subscriptions.length > 0) {
-        const sub = subscriptions[0];
-        document.getElementById('sub-plan').textContent = sub.tier || 'Free';
-        document.getElementById('sub-status').textContent = sub.status || 'Active';
-        
-        if (sub.expires_at) {
-          const expires = new Date(sub.expires_at);
-          document.getElementById('sub-expires').textContent = expires.toLocaleDateString('en-US', {day:'numeric', month:'short', year:'numeric'});
-        }
-        
-        // Auto-renew checkbox
-        const autoRenewCheckbox = document.getElementById('auto-renew');
-        if (autoRenewCheckbox) {
-          autoRenewCheckbox.checked = sub.auto_renew || false;
-          autoRenewCheckbox.addEventListener('change', () => toggleAutoRenew(autoRenewCheckbox.checked, sub.id));
-        }
-      }
+      // Cache for 10 minutes
+      Cache.set(`subscriptions_${currentUser.id}`, subscriptions, 10);
+      renderSubscriptionData(subscriptions);
+    }
+    
+    // Try cache for payments
+    const cachedPayments = Cache.get(`payments_${currentUser.id}`);
+    if (cachedPayments) {
+      renderPaymentHistory(cachedPayments);
     }
     
     // Load payment history
-    const payRes = await fetch(`${API}/api/v1/users/${currentUser.id}/payments`, {
+    const payRes = await dedupedFetch(`${API}/api/v1/users/${currentUser.id}/payments`, {
       headers: { 'Authorization': `Bearer ${authToken}` }
     });
     
     if (payRes.ok) {
       const payments = await payRes.json();
-      const historyContainer = document.getElementById('payment-history');
-      
-      if (payments && payments.length > 0) {
-        historyContainer.innerHTML = payments.map(payment => {
-          const date = new Date(payment.created_at);
-          const statusColor = payment.status === 'completed' ? 'var(--success)' : 
-                            payment.status === 'pending' ? 'var(--warning)' : 'var(--error)';
-          return `
-            <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;display:flex;justify-content:space-between;align-items:center">
-              <div>
-                <div style="font-size:13px;font-weight:600;color:var(--text-primary)">${payment.currency || 'USD'} ${payment.amount?.toLocaleString() || '0'}</div>
-                <div style="font-size:11px;color:var(--text-muted)">${date.toLocaleDateString('en-US', {day:'numeric', month:'short', year:'numeric'})}</div>
-              </div>
-              <div style="text-align:right">
-                <div style="font-size:12px;font-weight:600;color:${statusColor}">${payment.status || 'Unknown'}</div>
-                <div style="font-size:10px;color:var(--text-muted)">${payment.provider || 'Unknown'}</div>
-              </div>
-            </div>
-          `;
-        }).join('');
-      } else {
-        historyContainer.innerHTML = '<div style="font-size:13px;color:var(--text-muted);text-align:center;padding:1rem">No payments yet</div>';
-      }
+      // Cache for 10 minutes
+      Cache.set(`payments_${currentUser.id}`, payments, 10);
+      renderPaymentHistory(payments);
     }
   } catch(e) {
     console.error('Subscription info load error:', e);
+  }
+}
+
+function renderSubscriptionData(subscriptions) {
+  if (subscriptions && subscriptions.length > 0) {
+    const sub = subscriptions[0];
+    document.getElementById('sub-plan').textContent = sub.tier || 'Free';
+    document.getElementById('sub-status').textContent = sub.status || 'Active';
+    
+    if (sub.expires_at) {
+      const expires = new Date(sub.expires_at);
+      document.getElementById('sub-expires').textContent = expires.toLocaleDateString('en-US', {day:'numeric', month:'short', year:'numeric'});
+    }
+    
+    // Auto-renew checkbox
+    const autoRenewCheckbox = document.getElementById('auto-renew');
+    if (autoRenewCheckbox) {
+      autoRenewCheckbox.checked = sub.auto_renew || false;
+      autoRenewCheckbox.addEventListener('change', () => toggleAutoRenew(autoRenewCheckbox.checked, sub.id));
+    }
+  }
+}
+
+function renderPaymentHistory(payments) {
+  const historyContainer = document.getElementById('payment-history');
+  
+  if (payments && payments.length > 0) {
+    historyContainer.innerHTML = payments.map(payment => {
+      const date = new Date(payment.created_at);
+      const statusColor = payment.status === 'completed' ? 'var(--success)' : 
+                        payment.status === 'pending' ? 'var(--warning)' : 'var(--error)';
+      return `
+        <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div style="font-size:13px;font-weight:600;color:var(--text-primary)">${payment.currency || 'USD'} ${payment.amount?.toLocaleString() || '0'}</div>
+            <div style="font-size:11px;color:var(--text-muted)">${date.toLocaleDateString('en-US', {day:'numeric', month:'short', year:'numeric'})}</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:12px;font-weight:600;color:${statusColor}">${payment.status || 'Unknown'}</div>
+            <div style="font-size:10px;color:var(--text-muted)">${payment.provider || 'Unknown'}</div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  } else {
+    historyContainer.innerHTML = '<div style="font-size:13px;color:var(--text-muted);text-align:center;padding:1rem">No payments yet</div>';
   }
 }
 
@@ -1109,6 +1400,8 @@ async function toggleAutoRenew(enabled, subscriptionId) {
     
     if (res.ok) {
       showToast(enabled ? 'Auto-renew enabled' : 'Auto-renew disabled', 'success');
+      // Invalidate subscription cache
+      Cache.set(`subscriptions_${currentUser.id}`, null, 0);
     } else {
       showToast('Failed to update auto-renew setting', 'error');
       // Revert checkbox
@@ -1133,12 +1426,26 @@ async function openProfile() {
   document.getElementById('referral-code').textContent = code;
   document.getElementById('vek-credits').textContent = '0';
   document.getElementById('referral-count').textContent = '0';
+  
+  // Try cache first
+  const cachedSnapshots = Cache.get(`snapshots_${currentUser.id}`);
+  if (cachedSnapshots) {
+    const streak = calculateStreak(cachedSnapshots);
+    const latest = cachedSnapshots[0];
+    document.getElementById('profile-streak').textContent = streak > 0 ? `🔥 ${streak}` : '0';
+    document.getElementById('profile-score').textContent = latest?.vektra_score ? latest.vektra_score.toFixed(0) : '—';
+    document.getElementById('profile-logs').textContent = cachedSnapshots.length;
+  }
+  
   try {
-    const res = await fetch(`${API}/api/v1/users/${currentUser.id}/snapshots`, {
+    const res = await dedupedFetch(`${API}/api/v1/users/${currentUser.id}/snapshots`, {
       headers: { 'Authorization': `Bearer ${authToken}` }
     });
     if (res.ok) {
       const snapshots = await res.json();
+      // Cache for 5 minutes
+      Cache.set(`snapshots_${currentUser.id}`, snapshots, 5);
+      
       const streak = calculateStreak(snapshots);
       const latest = snapshots[0];
       document.getElementById('profile-streak').textContent = streak > 0 ? `🔥 ${streak}` : '0';
@@ -1591,6 +1898,7 @@ async function loadAnalytics(period) {
     if (res.ok) {
       const data = await res.json();
       renderAnalyticsCharts(data.data);
+      renderAnalyticsStats(data.data);
     } else {
       console.error('Failed to load analytics');
       showAnalyticsError();
@@ -1624,6 +1932,36 @@ function renderAnalyticsCharts(data) {
   renderSimpleChart('chart-focus', data, 'focus_hours', 0, 12, '#06b6d4');
 }
 
+function renderAnalyticsStats(data) {
+  if (!data || data.length === 0) {
+    document.getElementById('stat-avg-score').textContent = '—';
+    document.getElementById('stat-best-day').textContent = '—';
+    document.getElementById('stat-total-income').textContent = '—';
+    document.getElementById('stat-streak').textContent = '—';
+    return;
+  }
+
+  // Calculate average VEKTRA score
+  const scores = data.map(d => d.vektra_score).filter(v => v !== null && v !== undefined);
+  const avgScore = scores.length > 0 ? (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1) : '—';
+  document.getElementById('stat-avg-score').textContent = avgScore;
+
+  // Find best day
+  const bestDay = scores.length > 0 ? Math.max(...scores).toFixed(1) : '—';
+  document.getElementById('stat-best-day').textContent = bestDay;
+
+  // Calculate total income
+  const income = data.map(d => d.daily_income).filter(v => v !== null && v !== undefined);
+  const totalIncome = income.length > 0 ? (income.reduce((a, b) => a + b, 0)).toLocaleString() : '—';
+  document.getElementById('stat-total-income').textContent = totalIncome;
+
+  // Current streak (from profile data)
+  const streakEl = document.getElementById('profile-streak');
+  const streakText = streakEl ? streakEl.textContent : '—';
+  const streakNum = streakText.replace(/[^\d]/g, '');
+  document.getElementById('stat-streak').textContent = streakNum || '—';
+}
+
 function showNoDataMessage() {
   const charts = ['chart-vektra', 'chart-networth', 'chart-sleep', 'chart-mood', 'chart-focus'];
   charts.forEach(id => {
@@ -1632,6 +1970,12 @@ function showNoDataMessage() {
       el.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-muted);font-size:13px">No data for this period</div>';
     }
   });
+  
+  // Also reset stats
+  document.getElementById('stat-avg-score').textContent = '—';
+  document.getElementById('stat-best-day').textContent = '—';
+  document.getElementById('stat-total-income').textContent = '—';
+  document.getElementById('stat-streak').textContent = '—';
 }
 
 function renderSimpleChart(containerId, data, valueKey, minVal, maxVal, color) {
@@ -3103,12 +3447,82 @@ async function updateReminder() {
   }
 }
 
+function toggleDarkMode() {
+  const checkbox = document.getElementById('settings-darkmode');
+  const toggle = document.getElementById('darkmode-toggle');
+  const isDark = checkbox.checked;
+  
+  // Update toggle visual
+  toggle.style.transform = isDark ? 'translateX(20px)' : 'translateX(0)';
+  
+  // Save preference
+  localStorage.setItem('vektra_darkmode', isDark);
+  
+  // Apply theme (simplified - in production would update CSS variables)
+  if (isDark) {
+    document.documentElement.style.setProperty('--bg-primary', '#0a0a0f');
+    document.documentElement.style.setProperty('--bg-secondary', '#12121a');
+    document.documentElement.style.setProperty('--bg-card', '#1a1a2e');
+  } else {
+    document.documentElement.style.setProperty('--bg-primary', '#ffffff');
+    document.documentElement.style.setProperty('--bg-secondary', '#f5f5f7');
+    document.documentElement.style.setProperty('--bg-card', '#ffffff');
+  }
+  
+  showToast(isDark ? 'Dark mode enabled' : 'Light mode enabled', 'success');
+}
+
+function clearCache() {
+  if (confirm('Clear all cached data? This will make the app load slower until data is cached again.')) {
+    Cache.clear();
+    localStorage.removeItem('vektra_token');
+    localStorage.removeItem('vektra_darkmode');
+    showToast('Cache cleared successfully', 'success');
+  }
+}
+
+function exportData() {
+  if (!currentUser) {
+    showToast('No user data to export', 'error');
+    return;
+  }
+  
+  const exportData = {
+    user: currentUser,
+    exportDate: new Date().toISOString(),
+    version: '1.0'
+  };
+  
+  const dataStr = JSON.stringify(exportData, null, 2);
+  const dataBlob = new Blob([dataStr], { type: 'application/json' });
+  const url = URL.createObjectURL(dataBlob);
+  
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `vektra-export-${currentUser.username}-${new Date().toISOString().split('T')[0]}.json`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+  
+  showToast('Data exported successfully', 'success');
+}
+
 function confirmDeleteAccount() {
   if (confirm('Are you absolutely sure? This cannot be undone. All your data will be permanently deleted.')) {
     showToast('Account deletion coming soon. Contact support.', 'warning');
   }
 }
+
 window.confirmDeleteAccount = confirmDeleteAccount;
+window.toggleDarkMode = toggleDarkMode;
+window.clearCache = clearCache;
+window.exportData = exportData;
+window.showNotifications = showNotifications;
+window.clearNotifications = clearNotifications;
+window.showError = showError;
+window.showEmptyState = showEmptyState;
+
 // This function handles the actual data fetching and UI updating
 async function fetchHarshTruths() {
   showLoader('Consulting the Vector Oracle...');
@@ -3158,6 +3572,9 @@ window.toggleAutoRenew = toggleAutoRenew;
 // Expose functions to the window so HTML 'onclick' and 'oninput' can find them
 window.updateSlider = updateSlider;
 window.setGoalHit = setGoalHit;
+window.quickSetMood = quickSetMood;
+window.quickSetSleep = quickSetSleep;
+window.quickSetFocus = quickSetFocus;
 async function loadSilentKillers() {
   const container = document.getElementById('silent-killers-container');
   if (!container) return;
@@ -3581,9 +3998,8 @@ function onSliderChange(value) {
     badgeEl.style.display = 'none';
   }
 
-  // Debounce API call
-  clearTimeout(priceCalculateTimer);
-  priceCalculateTimer = setTimeout(() => calculatePrice(days), 300);
+  // Debounced API call
+  debouncedCalculatePrice(days);
 }
 
 async function calculatePrice(days) {
@@ -3615,6 +4031,9 @@ async function calculatePrice(days) {
     console.log('Price calculation error:', e);
   }
 }
+
+// Debounced version for slider events
+const debouncedCalculatePrice = debounce((days) => calculatePrice(days), 300);
 
 function getCountryCode() {
   const currencyToCountry = {
@@ -3822,3 +4241,8 @@ async function submitForgotPassword() {
 }
 window.showForgotPassword = showForgotPassword;
 window.submitForgotPassword = submitForgotPassword;
+
+// Expose performance utilities
+window.debounce = debounce;
+window.Cache = Cache;
+window.dedupedFetch = dedupedFetch;

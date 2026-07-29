@@ -46,8 +46,8 @@ PPP_FACTORS = {
 }
 
 BASE_USD_MONTHLY = {
-    'tier1': 15.49,
-    'tier2': 44.99,
+    'tier1': 24.99,
+    'tier2': 49.99,
 }
 
 TAX_RATES = {
@@ -139,7 +139,7 @@ async def calculate_price(
     monthly_local = ppp_adjusted_usd * local_currency_per_usd
     
     # 3. Calculate Base Subtotal for the entire slider duration
-    normalized_months = 1.0 + (days - 30) * (11.0 / 336)
+    normalized_months = 1.0 + ((days - 30) * 11 / 336)
     subtotal = monthly_local * normalized_months
     
     # 4. Fetch Milestones
@@ -183,7 +183,7 @@ async def calculate_price(
     # 7. Calculate Financial Value Tracking Metrics
     full_price = subtotal
     saved_amount = discount_amount
-    monthly_equivalent = total / (total_days / 30.0)
+    monthly_equivalent = total / (total_days / 30.5)
     
     # 8. Timezone Sync
     now_utc = datetime.datetime.now(datetime.timezone.utc)

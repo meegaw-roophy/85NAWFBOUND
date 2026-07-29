@@ -9,6 +9,25 @@
 <!-- Toast container -->
 <div id="toast-container"></div>
 
+<!-- Notification Bell with Badge -->
+<div id="notification-bell" style="position:fixed;top:20px;left:20px;z-index:9999;cursor:pointer;display:none" onclick="showNotifications()">
+  <div style="position:relative;width:44px;height:44px;background:var(--bg-card);border:1px solid var(--border);border-radius:50%;display:flex;align-items:center;justify-content:center">
+    <span style="font-size:20px">🔔</span>
+    <div id="notification-badge" style="position:absolute;top:-2px;right:-2px;width:18px;height:18px;background:var(--danger);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;display:none">0</div>
+  </div>
+</div>
+
+<!-- Notification Panel -->
+<div id="notification-panel" style="position:fixed;top:80px;left:20px;width:320px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1rem;z-index:9998;display:none;box-shadow:0 10px 40px rgba(0,0,0,0.3)">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+    <div style="font-size:14px;font-weight:700">Notifications</div>
+    <button onclick="clearNotifications()" style="padding:4px 8px;font-size:11px;background:transparent;border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-secondary);cursor:pointer;font-family:var(--font)">Clear All</button>
+  </div>
+  <div id="notification-list" style="display:flex;flex-direction:column;gap:8px;max-height:300px;overflow-y:auto">
+    <!-- Notifications will be rendered here -->
+  </div>
+</div>
+
 <!-- Global loader -->
 <div id="global-loader">
   <div class="spinner"></div>
@@ -352,6 +371,14 @@
   <div class="log-group" id="group-mental">
     <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:1rem">Mental & Emotional</div>
 
+    <!-- Quick-add mood buttons -->
+    <div style="display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap">
+      <button onclick="quickSetMood(8)" style="padding:6px 12px;border-radius:var(--radius-sm);border:1px solid var(--border);background:rgba(108,99,255,0.1);color:var(--text-primary);cursor:pointer;font-size:12px;font-family:var(--font)">😊 Great</button>
+      <button onclick="quickSetMood(6)" style="padding:6px 12px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;font-size:12px;font-family:var(--font)">🙂 Good</button>
+      <button onclick="quickSetMood(4)" style="padding:6px 12px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;font-size:12px;font-family:var(--font)">😐 Okay</button>
+      <button onclick="quickSetMood(2)" style="padding:6px 12px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;font-size:12px;font-family:var(--font)">😔 Low</button>
+    </div>
+
     <div class="slider-field">
       <div class="slider-label"><span>Mood</span><span id="val-mood">5</span></div>
       <input type="range" min="1" max="10" value="5" id="inp-mood" oninput="updateSlider('mood')">
@@ -445,6 +472,14 @@
   <div class="log-group" id="group-body">
     <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:1rem">Body & Health</div>
 
+    <!-- Quick-add sleep buttons -->
+    <div style="display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap">
+      <button onclick="quickSetSleep(7.5)" style="padding:6px 12px;border-radius:var(--radius-sm);border:1px solid var(--border);background:rgba(108,99,255,0.1);color:var(--text-primary);cursor:pointer;font-size:12px;font-family:var(--font)">😴 7.5h</button>
+      <button onclick="quickSetSleep(8)" style="padding:6px 12px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;font-size:12px;font-family:var(--font)">😴 8h</button>
+      <button onclick="quickSetSleep(6)" style="padding:6px 12px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;font-size:12px;font-family:var(--font)">😴 6h</button>
+      <button onclick="quickSetSleep(5)" style="padding:6px 12px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;font-size:12px;font-family:var(--font)">😴 5h</button>
+    </div>
+
     <div class="slider-field">
       <div class="slider-label"><span>Sleep Hours</span><span id="val-sleep">7</span></div>
       <input type="range" min="0" max="12" step="0.5" value="7" id="inp-sleep" oninput="updateSlider('sleep')">
@@ -489,6 +524,14 @@
   <!-- GROUP 6: PERFORMANCE -->
   <div class="log-group" id="group-performance">
     <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:1rem">Performance & Focus</div>
+
+    <!-- Quick-add focus hours buttons -->
+    <div style="display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap">
+      <button onclick="quickSetFocus(4)" style="padding:6px 12px;border-radius:var(--radius-sm);border:1px solid var(--border);background:rgba(108,99,255,0.1);color:var(--text-primary);cursor:pointer;font-size:12px;font-family:var(--font)">🎯 4h</button>
+      <button onclick="quickSetFocus(6)" style="padding:6px 12px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;font-size:12px;font-family:var(--font)">🎯 6h</button>
+      <button onclick="quickSetFocus(8)" style="padding:6px 12px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;font-size:12px;font-family:var(--font)">🎯 8h</button>
+      <button onclick="quickSetFocus(2)" style="padding:6px 12px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;font-size:12px;font-family:var(--font)">🎯 2h</button>
+    </div>
 
     <div class="slider-field">
       <div class="slider-label"><span>Focus Hours (deep work)</span><span id="val-focushours">0</span></div>
@@ -949,6 +992,26 @@
     <button onclick="loadAnalytics('1y')" id="period-1y" class="period-btn" style="flex:1;padding:10px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;font-size:13px;font-family:var(--font)">1Y</button>
   </div>
 
+  <!-- Summary Stats Cards -->
+  <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:1.5rem">
+    <div style="background:linear-gradient(135deg,#1a1a2e,#16213e);border:1px solid var(--border);border-radius:var(--radius);padding:1rem">
+      <div id="stat-avg-score" style="font-size:24px;font-weight:700;color:var(--accent)">—</div>
+      <div style="font-size:11px;color:var(--text-muted)">Avg VEKTRA Score</div>
+    </div>
+    <div style="background:linear-gradient(135deg,#1a1a2e,#16213e);border:1px solid var(--border);border-radius:var(--radius);padding:1rem">
+      <div id="stat-best-day" style="font-size:24px;font-weight:700;color:var(--success)">—</div>
+      <div style="font-size:11px;color:var(--text-muted)">Best Day</div>
+    </div>
+    <div style="background:linear-gradient(135deg,#1a1a2e,#16213e);border:1px solid var(--border);border-radius:var(--radius);padding:1rem">
+      <div id="stat-total-income" style="font-size:24px;font-weight:700;color:var(--text-primary)">—</div>
+      <div style="font-size:11px;color:var(--text-muted)">Total Income</div>
+    </div>
+    <div style="background:linear-gradient(135deg,#1a1a2e,#16213e);border:1px solid var(--border);border-radius:var(--radius);padding:1rem">
+      <div id="stat-streak" style="font-size:24px;font-weight:700;color:var(--warning)">—</div>
+      <div style="font-size:11px;color:var(--text-muted)">Current Streak</div>
+    </div>
+  </div>
+
   <!-- VEKTRA Score Chart -->
   <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
     <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">VEKTRA Score</div>
@@ -1087,8 +1150,30 @@
       <button class="btn-primary" onclick="updateReminder()" style="margin-top:.5rem">Save Reminder</button>
     </div>
 
+    <!-- Appearance -->
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
+      <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">Appearance</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+        <div>
+          <div style="font-size:14px;color:var(--text-primary);font-weight:500">Dark Mode</div>
+          <div style="font-size:12px;color:var(--text-muted)">Use dark theme</div>
+        </div>
+        <label style="display:flex;align-items:center;cursor:pointer">
+          <input type="checkbox" id="settings-darkmode" onchange="toggleDarkMode()" style="width:44px;height:24px;appearance:none;background:var(--border);border-radius:12px;position:relative;cursor:pointer;transition:background .3s">
+          <span style="position:absolute;top:2px;left:2px;width:20px;height:20px;background:var(--text-primary);border-radius:50%;transition:transform .3s;transform:translateX(0)" id="darkmode-toggle"></span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Data Management -->
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
+      <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">Data Management</div>
+      <button class="btn-secondary" onclick="clearCache()" style="width:100%;margin-bottom:.5rem">Clear Local Cache</button>
+      <button class="btn-secondary" onclick="exportData()" style="width:100%">Export My Data</button>
+    </div>
+
     <!-- Danger Zone -->
-    <div style="background:rgba(239,68,68,0.05);border:1px solid rgba(239,68,68,0.2);border-radius:var(--radius);padding:1.25rem;margin-bottom:3rem">
+    <div style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:var(--radius);padding:1.25rem;margin-bottom:3rem">
       <div style="font-size:11px;color:var(--danger);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">Danger Zone</div>
       <div style="font-size:13px;color:var(--text-secondary);margin-bottom:1rem">Deleting your account is permanent. All your logs, scores and reports will be lost forever.</div>
       <button onclick="confirmDeleteAccount()" style="width:100%;padding:12px;background:transparent;border:1px solid var(--danger);border-radius:var(--radius-sm);color:var(--danger);font-size:14px;font-weight:600;cursor:pointer;font-family:var(--font)">Delete Account</button>
