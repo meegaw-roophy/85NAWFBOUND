@@ -313,6 +313,45 @@ if ('serviceWorker' in navigator) {
   });
 }
 
+// ── Email validation helper ──
+function validateEmail(email) {
+  // Check format
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return { valid: false, message: 'Please enter a valid email address.' };
+  }
+  
+  // Check for disposable email domains (common ones)
+  const disposableDomains = [
+    'tempmail.com', 'guerrillamail.com', 'mailinator.com', '10minutemail.com',
+    'yopmail.com', 'trashmail.com', 'sharklasers.com', 'getairmail.com',
+    'throwawaymail.com', 'temp-mail.org', 'fakeinbox.com', 'maildrop.cc'
+  ];
+  
+  const domain = email.split('@')[1].toLowerCase();
+  if (disposableDomains.includes(domain)) {
+    return { valid: false, message: 'Disposable email addresses are not allowed.' };
+  }
+  
+  // Check for common typos in major domains
+  const commonTypos = {
+    'gmial.com': 'gmail.com',
+    'gmal.com': 'gmail.com',
+    'gmil.com': 'gmail.com',
+    'yahooo.com': 'yahoo.com',
+    'yaho.com': 'yahoo.com',
+    'hotmial.com': 'hotmail.com',
+    'hotmil.com': 'hotmail.com',
+    'outlok.com': 'outlook.com',
+    'outlookt.com': 'outlook.com'
+  };
+  
+  if (commonTypos[domain]) {
+    return { valid: false, message: `Did you mean ${email.split('@')[0]}@${commonTypos[domain]}?` };
+  }
+  
+  return { valid: true };
+}
+
 // ── Register ──
 async function register() {
   const name     = document.getElementById('reg-name').value.trim();
@@ -329,11 +368,15 @@ async function register() {
     errEl.style.display = 'block';
     return;
   }
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    errEl.textContent = 'Please enter a valid email address.';
+  
+  // Use improved email validation
+  const emailValidation = validateEmail(email);
+  if (!emailValidation.valid) {
+    errEl.textContent = emailValidation.message;
     errEl.style.display = 'block';
     return;
   }
+  
   if (password.length < 8) {
     errEl.textContent = 'Password must be at least 8 characters.';
     errEl.style.display = 'block';
@@ -1427,6 +1470,12 @@ async function openProfile() {
   document.getElementById('vek-credits').textContent = '0';
   document.getElementById('referral-count').textContent = '0';
   
+  // Populate body metrics
+  document.getElementById('profile-weight').value = currentUser.weight || '';
+  document.getElementById('profile-height').value = currentUser.height || '';
+  document.getElementById('profile-age').value = currentUser.age || '';
+  document.getElementById('profile-gender').value = currentUser.gender || '';
+  
   // Try cache first
   const cachedSnapshots = Cache.get(`snapshots_${currentUser.id}`);
   if (cachedSnapshots) {
@@ -1486,6 +1535,10 @@ async function openProfile() {
 async function saveProfile() {
   if (!currentUser || !authToken) return;
   const northStar = document.getElementById('profile-northstar').value.trim();
+  const weight = document.getElementById('profile-weight').value;
+  const height = document.getElementById('profile-height').value;
+  const age = document.getElementById('profile-age').value;
+  const gender = document.getElementById('profile-gender').value;
   const successEl = document.getElementById('profile-success');
   const errorEl = document.getElementById('profile-error');
   const saveBtn = document.getElementById('profile-save-btn');
@@ -1501,10 +1554,21 @@ async function saveProfile() {
     saveBtn.textContent = 'Saving...';
   }
   try {
+    const updateData = { 
+      north_star: northStar, 
+      preferred_feedback_tone: profileTone 
+    };
+    
+    // Add body metrics if provided
+    if (weight) updateData.weight = parseFloat(weight);
+    if (height) updateData.height = parseFloat(height);
+    if (age) updateData.age = parseInt(age);
+    if (gender) updateData.gender = gender;
+    
     const res = await fetch(`${API}/api/v1/users/me`, {
       method: 'PATCH',
       headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ north_star: northStar, preferred_feedback_tone: profileTone })
+      body: JSON.stringify(updateData)
     });
     if (res.ok) {
       currentUser = await res.json();
