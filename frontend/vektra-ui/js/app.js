@@ -4014,11 +4014,12 @@ async function openUpgrade() {
   goTo('upgrade');
   selectedTierUpgrade = 'tier1';
   document.getElementById('days-slider').value = 30;
-  document.getElementById('days-display').textContent = '30 days';
+  document.getElementById('amount-input').value = 302;
   document.getElementById('price-content').style.display = 'none';
   document.getElementById('price-loading').style.display = 'block';
   document.getElementById('milestone-badge').style.display = 'none';
-  await calculatePrice(30);
+  updateAmountConstraints();
+  await onSliderChange(30);
 }
 
 function selectTier(tier) {
@@ -4037,13 +4038,132 @@ function selectTier(tier) {
     }
   });
 
+  updateAmountConstraints();
+  
   const days = parseInt(document.getElementById('days-slider').value);
-  calculatePrice(days);
+  onSliderChange(days);
+}
+
+function updateAmountConstraints() {
+  // Calculate min/max amounts based on tier pricing
+  const dailyRate = selectedTierUpgrade === 'tier1' ? 302 / 30 : 1130 / 30;
+  const minAmount = Math.round(dailyRate * 30); // 30 days minimum
+  const maxAmount = Math.round(dailyRate * 366); // 366 days maximum
+  
+  document.getElementById('min-amount').textContent = `KES ${minAmount.toLocaleString()}`;
+  document.getElementById('max-amount').textContent = `KES ${maxAmount.toLocaleString()}`;
+  
+  const amountInput = document.getElementById('amount-input');
+  amountInput.min = minAmount;
+  amountInput.max = maxAmount;
+}
+
+function switchTab(tab) {
+  const daysTab = document.getElementById('tab-days');
+  const amountTab = document.getElementById('tab-amount');
+  const daysOption = document.getElementById('option-days');
+  const amountOption = document.getElementById('option-amount');
+  
+  if (tab === 'days') {
+    daysTab.style.border = '1px solid var(--accent)';
+    daysTab.style.background = 'rgba(108,99,255,0.15)';
+    daysTab.style.color = 'var(--text-primary)';
+    amountTab.style.border = '1px solid var(--border)';
+    amountTab.style.background = 'transparent';
+    amountTab.style.color = 'var(--text-secondary)';
+    daysOption.style.display = 'block';
+    amountOption.style.display = 'none';
+  } else {
+    amountTab.style.border = '1px solid var(--accent)';
+    amountTab.style.background = 'rgba(108,99,255,0.15)';
+    amountTab.style.color = 'var(--text-primary)';
+    daysTab.style.border = '1px solid var(--border)';
+    daysTab.style.background = 'transparent';
+    daysTab.style.color = 'var(--text-secondary)';
+    amountOption.style.display = 'block';
+    daysOption.style.display = 'none';
+  }
 }
 
 function onSliderChange(value) {
   const days = parseInt(value);
   document.getElementById('days-display').textContent = `${days} days`;
+
+  // Calculate corresponding amount
+  const dailyRate = selectedTierUpgrade === 'tier1' ? 302 / 30 : 1130 / 30;
+  const amount = Math.round(dailyRate * days);
+  document.getElementById('amount-input').value = amount;
+
+  // Sync amount display
+  document.getElementById('days-display-amount').textContent = `${days} days`;
+
+  // Calculate expiry date
+  const expiryDate = new Date();
+  expiryDate.setDate(expiryDate.getDate() + days);
+  document.getElementById('expiry-display').textContent = expiryDate.toLocaleDateString('en-US', { 
+    weekday: 'short', 
+    month: 'short', 
+    day: 'numeric', 
+    year: 'numeric' 
+  });
+
+  // Show milestone badge
+  const milestones = [
+    {days:366, badge:'👑 Founder — Max savings + 61 FREE bonus days'},
+    {days:274, badge:'⭐⭐⭐⭐ 9 Months — +42 bonus days'},
+    {days:183, badge:'⭐⭐⭐ Half Year — +25 bonus days'},
+    {days:91,  badge:'⭐⭐ Quarter — +10 bonus days'},
+    {days:61,  badge:'⭐ 2 Months — +4 bonus days'}
+  ];
+  const milestone = milestones.find(m => days >= m.days);
+  const badgeEl = document.getElementById('milestone-badge');
+  if (milestone) {
+    badgeEl.textContent = milestone.badge;
+    badgeEl.style.display = 'block';
+  } else {
+    badgeEl.style.display = 'none';
+  }
+
+  // Debounced API call
+  debouncedCalculatePrice(days);
+}
+
+async function onAmountChange(amount) {
+  const amountNum = parseFloat(amount);
+  const dailyRate = selectedTierUpgrade === 'tier1' ? 302 / 30 : 1130 / 30;
+  const minAmount = Math.round(dailyRate * 30);
+  const maxAmount = Math.round(dailyRate * 366);
+  
+  if (!amountNum || amountNum < minAmount) {
+    document.getElementById('days-display-amount').textContent = '—';
+    document.getElementById('expiry-display').textContent = '—';
+    return;
+  }
+
+  // Clamp amount to valid range
+  const clampedAmount = Math.min(Math.max(amountNum, minAmount), maxAmount);
+  
+  // Calculate days based on tier pricing
+  let days = Math.floor(clampedAmount / dailyRate);
+  
+  // Cap at 366 days (1 year)
+  if (days > 366) days = 366;
+
+  document.getElementById('days-display-amount').textContent = `${days} days`;
+  document.getElementById('days-display').textContent = `${days} days`;
+
+  // Sync slider
+  document.getElementById('days-slider').value = days;
+
+  // Calculate expiry date
+  const expiryDate = new Date();
+  expiryDate.setDate(expiryDate.getDate() + days);
+  document.getElementById('expiry-display').textContent = expiryDate.toLocaleDateString('en-US', { 
+    weekday: 'short', 
+    month: 'short', 
+    day: 'numeric', 
+    year: 'numeric' 
+  });
 
   // Show milestone badge
   const milestones = [
@@ -4096,8 +4216,8 @@ async function calculatePrice(days) {
   }
 }
 
-// Debounced version for slider events
-const debouncedCalculatePrice = debounce((days) => calculatePrice(days), 300);
+// Debounced version for amount input events
+const debouncedCalculatePrice = debounce((days) => calculatePrice(days), 500);
 
 function getCountryCode() {
   const currencyToCountry = {
@@ -4109,51 +4229,42 @@ function getCountryCode() {
 }
 
 function renderPriceCard(data) {
-  const sym = data.symbol;
+  // Since we're not integrating payment yet, use the user's input amount
+  const amount = parseFloat(document.getElementById('amount-input').value) || 302;
+  const days = parseInt(document.getElementById('days-display').textContent) || 30;
+  const sym = 'KES';
   
   document.getElementById('price-loading').style.display = 'none';
   document.getElementById('price-content').style.display = 'block';
 
-  document.getElementById('price-total').textContent = `${sym} ${data.total.toLocaleString()}`;
-  document.getElementById('price-monthly-eq').textContent = `${sym} ${data.monthly_equivalent.toLocaleString()}/month equivalent`;
+  document.getElementById('price-total').textContent = `${sym} ${amount.toLocaleString()}`;
   
-  document.getElementById('price-subtotal').textContent = `${sym} ${data.subtotal.toLocaleString()}`;
-  document.getElementById('price-tax').textContent = `${sym} ${data.tax_amount.toLocaleString()}`;
-  document.getElementById('tax-pct').textContent = data.tax_rate;
-  document.getElementById('price-fee').textContent = `${sym} ${data.stripe_fee.toLocaleString()}`;
-  document.getElementById('price-final').textContent = `${sym} ${data.total.toLocaleString()}`;
-  document.getElementById('total-days-display').textContent = data.total_days;
+  // Calculate monthly equivalent
+  const monthlyEq = (amount / days * 30).toFixed(0);
+  document.getElementById('price-monthly-eq').textContent = `${sym} ${parseInt(monthlyEq).toLocaleString()}/month equivalent`;
+  
+  document.getElementById('price-subtotal').textContent = `${sym} ${amount.toLocaleString()}`;
+  document.getElementById('price-tax').textContent = `${sym} 0`;
+  document.getElementById('tax-pct').textContent = '0';
+  document.getElementById('price-fee').textContent = `${sym} 0`;
+  document.getElementById('price-final').textContent = `${sym} ${amount.toLocaleString()}`;
+  document.getElementById('total-days-display').textContent = days;
 
-  // Expires
-  const expires = new Date(data.expires_at);
-  document.getElementById('price-expires').textContent = expires.toLocaleDateString('en-US', {day:'numeric', month:'short', year:'numeric'});
+  // Expires - use the calculated expiry from onAmountChange
+  const expiryText = document.getElementById('expiry-display').textContent;
+  document.getElementById('price-expires').textContent = expiryText !== '—' ? expiryText : '—';
 
-  // Discount
-  if (data.discount_rate > 0) {
-    document.getElementById('discount-row').style.display = 'flex';
-    document.getElementById('discount-pct').textContent = data.discount_rate;
-    document.getElementById('price-discount').textContent = `-${sym} ${data.discount_amount.toLocaleString()}`;
-  } else {
-    document.getElementById('discount-row').style.display = 'none';
-  }
+  // Hide discount row for now
+  document.getElementById('discount-row').style.display = 'none';
 
-  // Savings
-  if (data.saved_amount > 0 || data.bonus_days > 0) {
-    document.getElementById('savings-card').style.display = 'block';
-    document.getElementById('price-saved').textContent = `${sym} ${data.saved_amount.toLocaleString()}`;
-    document.getElementById('price-bonus-days').textContent = data.bonus_days > 0 ? `+${data.bonus_days} FREE bonus days included` : '';
-  } else {
-    document.getElementById('savings-card').style.display = 'none';
-  }
+  // Hide savings card for now
+  document.getElementById('savings-card').style.display = 'none';
 
   // Enable checkout button only if T&Cs checked
   const btn = document.getElementById('checkout-btn');
   const termsChecked = document.getElementById('terms-checkbox').checked;
   btn.disabled = !termsChecked;
-  btn.textContent = termsChecked ? `Pay ${sym} ${data.total.toLocaleString()} →` : 'Accept Terms to Continue';
-
-  // Start price lock countdown
-  startPriceLockCountdown();
+  btn.textContent = termsChecked ? `Pay ${sym} ${amount.toLocaleString()} →` : 'Accept Terms to Continue';
 }
 
 function startPriceLockCountdown() {
@@ -4236,6 +4347,9 @@ window.priceLockSeconds = priceLockSeconds;
 window.openUpgrade = openUpgrade;
 window.selectTier = selectTier;
 window.onSliderChange = onSliderChange;
+window.onAmountChange = onAmountChange;
+window.switchTab = switchTab;
+window.updateAmountConstraints = updateAmountConstraints;
 window.calculatePrice = calculatePrice;
 window.getCountryCode = getCountryCode;
 window.renderPriceCard = renderPriceCard;

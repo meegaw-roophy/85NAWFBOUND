@@ -1394,34 +1394,76 @@
       </button>
     </div>
 
-    <!-- Slider Section -->
+    <!-- Duration Selection -->
     <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
       <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.5rem">Commitment Period</div>
-      <div style="font-size:13px;color:var(--text-muted);margin-bottom:1rem">Only 30 days? Are we building a legacy or just a hobby? Slide more to commit and save money.</div>
+      <div style="font-size:13px;color:var(--text-muted);margin-bottom:1rem">Choose by days or by amount. Both options sync automatically.</div>
       
-      <!-- Slider -->
-      <input type="range" id="days-slider" min="30" max="366" value="30" 
-            oninput="onSliderChange(this.value)"
-            style="width:100%;accent-color:var(--accent);cursor:pointer;margin-bottom:.75rem">
-      
-      <!-- Days display -->
+      <!-- Tab toggle -->
+      <div style="display:flex;gap:8px;margin-bottom:1rem">
+        <button id="tab-days" onclick="switchTab('days')" style="flex:1;padding:8px;border-radius:var(--radius-sm);border:1px solid var(--accent);background:rgba(108,99,255,0.15);color:var(--text-primary);cursor:pointer;font-size:13px;font-weight:600;font-family:var(--font)">By Days</button>
+        <button id="tab-amount" onclick="switchTab('amount')" style="flex:1;padding:8px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;font-size:13px;font-weight:600;font-family:var(--font)">By Amount</button>
+      </div>
+
+      <!-- Days Slider Option -->
+      <div id="option-days">
+        <div style="font-size:13px;color:var(--text-muted);margin-bottom:1rem">Only 30 days? Are we building a legacy or just a hobby? Slide more to commit and save money.</div>
+        
+        <!-- Slider -->
+        <input type="range" id="days-slider" min="30" max="366" value="30" 
+              oninput="onSliderChange(this.value)"
+              style="width:100%;accent-color:var(--accent);cursor:pointer;margin-bottom:.75rem">
+        
+        <!-- Days display -->
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem">
+          <span style="font-size:13px;color:var(--text-muted)">Duration</span>
+          <span id="days-display" style="font-size:20px;font-weight:800;color:var(--text-primary)">30 days</span>
+        </div>
+
+        <!-- Milestone markers -->
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-muted);margin-bottom:.5rem">
+          <span>30</span>
+          <span>61⭐</span>
+          <span>91⭐⭐</span>
+          <span>183⭐⭐⭐</span>
+          <span>274⭐⭐⭐⭐</span>
+          <span>366👑</span>
+        </div>
+      </div>
+
+      <!-- Amount Input Option -->
+      <div id="option-amount" style="display:none">
+        <div style="font-size:13px;color:var(--text-muted);margin-bottom:1rem">Enter how much you want to spend. We'll calculate your access duration.</div>
+        
+        <!-- Amount input with min/max hints -->
+        <div style="margin-bottom:.5rem">
+          <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-muted);margin-bottom:4px">
+            <span>Min: <span id="min-amount">KES 302</span></span>
+            <span>Max: <span id="max-amount">KES 3,684</span></span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:.75rem">
+            <span style="font-size:18px;font-weight:700;color:var(--text-muted)">KES</span>
+            <input type="number" id="amount-input" min="302" max="3684" value="302" 
+                  oninput="onAmountChange(this.value)"
+                  style="flex:1;padding:12px 14px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:18px;font-weight:700;font-family:var(--font);outline:none">
+          </div>
+        </div>
+        
+        <!-- Days display -->
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem">
+          <span style="font-size:13px;color:var(--text-muted)">You get</span>
+          <span id="days-display-amount" style="font-size:20px;font-weight:800;color:var(--accent)">30 days</span>
+        </div>
+      </div>
+
+      <!-- Expiry display (shared) -->
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem">
-        <span style="font-size:13px;color:var(--text-muted)">Duration</span>
-        <span id="days-display" style="font-size:20px;font-weight:800;color:var(--text-primary)">30 days</span>
+        <span style="font-size:13px;color:var(--text-muted)">Expires on</span>
+        <span id="expiry-display" style="font-size:14px;font-weight:600;color:var(--text-primary)">—</span>
       </div>
 
       <!-- Milestone badge -->
       <div id="milestone-badge" style="display:none;text-align:center;padding:8px;background:rgba(108,99,255,0.1);border:1px solid rgba(108,99,255,0.3);border-radius:var(--radius-sm);margin-bottom:.75rem;font-size:13px;color:var(--accent)"></div>
-
-      <!-- Milestone markers -->
-      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-muted);margin-bottom:.5rem">
-        <span>30</span>
-        <span>61⭐</span>
-        <span>91⭐⭐</span>
-        <span>183⭐⭐⭐</span>
-        <span>274⭐⭐⭐⭐</span>
-        <span>366👑</span>
-      </div>
     </div>
 
     <!-- Price Card -->
