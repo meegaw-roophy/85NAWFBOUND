@@ -3551,13 +3551,13 @@ function exportData() {
     return;
   }
   
-  const exportData = {
+  const exportPayload = {
     user: currentUser,
     exportDate: new Date().toISOString(),
     version: '1.0'
   };
   
-  const dataStr = JSON.stringify(exportData, null, 2);
+  const dataStr = JSON.stringify(exportPayload, null, 2);
   const dataBlob = new Blob([dataStr], { type: 'application/json' });
   const url = URL.createObjectURL(dataBlob);
   
@@ -4340,6 +4340,7 @@ window.generateInsight = generateInsight;
 window.login = login;
 window.register = register;
 window.loginWithCredentials = loginWithCredentials;
+window.exportData = exportData;
 window.filterHistory = filterHistory;
 window.openTrajectoryHistory = openTrajectoryHistory;
 window.viewReport = viewReport;
