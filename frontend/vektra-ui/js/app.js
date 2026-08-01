@@ -3122,6 +3122,8 @@ async function exportData(format) {
   }
   
   try {
+    showToast(`Preparing your ${format.toUpperCase()} export...`, 'info');
+    
     const res = await fetch(`${API}/api/v1/export/${format}`, {
       headers: { 'Authorization': `Bearer ${authToken}` }
     });
@@ -3131,14 +3133,14 @@ async function exportData(format) {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `vektra_export_${currentUser.username}.${format}`;
+      a.download = `vektra_export_${currentUser.username}_${new Date().toISOString().split('T')[0]}.${format}`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
       showToast(`Data exported as ${format.toUpperCase()}`, 'success');
     } else {
-      showToast('Failed to export data', 'error');
+      showToast('Failed to export data from server', 'error');
     }
   } catch (e) {
     console.error('Error exporting data:', e);
@@ -3545,33 +3547,6 @@ function clearCache() {
   }
 }
 
-function exportData() {
-  if (!currentUser) {
-    showToast('No user data to export', 'error');
-    return;
-  }
-  
-  const exportData = {
-    user: currentUser,
-    exportDate: new Date().toISOString(),
-    version: '1.0'
-  };
-  
-  const dataStr = JSON.stringify(exportData, null, 2);
-  const dataBlob = new Blob([dataStr], { type: 'application/json' });
-  const url = URL.createObjectURL(dataBlob);
-  
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = `vektra-export-${currentUser.username}-${new Date().toISOString().split('T')[0]}.json`;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
-  
-  showToast('Data exported successfully', 'success');
-}
-
 function confirmDeleteAccount() {
   if (confirm('Are you absolutely sure? This cannot be undone. All your data will be permanently deleted.')) {
     showToast('Account deletion coming soon. Contact support.', 'warning');
@@ -3581,7 +3556,6 @@ function confirmDeleteAccount() {
 window.confirmDeleteAccount = confirmDeleteAccount;
 window.toggleDarkMode = toggleDarkMode;
 window.clearCache = clearCache;
-window.exportData = exportData;
 window.showNotifications = showNotifications;
 window.clearNotifications = clearNotifications;
 window.showError = showError;
