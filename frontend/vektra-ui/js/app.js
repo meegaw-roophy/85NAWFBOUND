@@ -3958,25 +3958,45 @@ function getLanguageName(code) {
 // ── Currency pricing by region ──
 function getPricingForCurrency(currency) {
   const pricing = {
-    // Africa
-    'KES': { tier1: 499,    tier2: 1999,  symbol: 'KES', name: 'Kenya' },
-    'NGN': { tier1: 2999,   tier2: 9999,  symbol: '₦',   name: 'Nigeria' },
-    'GHS': { tier1: 29,     tier2: 99,    symbol: '₵',   name: 'Ghana' },
-    'ZAR': { tier1: 74,     tier2: 279,   symbol: 'R',   name: 'South Africa' },
-    'UGX': { tier1: 14900,  tier2: 54900, symbol: 'UGX', name: 'Uganda' },
-    'TZS': { tier1: 9900,   tier2: 39900, symbol: 'TZS', name: 'Tanzania' },
-    // Americas
-    'USD': { tier1: 3.99,   tier2: 14.99, symbol: '$',   name: 'US' },
-    'BRL': { tier1: 19.90,  tier2: 74.90, symbol: 'R$',  name: 'Brazil' },
-    'MXN': { tier1: 69,     tier2: 249,   symbol: '$',   name: 'Mexico' },
-    // Europe
-    'GBP': { tier1: 3.49,   tier2: 12.99, symbol: '£',   name: 'UK' },
-    'EUR': { tier1: 3.99,   tier2: 14.99, symbol: '€',   name: 'Europe' },
-    // Asia
-    'INR': { tier1: 329,    tier2: 1249,  symbol: '₹',   name: 'India' },
-    'PKR': { tier1: 1099,   tier2: 3999,  symbol: '₨',   name: 'Pakistan' },
+    'KES': { tier1: 20, tier2: 50, tier3: 100, symbol: 'KES', name: 'Kenya' },
+    'NGN': { tier1: 20, tier2: 50, tier3: 100, symbol: '₦', name: 'Nigeria' },
+    'GHS': { tier1: 20, tier2: 50, tier3: 100, symbol: '₵', name: 'Ghana' },
+    'ZAR': { tier1: 20, tier2: 50, tier3: 100, symbol: 'R', name: 'South Africa' },
+    'UGX': { tier1: 20, tier2: 50, tier3: 100, symbol: 'UGX', name: 'Uganda' },
+    'TZS': { tier1: 20, tier2: 50, tier3: 100, symbol: 'TZS', name: 'Tanzania' },
+    'USD': { tier1: 20, tier2: 50, tier3: 100, symbol: '$', name: 'US' },
+    'BRL': { tier1: 20, tier2: 50, tier3: 100, symbol: 'R$', name: 'Brazil' },
+    'MXN': { tier1: 20, tier2: 50, tier3: 100, symbol: '$', name: 'Mexico' },
+    'GBP': { tier1: 20, tier2: 50, tier3: 100, symbol: '£', name: 'UK' },
+    'EUR': { tier1: 20, tier2: 50, tier3: 100, symbol: '€', name: 'Europe' },
+    'INR': { tier1: 20, tier2: 50, tier3: 100, symbol: '₹', name: 'India' },
+    'PKR': { tier1: 20, tier2: 50, tier3: 100, symbol: '₨', name: 'Pakistan' },
   };
   return pricing[currency] || pricing['USD'];
+}
+
+function getTierPreviewPrice(tier, currency = 'USD') {
+  const pricing = getPricingForCurrency(currency);
+  const base = pricing[tier] || pricing.tier1 || 20;
+  const fxRates = {
+    USD: 1, KES: 129.5, NGN: 1520, GHS: 15.2, ZAR: 18.4, UGX: 3720,
+    TZS: 2680, GBP: 0.78, EUR: 0.91, CAD: 1.36, AUD: 1.52, INR: 83.5,
+    PKR: 278, BRL: 5.1, MXN: 17.2, EGP: 48.5, ZMW: 27, XOF: 600
+  };
+  const pppRates = {
+    USD: 1.0, KES: 0.70, NGN: 0.55, GHS: 0.55, ZAR: 0.65, UGX: 0.40,
+    TZS: 0.48, GBP: 1.0, EUR: 1.0, INR: 0.55, PKR: 0.55, BRL: 0.65,
+    MXN: 0.65, CAD: 1.0, AUD: 1.0, EGP: 0.55, ZMW: 0.48, XOF: 0.40
+  };
+  const fx = fxRates[currency] || 1;
+  const ppp = pppRates[currency] || 0.70;
+  return Math.round(base * ppp * fx);
+}
+
+function getTierDisplayPrice(tier, currency = 'USD') {
+  const symbol = getPricingForCurrency(currency).symbol || '$';
+  const amount = getTierPreviewPrice(tier, currency);
+  return `${symbol} ${amount.toLocaleString()}`;
 }
 
 function generateInsight(latest) {
@@ -4014,18 +4034,28 @@ async function openUpgrade() {
   goTo('upgrade');
   selectedTierUpgrade = 'tier1';
   document.getElementById('days-slider').value = 30;
-  document.getElementById('amount-input').value = 302;
+  const currency = currentUser?.currency || 'USD';
+  document.getElementById('amount-input').value = getTierPreviewPrice('tier1', currency);
   document.getElementById('price-content').style.display = 'none';
   document.getElementById('price-loading').style.display = 'block';
   document.getElementById('milestone-badge').style.display = 'none';
+  updateTierButtonLabels();
   updateAmountConstraints();
   await onSliderChange(30);
+}
+
+function updateTierButtonLabels() {
+  const currency = currentUser?.currency || 'USD';
+  ['tier1', 'tier2', 'tier3'].forEach(tier => {
+    const el = document.getElementById(`tier-price-${tier}`);
+    if (el) el.textContent = `${getTierDisplayPrice(tier, currency)}/mo`;
+  });
 }
 
 function selectTier(tier) {
   selectedTierUpgrade = tier;
   
-  ['tier1','tier2'].forEach(t => {
+  ['tier1','tier2','tier3'].forEach(t => {
     const btn = document.getElementById(`tier-btn-${t}`);
     if (t === tier) {
       btn.style.border = '2px solid var(--accent)';
@@ -4045,13 +4075,15 @@ function selectTier(tier) {
 }
 
 function updateAmountConstraints() {
-  // Calculate min/max amounts based on tier pricing
-  const dailyRate = selectedTierUpgrade === 'tier1' ? 302 / 30 : 1130 / 30;
-  const minAmount = Math.round(dailyRate * 30); // 30 days minimum
-  const maxAmount = Math.round(dailyRate * 366); // 366 days maximum
+  const currency = currentUser?.currency || 'USD';
+  const monthlyPrice = getTierPreviewPrice(selectedTierUpgrade, currency);
+  const dailyRate = monthlyPrice / 30;
+  const minAmount = Math.round(dailyRate * 30);
+  const maxAmount = Math.round(dailyRate * 366);
   
-  document.getElementById('min-amount').textContent = `KES ${minAmount.toLocaleString()}`;
-  document.getElementById('max-amount').textContent = `KES ${maxAmount.toLocaleString()}`;
+  const symbol = getPricingForCurrency(currency).symbol || '$';
+  document.getElementById('min-amount').textContent = `${symbol} ${minAmount.toLocaleString()}`;
+  document.getElementById('max-amount').textContent = `${symbol} ${maxAmount.toLocaleString()}`;
   
   const amountInput = document.getElementById('amount-input');
   amountInput.min = minAmount;
@@ -4089,8 +4121,9 @@ function onSliderChange(value) {
   const days = parseInt(value);
   document.getElementById('days-display').textContent = `${days} days`;
 
-  // Calculate corresponding amount
-  const dailyRate = selectedTierUpgrade === 'tier1' ? 302 / 30 : 1130 / 30;
+  const currency = currentUser?.currency || 'USD';
+  const monthlyPrice = getTierPreviewPrice(selectedTierUpgrade, currency);
+  const dailyRate = monthlyPrice / 30;
   const amount = Math.round(dailyRate * days);
   document.getElementById('amount-input').value = amount;
 
@@ -4130,7 +4163,9 @@ function onSliderChange(value) {
 
 async function onAmountChange(amount) {
   const amountNum = parseFloat(amount);
-  const dailyRate = selectedTierUpgrade === 'tier1' ? 302 / 30 : 1130 / 30;
+  const currency = currentUser?.currency || 'USD';
+  const monthlyPrice = getTierPreviewPrice(selectedTierUpgrade, currency);
+  const dailyRate = monthlyPrice / 30;
   const minAmount = Math.round(dailyRate * 30);
   const maxAmount = Math.round(dailyRate * 366);
   
@@ -4229,42 +4264,36 @@ function getCountryCode() {
 }
 
 function renderPriceCard(data) {
-  // Since we're not integrating payment yet, use the user's input amount
-  const amount = parseFloat(document.getElementById('amount-input').value) || 302;
-  const days = parseInt(document.getElementById('days-display').textContent) || 30;
-  const sym = 'KES';
-  
+  const amount = data?.total || parseFloat(document.getElementById('amount-input').value) || 0;
+  const days = data?.days || parseInt(document.getElementById('days-display').textContent) || 30;
+  const currency = data?.currency || currentUser?.currency || 'USD';
+  const symbol = data?.symbol || getPricingForCurrency(currency).symbol || '$';
+  const savings = data?.you_save || 0;
+  const discountPct = data?.discount_rate_pct || 0;
+
   document.getElementById('price-loading').style.display = 'none';
   document.getElementById('price-content').style.display = 'block';
 
-  document.getElementById('price-total').textContent = `${sym} ${amount.toLocaleString()}`;
-  
-  // Calculate monthly equivalent
-  const monthlyEq = (amount / days * 30).toFixed(0);
-  document.getElementById('price-monthly-eq').textContent = `${sym} ${parseInt(monthlyEq).toLocaleString()}/month equivalent`;
-  
-  document.getElementById('price-subtotal').textContent = `${sym} ${amount.toLocaleString()}`;
-  document.getElementById('price-tax').textContent = `${sym} 0`;
-  document.getElementById('tax-pct').textContent = '0';
-  document.getElementById('price-fee').textContent = `${sym} 0`;
-  document.getElementById('price-final').textContent = `${sym} ${amount.toLocaleString()}`;
+  document.getElementById('price-total').textContent = `${symbol} ${amount.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+  document.getElementById('price-monthly-eq').textContent = `${symbol} ${parseFloat(data?.monthly_equivalent || (amount / days * 30)).toLocaleString(undefined, { maximumFractionDigits: 2 })}/month equivalent`;
+  document.getElementById('price-final').textContent = `${symbol} ${amount.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
   document.getElementById('total-days-display').textContent = days;
 
-  // Expires - use the calculated expiry from onAmountChange
   const expiryText = document.getElementById('expiry-display').textContent;
   document.getElementById('price-expires').textContent = expiryText !== '—' ? expiryText : '—';
 
-  // Hide discount row for now
-  document.getElementById('discount-row').style.display = 'none';
+  if (savings > 0) {
+    document.getElementById('price-saved').textContent = `${symbol} ${savings.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+    document.getElementById('price-bonus-days').textContent = `Discount ${discountPct.toFixed(1)}% applied`;
+    document.getElementById('savings-card').style.display = 'block';
+  } else {
+    document.getElementById('savings-card').style.display = 'none';
+  }
 
-  // Hide savings card for now
-  document.getElementById('savings-card').style.display = 'none';
-
-  // Enable checkout button only if T&Cs checked
   const btn = document.getElementById('checkout-btn');
   const termsChecked = document.getElementById('terms-checkbox').checked;
   btn.disabled = !termsChecked;
-  btn.textContent = termsChecked ? `Pay ${sym} ${amount.toLocaleString()} →` : 'Accept Terms to Continue';
+  btn.textContent = termsChecked ? `Pay ${symbol} ${amount.toLocaleString(undefined, { maximumFractionDigits: 2 })} →` : 'Accept Terms to Continue';
 }
 
 function startPriceLockCountdown() {

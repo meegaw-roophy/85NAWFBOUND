@@ -1275,10 +1275,13 @@
     <!-- Tier Selector -->
     <div style="display:flex;gap:8px;margin-bottom:1.5rem">
       <button id="tier-btn-tier1" onclick="selectTier('tier1')" style="flex:1;padding:12px;border-radius:var(--radius-sm);border:2px solid var(--accent);background:rgba(108,99,255,0.15);color:var(--text-primary);cursor:pointer;font-family:var(--font);font-weight:600;font-size:14px">
-        Vector<br><span style="font-size:11px;color:var(--text-muted);font-weight:400">~KES 302/mo</span>
+        Vector<br><span id="tier-price-tier1" style="font-size:11px;color:var(--text-muted);font-weight:400">Loading…</span>
       </button>
       <button id="tier-btn-tier2" onclick="selectTier('tier2')" style="flex:1;padding:12px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;font-family:var(--font);font-weight:600;font-size:14px">
-        Apex<br><span style="font-size:11px;color:var(--text-muted);font-weight:400">~KES 1,130/mo</span>
+        Apex<br><span id="tier-price-tier2" style="font-size:11px;color:var(--text-muted);font-weight:400">Loading…</span>
+      </button>
+      <button id="tier-btn-tier3" onclick="selectTier('tier3')" style="flex:1;padding:12px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;font-family:var(--font);font-weight:600;font-size:14px">
+        Founder<br><span id="tier-price-tier3" style="font-size:11px;color:var(--text-muted);font-weight:400">Loading…</span>
       </button>
     </div>
 
@@ -1333,22 +1336,7 @@
 
         <!-- Price breakdown -->
         <div style="display:flex;flex-direction:column;gap:6px;font-size:13px">
-          <div style="display:flex;justify-content:space-between">
-            <span style="color:var(--text-muted)">Subtotal</span>
-            <span id="price-subtotal">—</span>
-          </div>
-          <div id="discount-row" style="display:none;display:flex;justify-content:space-between">
-            <span style="color:var(--success)">Discount (<span id="discount-pct"></span>%)</span>
-            <span id="price-discount" style="color:var(--success)">—</span>
-          </div>
-          <div style="display:flex;justify-content:space-between">
-            <span style="color:var(--text-muted)">VAT (<span id="tax-pct"></span>%)</span>
-            <span id="price-tax">—</span>
-          </div>
-          <div style="display:flex;justify-content:space-between">
-            <span style="color:var(--text-muted)">Processing fee</span>
-            <span id="price-fee">—</span>
-          </div>
+          <div style="text-align:center;font-size:12px;color:var(--text-muted)">Simple total. No hidden taxes or fees.</div>
           <div style="border-top:1px solid var(--border);padding-top:6px;display:flex;justify-content:space-between;font-weight:700">
             <span>Total (<span id="total-days-display"></span> days)</span>
             <span id="price-final">—</span>
