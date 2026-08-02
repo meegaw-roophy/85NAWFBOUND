@@ -10,9 +10,9 @@ Philosophy:
     - Nothing else.
 
 Base prices (after 1.3333 multiplier applied internally):
-    Tier 1: $15/month target → charge $20/month → user sees local currency
-    Tier 2: $37.50/month target → charge $50/month → user sees local currency
-    Tier 3: $75/month target → charge $100/month → user sees local currency
+    Tier 1: $16.50/month target → charge $22/month → user sees local currency
+    Tier 2: $41.25/month target → charge $55/month → user sees local currency
+    Tier 3: $82.50/month target → charge $110/month → user sees local currency
 
 Discount caps:
     Tier 1: max 16.667% at 366 days (2 month free equivalent)
@@ -135,9 +135,9 @@ PPP_FACTORS = {
 #  Charged: $22/$55 (covers all fees/taxes)
 # ─────────────────────────────────────────────
 BASE_USD_MONTHLY = {
-    "tier1": 20,
-    "tier2": 50,
-    "tier3": 100,
+    "tier1": 22,
+    "tier2": 55,
+    "tier3": 110,
 }
 
 # Discount caps per tier
@@ -315,7 +315,7 @@ async def get_tiers(current_user: User = Depends(get_current_user)):
                     "👑 Founder badge",
                 ],
                 "cta": "Choose Apex",
-                "price_usd": 50,
+                "price_usd": 55,
             },
             {
                 "id": "tier3",
@@ -328,7 +328,7 @@ async def get_tiers(current_user: User = Depends(get_current_user)):
                     "Early access to new modules",
                 ],
                 "cta": "Choose Founder",
-                "price_usd": 100,
+                "price_usd": 110,
             }
         ]
     }

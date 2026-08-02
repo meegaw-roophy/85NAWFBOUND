@@ -313,6 +313,30 @@ if ('serviceWorker' in navigator) {
   });
 }
 
+// ── IP-based auto-detection ──
+async function detectUserLocation() {
+  try {
+    const res = await fetch('https://ipapi.co/json/');
+    if (res.ok) {
+      const data = await res.json();
+      return {
+        country: data.country_code || 'US',
+        currency: data.currency || 'USD',
+        timezone: data.timezone || 'UTC',
+        location: data.city ? `${data.city}, ${data.country_name}` : data.country_name
+      };
+    }
+  } catch (e) {
+    console.log('IP detection failed, using defaults');
+  }
+  return {
+    country: 'US',
+    currency: 'USD',
+    timezone: 'UTC',
+    location: 'Unknown'
+  };
+}
+
 // ── Email validation helper ──
 function validateEmail(email) {
   // Check format
@@ -394,10 +418,19 @@ async function register() {
   }
 
   try {
+    // Auto-detect user location
+    const locationData = await detectUserLocation();
+    
     const res = await fetch(`${API}/api/v1/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, email, password })
+      body: JSON.stringify({ 
+        username, 
+        email, 
+        password,
+        current_location: locationData.location,
+        currency: locationData.currency
+      })
     });
     const data = await res.json();
     if (!res.ok) {
@@ -451,25 +484,20 @@ async function loginWithCredentials(username, password) {
     // Clear cache on fresh login
     Cache.clear();
 
-    // 2. Safely auto-detect and sync PPP localization matrix
-    if (location && currentUser) {
-      const locationRes = await fetch(`${API}/api/v1/users/me`, {
+    // 2. Auto-detect and sync location if not set
+    if (currentUser && (!currentUser.current_location || !currentUser.currency)) {
+      const locationData = await detectUserLocation();
+      await fetch(`${API}/api/v1/users/me`, {
         method: 'PATCH',
         headers: { 
           'Authorization': `Bearer ${authToken}`, 
           'Content-Type': 'application/json' 
         },
         body: JSON.stringify({
-          current_location: location.location_string || "KE",
-          currency: location.currency || "KES",
-          language: location.language || "en",
+          current_location: locationData.location || currentUser.current_location,
+          currency: locationData.currency || currentUser.currency
         })
       });
-
-      if (locationRes.ok) {
-        // Safely update user profile state with localized values
-        currentUser = await locationRes.json(); 
-      }
     }
 
     // 3. Absolute safety fallback to prevent "reading properties of null"
@@ -1066,14 +1094,24 @@ function selectTone(tone) {
 function onboardStep1() {
   const goal = document.getElementById('ob-goal').value.trim();
   const deadline = document.getElementById('ob-deadline').value;
+  const dob = document.getElementById('ob-dob').value;
   const errEl = document.getElementById('ob1-error');
   const btnEl = document.getElementById('ob1-btn');
   errEl.style.display = 'none';
+  
+  // DOB is now required for birthday cards
+  if (!dob) {
+    errEl.textContent = 'Please enter your date of birth for birthday cards.';
+    errEl.style.display = 'block';
+    return;
+  }
+  
   if (!goal) {
     errEl.textContent = 'Please enter your north star goal.';
     errEl.style.display = 'block';
     return;
   }
+  
   if (btnEl) {
     btnEl.disabled = true;
     btnEl.textContent = 'Saving...';
@@ -1081,6 +1119,7 @@ function onboardStep1() {
   onboardData.primary_goal = goal;
   onboardData.north_star = deadline ? `${goal} — by ${deadline}` : goal;
   onboardData.north_star_deadline = deadline || null;
+  onboardData.dob = dob;
   setTimeout(() => {
     if (btnEl) {
       btnEl.disabled = false;
@@ -1473,7 +1512,7 @@ async function openProfile() {
   // Populate body metrics
   document.getElementById('profile-weight').value = currentUser.weight || '';
   document.getElementById('profile-height').value = currentUser.height || '';
-  document.getElementById('profile-age').value = currentUser.age || '';
+  document.getElementById('profile-dob').value = currentUser.dob || '';
   document.getElementById('profile-gender').value = currentUser.gender || '';
   
   // Try cache first
@@ -1537,7 +1576,6 @@ async function saveProfile() {
   const northStar = document.getElementById('profile-northstar').value.trim();
   const weight = document.getElementById('profile-weight').value;
   const height = document.getElementById('profile-height').value;
-  const age = document.getElementById('profile-age').value;
   const gender = document.getElementById('profile-gender').value;
   const successEl = document.getElementById('profile-success');
   const errorEl = document.getElementById('profile-error');
@@ -1559,10 +1597,9 @@ async function saveProfile() {
       preferred_feedback_tone: profileTone 
     };
     
-    // Add body metrics if provided
+    // Add body metrics if provided (DOB is locked, not editable)
     if (weight) updateData.weight = parseFloat(weight);
     if (height) updateData.height = parseFloat(height);
-    if (age) updateData.age = parseInt(age);
     if (gender) updateData.gender = gender;
     
     const res = await fetch(`${API}/api/v1/users/me`, {
