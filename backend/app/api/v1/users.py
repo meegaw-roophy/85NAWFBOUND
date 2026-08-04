@@ -25,6 +25,7 @@ class UserUpdate(BaseModel):
     ai_tone_language: Optional[str] = None
     reminder_time: Optional[time] = None
     current_location: Optional[str] = None
+    dob: Optional[date] = None
 
 
 class PasswordChange(BaseModel):

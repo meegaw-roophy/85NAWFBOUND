@@ -41,7 +41,7 @@
     <div class="welcome-logo">VEKTRA</div>
     <div class="welcome-subtitle">Vector = Magnitude × Direction</div>
     <div class="welcome-headline">Know your <span>trajectory.</span> Own your path.</div>
-    <div class="welcome-desc">Track what matters. Measure what moves. Get the harsh truth your progress deserves.</div>
+    <div class="welcome-desc">Track what matters, measure what moves, and see the trajectory behind every choice.</div>
     <button class="btn-primary" onclick="goTo('register')">Get Started</button>
     <button class="btn-secondary" onclick="goTo('login')">I already have an account</button>
   </div>
@@ -113,7 +113,7 @@
     </div>
 
     <div class="text-field" style="margin-bottom:24px">
-      <label>Date of Birth</label>
+      <label style="font-size:12px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.08em;display:block;margin-bottom:6px">Date of Birth </label>
       <input type="date" id="ob-dob" style="width:100%;padding:12px 14px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;font-family:var(--font);outline:none">
     </div>
 
@@ -276,7 +276,7 @@
           <div id="dash-vector-accuracy" style="font-size: 13px; font-weight: 600; color: var(--text-primary);">0% Match</div>
         </div>
       </div>
-      <div id="dash-trajectory" style="margin-top:14px;font-size:12px;color:var(--text-secondary);line-height:1.4;">Log today to update your score vector displacement.</div>
+      <div id="dash-trajectory" style="margin-top:14px;font-size:12px;color:var(--text-secondary);line-height:1.4;">Log today to fine-tune your trajectory and vector score.</div>
     </div>
   </div>
 
@@ -319,14 +319,14 @@
   <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:1rem;margin-bottom:1rem">
     <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.08em">This week summary</div>
     <div id="dash-week-summary" style="font-size:16px;font-weight:700;color:var(--text-primary)">0 logs • 0 unique days</div>
-    <div id="dash-week-status" style="font-size:13px;color:var(--text-secondary);margin-top:4px">Keep logging to unlock richer weekly insights</div>
+    <div id="dash-week-status" style="font-size:13px;color:var(--text-secondary);margin-top:4px">Keep logging to unlock a richer weekly trajectory summary.</div>
   </div>
 
   <!-- Real-time Pulse Metric -->
   <div style="background:linear-gradient(135deg,rgba(108,99,255,0.06),rgba(236,72,153,0.06));border:1px solid var(--border);border-radius:var(--radius-sm);padding:1rem;margin-bottom:1rem">
     <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.08em">Today’s pulse</div>
     <div id="dash-lastlog" style="font-size:14px;font-weight:600;color:var(--text-primary)">No logs yet</div>
-    <div id="dash-status" style="font-size:13px;color:var(--text-secondary);margin-top:4px">Start logging to build momentum</div>
+    <div id="dash-status" style="font-size:13px;color:var(--text-secondary);margin-top:4px">Start logging today to build momentum.</div>
   </div>
 
   <!-- Target North Star Parameter Row -->
@@ -339,7 +339,7 @@
   <div id="first-log-prompt" style="display:none;background:linear-gradient(135deg,rgba(108,99,255,0.15),rgba(236,72,153,0.15));border:1px solid var(--accent);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem;text-align:center">
     <div style="font-size:24px;margin-bottom:8px">🚀</div>
     <div style="font-weight:700;margin-bottom:6px">Your vector is set.</div>
-    <div style="font-size:13px;color:var(--text-secondary);margin-bottom:12px">Log your first day to activate your VEKTRA score.</div>
+    <div style="font-size:13px;color:var(--text-secondary);margin-bottom:12px">Log your first day to activate your VEKTRA trajectory score.</div>
     <button class="btn-primary" onclick="openDailyLog()" style="width:100%">Log Your First Day</button>
   </div>
 
@@ -349,6 +349,7 @@
   <button type="button" class="btn-secondary" style="margin-top:12px" onclick="event.preventDefault(); event.stopPropagation(); generateReport(event)">
     View Weekly Report
   </button>
+  <div style="font-size:12px;color:var(--text-muted);margin-top:10px;line-height:1.5">Your first weekly report becomes available after 3 logged days. Keep logging to unlock richer insights and trajectory guidance.</div>
 
   <button class="btn-secondary" style="margin-top:12px; margin-bottom: 1rem;" onclick="openHistory()">📋 View Log History</button>
 
@@ -632,16 +633,16 @@
     </div>
   </div>
 
-  <div id="report-readiness" style="display:block;background:rgba(236,72,153,0.08);border:1px solid rgba(236,72,153,0.3);border-radius:var(--radius-sm);padding:.85rem;margin-bottom:1rem;font-size:13px;color:var(--text-secondary)"></div>
+  <div id="report-readiness" style="display:block;background:rgba(236,72,153,0.08);border:1px solid rgba(236,72,153,0.3);border-radius:var(--radius-sm);padding:.85rem;margin-bottom:1rem;font-size:13px;color:var(--text-secondary)">Your weekly report arrives after at least 3 logged days. Keep tracking daily to unlock a meaningful trajectory analysis.</div>
 
   <!-- AI Narrative -->
   <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
     <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">VEKTRA Analysis</div>
-    <div id="report-narrative" style="font-size:14px;color:var(--text-secondary);line-height:1.8;white-space:pre-wrap">Generating your report...</div>
+    <div id="report-narrative" style="font-size:14px;color:var(--text-secondary);line-height:1.8;white-space:pre-wrap">Your weekly trajectory summary appears once VEKTRA has enough data. Keep logging daily to unlock actionable insights, trend clarity, and a stronger momentum playbook.</div>
     <div id="report-empty" style="display:none;text-align:center;padding:2rem">
       <div style="font-size:48px;margin-bottom:1rem">📊</div>
       <div style="font-size:16px;font-weight:600;color:var(--text-primary);margin-bottom:8px">Not enough data yet</div>
-      <div style="font-size:13px;color:var(--text-muted)">Log at least 3 days to unlock your first weekly report</div>
+      <div style="font-size:13px;color:var(--text-muted)">Log at least 3 days to unlock your first weekly report, built to reveal your trajectory and momentum.</div>
     </div>
   </div>
 
@@ -1126,7 +1127,7 @@
   <div id="trajectory-history-empty" style="display:none;text-align:center;padding:3rem 1.5rem">
     <div style="font-size:48px;margin-bottom:1rem">📜</div>
     <div style="font-size:16px;font-weight:600;color:var(--text-primary);margin-bottom:8px">No reports yet</div>
-    <div style="font-size:13px;color:var(--text-muted);margin-bottom:1.5rem">Your trajectory history will appear here</div>
+    <div style="font-size:13px;color:var(--text-muted);margin-bottom:1.5rem">Your trajectory history will appear here once you complete more daily logs. Keep tracking for full trend visibility.</div>
   </div>
 
 </div>
@@ -1283,6 +1284,7 @@
       <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">Current Plan</div>
       <div id="current-plan-name" style="font-size:20px;font-weight:700;color:var(--text-primary)">Loading...</div>
       <div id="current-plan-status" style="font-size:13px;color:var(--text-muted);margin-top:4px">Loading status...</div>
+      <div style="font-size:12px;color:var(--text-muted);margin-top:12px;line-height:1.5">Subscription management is in preview. This screen helps you review tiers and pricing while the gateway is being finalized.</div>
     </div>
 
     <!-- Plans Grid -->
@@ -1293,6 +1295,7 @@
     <!-- Payment Section -->
     <div id="payment-section" style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;display:none">
       <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">Payment Method</div>
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px;line-height:1.5">Payment gateway support is currently in preview. No live charges are processed until Stripe/M-Pesa setup is complete.</div>
       
       <div style="display:flex;gap:8px;margin-bottom:12px">
         <button id="pay-stripe-btn" onclick="selectPaymentMethod('stripe')" style="flex:1;padding:12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:transparent;color:var(--text-secondary);cursor:pointer;font-size:13px;font-family:var(--font)">💳 Stripe</button>
@@ -1322,7 +1325,7 @@
         <input type="tel" id="mpesa-phone" placeholder="+254700000000" style="width:100%;padding:10px 12px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;font-family:var(--font);outline:none;margin-bottom:12px">
       </div>
 
-      <button id="pay-button" onclick="processPayment()" style="width:100%;padding:12px;background:linear-gradient(135deg,#6c63ff,#ec4899);border:none;border-radius:var(--radius-sm);color:white;font-size:14px;font-weight:600;cursor:pointer;font-family:var(--font)">Pay Now</button>
+      <button id="pay-button" onclick="processPayment()" style="width:100%;padding:12px;background:linear-gradient(135deg,#6c63ff,#ec4899);border:none;border-radius:var(--radius-sm);color:white;font-size:14px;font-weight:600;cursor:pointer;font-family:var(--font)">Preview payment</button>
     </div>
 
   </div>
@@ -1400,6 +1403,7 @@
       </div>
       <div onclick="goTo('profile')" style="color:var(--text-muted);cursor:pointer;font-size:13px">← Back</div>
     </div>
+    <div style="font-size:12px;color:var(--text-muted);margin-bottom:1.5rem;line-height:1.5">The premium upgrade flow is under refinement. This preview helps you visualize pricing and commitment options before launch.</div>
 
     <!-- Tier Selector -->
     <div style="display:flex;gap:8px;margin-bottom:1.5rem">
@@ -1532,9 +1536,9 @@
 
     <!-- CTA Button -->
     <button id="checkout-btn" class="btn-primary" onclick="proceedToCheckout()" style="margin-bottom:.75rem" disabled>
-      Select a plan to continue
+      Accept Terms to Preview
     </button>
-    <div style="font-size:12px;color:var(--text-muted);text-align:center">Secure payment via Stripe (global) or M-Pesa (Kenya)</div>
+    <div style="font-size:12px;color:var(--text-muted);text-align:center">Preview mode only — payment flow is visible, but live charges are disabled until backend gateway setup is complete.</div>
 
   </div>
 
@@ -1567,6 +1571,71 @@
       <div style="text-align:center;margin-top:16px">
         <span onclick="goTo('login')" style="font-size:13px;color:var(--text-muted);cursor:pointer">← Back to login</span>
       </div>
+    </div>
+  </div>
+
+  <!-- SCREEN: BIRTHDAY CARD -->
+  <div id="birthday-card" style="display:none;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:1.5rem;background:linear-gradient(135deg,#0a0a0f,#1a0a2e)">
+
+    <div style="width:100%;max-width:380px">
+      <!-- Card -->
+      <div id="bd-card" style="background:linear-gradient(135deg,#1a1a2e,#16213e);border:1px solid rgba(108,99,255,0.4);border-radius:20px;padding:2rem;text-align:center;box-shadow:0 0 40px rgba(108,99,255,0.2)">
+        
+        <div style="font-size:48px;margin-bottom:.5rem">🎂</div>
+        
+        <div style="font-size:12px;color:var(--accent);text-transform:uppercase;letter-spacing:.15em;margin-bottom:.5rem">Happy Birthday</div>
+        
+        <div id="bd-name" style="font-size:28px;font-weight:800;margin-bottom:.25rem">—</div>
+        
+        <div id="bd-age" style="font-size:14px;color:var(--text-muted);margin-bottom:2rem">Year — begins today</div>
+
+        <!-- Score highlight -->
+        <div style="background:rgba(108,99,255,0.1);border:1px solid rgba(108,99,255,0.2);border-radius:var(--radius);padding:1.25rem;margin-bottom:1.5rem">
+          <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:.5rem">Your Trajectory Score</div>
+          <div id="bd-score" style="font-size:56px;font-weight:900;background:linear-gradient(135deg,#6c63ff,#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1">—</div>
+          <div id="bd-trajectory" style="font-size:13px;color:var(--text-muted);margin-top:.5rem"></div>
+        </div>
+
+        <!-- Year stats -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:1.5rem">
+          <div style="background:rgba(255,255,255,0.03);border-radius:var(--radius-sm);padding:.75rem">
+            <div style="font-size:10px;color:var(--text-muted);margin-bottom:4px">BEST SCORE</div>
+            <div id="bd-best" style="font-size:20px;font-weight:700">—</div>
+          </div>
+          <div style="background:rgba(255,255,255,0.03);border-radius:var(--radius-sm);padding:.75rem">
+            <div style="font-size:10px;color:var(--text-muted);margin-bottom:4px">BEST STREAK</div>
+            <div id="bd-streak" style="font-size:20px;font-weight:700">—</div>
+          </div>
+          <div style="background:rgba(255,255,255,0.03);border-radius:var(--radius-sm);padding:.75rem">
+            <div style="font-size:10px;color:var(--text-muted);margin-bottom:4px">DAYS LOGGED</div>
+            <div id="bd-logs" style="font-size:20px;font-weight:700">—</div>
+          </div>
+          <div style="background:rgba(255,255,255,0.03);border-radius:var(--radius-sm);padding:.75rem">
+            <div style="font-size:10px;color:var(--text-muted);margin-bottom:4px">AVG SCORE</div>
+            <div id="bd-avg" style="font-size:20px;font-weight:700">—</div>
+          </div>
+        </div>
+
+        <!-- North star -->
+        <div style="background:rgba(108,99,255,0.08);border-left:2px solid var(--accent);border-radius:0 var(--radius-sm) var(--radius-sm) 0;padding:.75rem 1rem;margin-bottom:1.5rem;text-align:left">
+          <div style="font-size:10px;color:var(--accent);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px">North Star</div>
+          <div id="bd-northstar" style="font-size:13px;color:var(--text-secondary);font-style:italic;line-height:1.5"></div>
+        </div>
+
+        <!-- VEKTRA branding -->
+        <div style="font-size:11px;color:var(--text-muted);letter-spacing:.1em">
+          <span style="background:linear-gradient(135deg,#6c63ff,#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;font-weight:800">VEKTRA</span>
+          &nbsp;·&nbsp; Vector = Magnitude × Direction
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <button class="btn-primary" style="margin-top:1rem" onclick="shareBirthdayCard()">
+        Share My Card 🎂
+      </button>
+      <button class="btn-secondary" style="margin-top:12px" onclick="goTo('dashboard')">
+        Back to Dashboard
+      </button>
     </div>
   </div>
 

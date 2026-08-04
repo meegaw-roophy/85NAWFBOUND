@@ -773,6 +773,7 @@ async function loadDashboard() {
     console.error('Could not load snapshots:', e);
     showToast('Could not load your data. Please refresh.', 'error');
   }
+  checkBirthday();
 }
 
 // ── NOTIFICATION SYSTEM ──
@@ -1142,13 +1143,14 @@ function onboardStep1() {
   const goal = document.getElementById('ob-goal').value.trim();
   const deadline = document.getElementById('ob-deadline').value;
   const dob = document.getElementById('ob-dob').value;
+  onboardData.dob = document.getElementById('ob-dob').value || null;
   const errEl = document.getElementById('ob1-error');
   const btnEl = document.getElementById('ob1-btn');
   errEl.style.display = 'none';
   
   // DOB is now required for birthday cards
   if (!dob) {
-    errEl.textContent = 'Please enter your date of birth for birthday cards.';
+    errEl.textContent = 'Please enter your date of birth.';
     errEl.style.display = 'block';
     return;
   }
@@ -1214,6 +1216,7 @@ async function onboardStep3() {
         north_star_deadline: onboardData.north_star_deadline,
         initial_net_worth: onboardData.initial_net_worth,
         preferred_feedback_tone: selectedTone,
+        dob: onboardData.dob || null,
       })
     });
 
@@ -2894,9 +2897,10 @@ function selectPlan(planId) {
     paymentSection.style.display = 'block';
   }
   
-  showToast(`Selected ${planId} plan. Complete payment to activate.`, 'success');
+  showToast(`Selected ${planId} plan. This is a preview of the payment flow.`, 'success');
 }
 
+const PAYMENT_PREVIEW_MODE = true;
 let selectedPaymentMethod = null;
 let selectedPlanId = null;
 
@@ -2937,6 +2941,11 @@ async function processPayment() {
   payButton.disabled = true;
   
   try {
+    if (PAYMENT_PREVIEW_MODE) {
+      showToast('Payment preview complete. No live charges are processed in this demo mode.', 'info');
+      return;
+    }
+
     if (selectedPaymentMethod === 'stripe') {
       // Stripe payment processing
       const cardNumber = document.getElementById('stripe-card').value;
@@ -3026,7 +3035,7 @@ async function processPayment() {
     console.error('Payment error:', e);
     showToast(e.message || 'Payment failed. Please try again.', 'error');
   } finally {
-    payButton.textContent = 'Pay Now';
+    payButton.textContent = PAYMENT_PREVIEW_MODE ? 'Preview payment' : 'Pay Now';
     payButton.disabled = false;
   }
 }
@@ -4324,7 +4333,7 @@ function renderPriceCard(data) {
   const btn = document.getElementById('checkout-btn');
   const termsChecked = document.getElementById('terms-checkbox').checked;
   btn.disabled = !termsChecked;
-  btn.textContent = termsChecked ? `Pay ${symbol} ${amount.toLocaleString(undefined, { maximumFractionDigits: 2 })} →` : 'Accept Terms to Continue';
+  btn.textContent = termsChecked ? `Preview ${symbol} ${amount.toLocaleString(undefined, { maximumFractionDigits: 2 })} →` : 'Accept Terms to Preview';
 }
 
 function startPriceLockCountdown() {
@@ -4353,6 +4362,11 @@ function proceedToCheckout() {
   const termsChecked = document.getElementById('terms-checkbox').checked;
   if (!termsChecked) {
     showToast('Please accept the Terms of Service to continue', 'warning');
+    return;
+  }
+  
+  if (PAYMENT_PREVIEW_MODE) {
+    showToast('Checkout preview active. No live purchase is processed until backend gateway setup is complete.', 'info');
     return;
   }
   
@@ -4594,3 +4608,87 @@ ${tomorrow}
 }
 window.loadDailyReport = loadDailyReport;
 window.buildDailySummaryText = buildDailySummaryText;
+
+// ── Birthday Card ──
+async function loadBirthdayCard() {
+  goTo('birthday-card');
+  if (!currentUser || !authToken) return;
+
+  // Set name and age
+  const name = currentUser.full_name?.split(' ')[0] || currentUser.username;
+  document.getElementById('bd-name').textContent = name;
+
+  // Calculate age
+  if (currentUser.dob) {
+    const dob = new Date(currentUser.dob);
+    const today = new Date();
+    const age = today.getFullYear() - dob.getFullYear();
+    document.getElementById('bd-age').textContent = `Year ${age} begins today 🚀`;
+  }
+
+  // North star
+  document.getElementById('bd-northstar').textContent = 
+    currentUser.north_star || 'Not set yet — update in profile';
+
+  // Load snapshots for year stats
+  try {
+    const res = await fetch(`${API}/api/v1/users/${currentUser.id}/snapshots?limit=365`, {
+      headers: { 'Authorization': `Bearer ${authToken}` }
+    });
+    if (!res.ok) return;
+    const snapshots = await res.json();
+
+    if (snapshots.length === 0) {
+      document.getElementById('bd-score').textContent = '—';
+      document.getElementById('bd-trajectory').textContent = 'Start logging to build your trajectory';
+      return;
+    }
+
+    const scores = snapshots.map(s => s.vektra_score).filter(s => s !== null);
+    const avgScore = scores.reduce((a, b) => a + b, 0) / scores.length;
+    const bestScore = Math.max(...scores);
+    const streak = calculateStreak(snapshots);
+
+    document.getElementById('bd-score').textContent = avgScore.toFixed(0);
+    document.getElementById('bd-best').textContent = bestScore.toFixed(0);
+    document.getElementById('bd-streak').textContent = `🔥 ${streak}`;
+    document.getElementById('bd-logs').textContent = snapshots.length;
+    document.getElementById('bd-avg').textContent = avgScore.toFixed(0);
+    document.getElementById('bd-trajectory').textContent = 
+      avgScore >= 70 ? '🔥 Rising trajectory' :
+      avgScore >= 50 ? '→ Steady vector' : '⚠ Recalibrating';
+
+  } catch(e) {
+    console.log('Birthday card error:', e);
+  }
+}
+
+function shareBirthdayCard() {
+  const name = currentUser?.username || 'me';
+  const score = document.getElementById('bd-score').textContent;
+  const message = `It's my birthday and VEKTRA says my trajectory score is ${score}/100 🎂\n\nKnow your vector:\nhttps://meegaw-roophy.github.io/85NAWFBOUND/app/\n\nVector = Magnitude × Direction 🔥`;
+  
+  if (navigator.share) {
+    navigator.share({ title: 'My VEKTRA Birthday Card', text: message });
+  } else {
+    navigator.clipboard.writeText(message).then(() => {
+      showToast('Birthday card copied! Share it anywhere 🎂', 'success');
+    });
+  }
+}
+
+// Check if today is user's birthday on dashboard load
+function checkBirthday() {
+  if (!currentUser?.dob) return;
+  const dob = new Date(currentUser.dob);
+  const today = new Date();
+  if (dob.getMonth() === today.getMonth() && dob.getDate() === today.getDate()) {
+    setTimeout(() => {
+      showToast('🎂 Happy Birthday! Your VEKTRA birthday card is ready!', 'success', 6000);
+      setTimeout(() => loadBirthdayCard(), 3000);
+    }, 2000);
+  }
+}
+window.loadBirthdayCard = loadBirthdayCard;
+window.shareBirthdayCard = shareBirthdayCard;
+window.checkBirthday = checkBirthday;
