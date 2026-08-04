@@ -585,6 +585,18 @@
     </div>
   </div>
 
+  <!-- Report Type Selector -->
+  <div style="display:flex;gap:8px;margin-bottom:1.5rem">
+    <button id="rpt-btn-daily" onclick="switchReport('daily')" 
+      style="flex:1;padding:10px;border-radius:var(--radius-sm);border:2px solid var(--accent);background:rgba(108,99,255,0.15);color:var(--text-primary);cursor:pointer;font-size:13px;font-weight:600;font-family:var(--font)">
+      Today
+    </button>
+    <button id="rpt-btn-weekly" onclick="switchReport('weekly')"
+      style="flex:1;padding:10px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;font-size:13px;font-weight:600;font-family:var(--font)">
+      Weekly
+    </button>
+  </div>
+
   <!-- Weekly Comparison -->
   <div id="weekly-comparison" style="background:linear-gradient(135deg,#1a1a2e,#16213e);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
     <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">vs Last Week</div>

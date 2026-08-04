@@ -4484,3 +4484,113 @@ window.submitForgotPassword = submitForgotPassword;
 window.debounce = debounce;
 window.Cache = Cache;
 window.dedupedFetch = dedupedFetch;
+
+function switchReport(type) {
+  ['daily','weekly'].forEach(t => {
+    const btn = document.getElementById(`rpt-btn-${t}`);
+    if (t === type) {
+      btn.style.border = '2px solid var(--accent)';
+      btn.style.background = 'rgba(108,99,255,0.15)';
+      btn.style.color = 'var(--text-primary)';
+    } else {
+      btn.style.border = '1px solid var(--border)';
+      btn.style.background = 'transparent';
+      btn.style.color = 'var(--text-secondary)';
+    }
+  });
+  if (type === 'daily') loadDailyReport();
+  else loadReport();
+}
+window.switchReport = switchReport;
+
+async function loadDailyReport() {
+  document.getElementById('report-narrative').textContent = 'Loading today\'s summary...';
+  document.getElementById('report-period').textContent = 'Today';
+  if (!currentUser || !authToken) return;
+
+  try {
+    const res = await fetch(`${API}/api/v1/users/${currentUser.id}/snapshots?limit=1`, {
+      headers: { 'Authorization': `Bearer ${authToken}` }
+    });
+    if (!res.ok) return;
+    const snapshots = await res.json();
+    if (!snapshots.length) {
+      document.getElementById('report-narrative').textContent = 'No log found for today. Submit your daily log first.';
+      return;
+    }
+
+    const snap = snapshots[0];
+    const date = new Date(snap.timestamp);
+    const isToday = date.toDateString() === new Date().toDateString();
+
+    document.getElementById('report-period').textContent = 
+      isToday ? 'Today' : date.toLocaleDateString('en-US', {weekday:'long', month:'short', day:'numeric'});
+
+    document.getElementById('report-score').textContent = 
+      snap.vektra_score ? snap.vektra_score.toFixed(0) : '—';
+
+    // Stats
+    document.getElementById('report-days').textContent = isToday ? 'Today' : '1 day';
+    document.getElementById('report-cashflow').textContent = 
+      snap.daily_income !== null && snap.expenses !== null 
+      ? (snap.daily_income - snap.expenses >= 0 ? '+' : '') + (snap.daily_income - snap.expenses)
+      : '—';
+    document.getElementById('report-goals').textContent = 
+      snap.target_hit_bool !== null ? (snap.target_hit_bool ? '✓' : '✗') : '—';
+
+    const cfEl = document.getElementById('report-cashflow');
+    if (snap.daily_income !== null && snap.expenses !== null) {
+      cfEl.style.color = (snap.daily_income - snap.expenses) >= 0 ? 'var(--success)' : 'var(--danger)';
+    }
+
+    // Daily narrative — free tier is data only, no AI
+    const tier = currentUser.tier || 'free';
+    if (tier === 'free') {
+      const summary = buildDailySummaryText(snap);
+      document.getElementById('report-narrative').innerHTML = summary;
+    } else {
+      // Tier 1/2 — AI narrative (needs Claude API)
+      document.getElementById('report-narrative').textContent = 'AI daily summary — connect Claude API key to unlock.';
+    }
+
+    // Engine bars from today's snapshot
+    renderEngineBar('bar-financial', 'Financial', snap.vektra_score || 50, '#22c55e');
+    renderEngineBar('bar-mental', 'Mental', snap.mood_score ? snap.mood_score * 10 : 50, '#6c63ff');
+    renderEngineBar('bar-execution', 'Execution', snap.target_hit_bool ? 100 : 50, '#ec4899');
+    renderEngineBar('bar-body', 'Body', snap.sleep_hours ? Math.min(100, snap.sleep_hours / 9 * 100) : 50, '#f59e0b');
+    renderEngineBar('bar-growth', 'Growth', snap.skills_learned ? 80 : 30, '#06b6d4');
+
+  } catch(e) {
+    document.getElementById('report-narrative').textContent = 'Could not load today\'s summary.';
+  }
+}
+
+function buildDailySummaryText(snap) {
+  const score = snap.vektra_score ? snap.vektra_score.toFixed(0) : '—';
+  const mood = snap.mood_score ? `${snap.mood_score}/10` : '—';
+  const energy = snap.energy_level ? `${snap.energy_level}/10` : '—';
+  const sleep = snap.sleep_hours ? `${snap.sleep_hours}h` : '—';
+  const income = snap.daily_income || 0;
+  const expenses = snap.expenses || 0;
+  const cashflow = income - expenses;
+  const goalHit = snap.target_hit_bool !== null ? (snap.target_hit_bool ? '✓ Yes' : '✗ No') : '—';
+  const tomorrow = snap.tomorrow_goal || 'Not set';
+  const best = snap.best_decision || '—';
+
+  return `
+<strong>🎯 TRAJECTORY: ${score}/100</strong><br><br>
+<strong>Mental</strong><br>
+Mood: ${mood} &nbsp;|&nbsp; Energy: ${energy}<br><br>
+<strong>Body</strong><br>
+Sleep: ${sleep}<br><br>
+<strong>Finance</strong><br>
+Cash flow: ${cashflow >= 0 ? '+' : ''}${cashflow}<br><br>
+<strong>Execution</strong><br>
+Hit yesterday's goal: ${goalHit}<br>
+Best decision: ${best}<br><br>
+<strong>Tomorrow</strong><br>
+${tomorrow}
+  `.trim();
+}
+window.loadDailyReport = loadDailyReport;
+window.buildDailySummaryText = buildDailySummaryText;
