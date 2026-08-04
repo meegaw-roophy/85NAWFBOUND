@@ -313,29 +313,76 @@ if ('serviceWorker' in navigator) {
   });
 }
 
-// ── IP-based auto-detection ──
 async function detectUserLocation() {
+  const CACHE_KEY = 'user_location_data';
+  const CACHE_TIME_KEY = 'user_location_time';
+  const ONE_DAY = 24 * 60 * 60 * 1000;
+
+  // 1. Check valid cache
   try {
-    const res = await fetch('https://ipapi.co/json/');
-    if (res.ok) {
-      const data = await res.json();
-      return {
-        country: data.country_code || 'US',
-        currency: data.currency || 'USD',
-        timezone: data.timezone || 'UTC',
-        location: data.city ? `${data.city}, ${data.country_name}` : data.country_name
-      };
+    const cachedData = localStorage.getItem(CACHE_KEY);
+    const cachedTime = localStorage.getItem(CACHE_TIME_KEY);
+    
+    if (cachedData && cachedTime && (Date.now() - cachedTime < ONE_DAY)) {
+      return JSON.parse(cachedData);
     }
   } catch (e) {
-    console.log('IP detection failed, using defaults');
+    console.warn('LocalStorage not available:', e);
   }
-  return {
-    country: 'US',
+
+  // Default fallback data
+  const fallback = {
+    country_code: 'US',
     currency: 'USD',
+    language: 'en',
     timezone: 'UTC',
-    location: 'Unknown'
+    city: '',
+    country: 'Unknown',
+    location_string: 'Unknown'
   };
+
+  // 2. Fetch with a 5-second timeout
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+    const res = await fetch('https://ipapi.co', { signal: controller.signal });
+    clearTimeout(timeoutId);
+
+    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+    
+    const data = await res.json();
+    if (data.error) throw new Error(data.reason || 'API error');
+
+    const city = data.city || '';
+    const country = data.country_name || 'Unknown';
+    
+    const result = {
+      country_code: data.country_code || 'US',
+      currency: data.currency || 'USD',
+      language: data.languages ? data.languages.split(',')[0] : 'en',
+      timezone: data.timezone || 'UTC',
+      city: city,
+      country: country,
+      location_string: city ? `${city}, ${country}` : country
+    };
+
+    // 3. Save to cache
+    try {
+      localStorage.setItem(CACHE_KEY, JSON.stringify(result));
+      localStorage.setItem(CACHE_TIME_KEY, Date.now().toString());
+    } catch (e) {
+      console.warn('Failed to save to localStorage:', e);
+    }
+
+    return result;
+
+  } catch (e) {
+    console.log('Location detection failed, using defaults:', e.message);
+    return fallback;
+  }
 }
+
 
 // ── Email validation helper ──
 function validateEmail(email) {
@@ -3928,33 +3975,6 @@ function renderScoreChart(snapshots) {
   }).join('');
 }
 
-// ── Auto-detect location and set currency/language ──
-async function detectUserLocation() {
-  try {
-    const res = await fetch('https://ipapi.co/json/');
-    const data = await res.json();
-    
-    const countryCode = data.country_code;
-    const currency = data.currency;
-    const languages = data.languages?.split(',')[0] || 'en';
-    const timezone = data.timezone;
-    const city = data.city;
-    const country = data.country_name;
-
-    return {
-      country_code: countryCode,
-      currency: currency,
-      language: getLanguageName(languages),
-      timezone: timezone,
-      city: city,
-      country: country,
-      location_string: `${city}, ${country}`
-    };
-  } catch(e) {
-    console.log('Location detection failed:', e);
-    return null;
-  }
-}
 
 function getLanguageName(code) {
   const languages = {
