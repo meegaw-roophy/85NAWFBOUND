@@ -50,6 +50,7 @@ class UserOut(BaseModel):
     tier_expires_at: Optional[datetime] = None  # 2. RECOMMENDED: Kept as datetime/date or string
     created_at: Optional[datetime] = None
     current_location: Optional[str] = None
+    dob: Optional[date] = None
     
     # 3. FIXED: Kept v2 syntax and removed the redundant v1 "class Config" block
     model_config = ConfigDict(from_attributes=True)

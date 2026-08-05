@@ -4611,19 +4611,36 @@ window.buildDailySummaryText = buildDailySummaryText;
 
 // ── Birthday Card ──
 async function loadBirthdayCard() {
+  // 1. Await navigation so the UI elements actually exist in the DOM
   goTo('birthday-card');
   if (!currentUser || !authToken) return;
 
-  // Set name and age
+  // Set name 
   const name = currentUser.full_name?.split(' ')[0] || currentUser.username;
   document.getElementById('bd-name').textContent = name;
 
-  // Calculate age
+  // Calculate age safely
+  let ageCalculated = false;
   if (currentUser.dob) {
     const dob = new Date(currentUser.dob);
-    const today = new Date();
-    const age = today.getFullYear() - dob.getFullYear();
-    document.getElementById('bd-age').textContent = `Year ${age} begins today 🚀`;
+    // Check if JavaScript actually parsed a valid date
+    if (!isNaN(dob.getTime())) {
+      const today = new Date();
+      let age = today.getFullYear() - dob.getFullYear();
+      
+      // Adjust if birthday hasn't happened yet this calendar year
+      const monthDiff = today.getMonth() - dob.getMonth();
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
+        age--;
+      }
+      
+      document.getElementById('bd-age').textContent = `Year ${age + 1} begins today 🚀`;
+      ageCalculated = true;
+    }
+  }
+  
+  if (!ageCalculated) {
+    document.getElementById('bd-age').textContent = "Happy Birthday! 🎂";
   }
 
   // North star
@@ -4632,36 +4649,54 @@ async function loadBirthdayCard() {
 
   // Load snapshots for year stats
   try {
-    const res = await fetch(`${API}/api/v1/users/${currentUser.id}/snapshots?limit=365`, {
+    const res = await fetch(`${API}/api/v1/users/${currentUser.id}/snapshots`, {
       headers: { 'Authorization': `Bearer ${authToken}` }
     });
-    if (!res.ok) return;
+    
+    if (!res.ok) throw new Error(`API error: ${res.status}`);
     const snapshots = await res.json();
 
-    if (snapshots.length === 0) {
+    // Fallback UI if there are zero snapshots (No early exit!)
+    if (!snapshots || snapshots.length === 0) {
       document.getElementById('bd-score').textContent = '—';
+      document.getElementById('bd-best').textContent = '0';
+      document.getElementById('bd-streak').textContent = '🔥 0';
+      document.getElementById('bd-logs').textContent = '0';
+      document.getElementById('bd-avg').textContent = '—';
       document.getElementById('bd-trajectory').textContent = 'Start logging to build your trajectory';
       return;
     }
 
-    const scores = snapshots.map(s => s.vektra_score).filter(s => s !== null);
-    const avgScore = scores.reduce((a, b) => a + b, 0) / scores.length;
-    const bestScore = Math.max(...scores);
-    const streak = calculateStreak(snapshots);
+    const scores = snapshots.map(s => s.vektra_score).filter(s => s !== null && s !== undefined);
+    
+    if (scores.length === 0) {
+      document.getElementById('bd-score').textContent = '—';
+      document.getElementById('bd-best').textContent = '—';
+      document.getElementById('bd-avg').textContent = '—';
+    } else {
+      const avgScore = scores.reduce((a, b) => a + b, 0) / scores.length;
+      const bestScore = Math.max(...scores);
+      
+      document.getElementById('bd-score').textContent = avgScore.toFixed(0);
+      document.getElementById('bd-best').textContent = bestScore.toFixed(0);
+      document.getElementById('bd-avg').textContent = avgScore.toFixed(0);
+      
+      document.getElementById('bd-trajectory').textContent = 
+        avgScore >= 70 ? '🔥 Rising trajectory' :
+        avgScore >= 50 ? '→ Steady vector' : '⚠ Recalibrating';
+    }
 
-    document.getElementById('bd-score').textContent = avgScore.toFixed(0);
-    document.getElementById('bd-best').textContent = bestScore.toFixed(0);
+    const streak = typeof calculateStreak === 'function' ? calculateStreak(snapshots) : 0;
     document.getElementById('bd-streak').textContent = `🔥 ${streak}`;
     document.getElementById('bd-logs').textContent = snapshots.length;
-    document.getElementById('bd-avg').textContent = avgScore.toFixed(0);
-    document.getElementById('bd-trajectory').textContent = 
-      avgScore >= 70 ? '🔥 Rising trajectory' :
-      avgScore >= 50 ? '→ Steady vector' : '⚠ Recalibrating';
 
   } catch(e) {
-    console.log('Birthday card error:', e);
+    console.error('Birthday card network error:', e);
+    // Graceful fallback display for errors
+    document.getElementById('bd-trajectory').textContent = 'Could not load your trajectory stats';
   }
 }
+
 
 function shareBirthdayCard() {
   const name = currentUser?.username || 'me';
