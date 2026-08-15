@@ -17,14 +17,23 @@ async def add_snapshot(user_id: int, payload: SnapshotCreate, db: AsyncSession =
     if current_user.id != user_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not allowed")
 
-    # Filter out trash_talk fields if not intended to be set from frontend
+    # ── Free tier limit: 7 snapshots max ──
+    if current_user.tier == 'free' or current_user.tier is None:
+        existing = await crud.list_snapshots(db, user_id, limit=10)
+        if len(existing) >= 7:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="free_tier_limit_reached"
+            )
+
+    # Filter out trash_talk fields
     data = payload.dict(exclude_none=True)
     if 'last_trash_talk_sent' in data:
         del data['last_trash_talk_sent']
     if 'trash_talk_count' in data:
         del data['trash_talk_count']
 
-    # Auto-calculate Vektra score before saving
+    # Auto-calculate Vektra score
     score_result = calculate_vektra_score(data)
     data['vektra_score'] = score_result.vektra_score
 

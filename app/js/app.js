@@ -8,6 +8,7 @@ const API = 'https://vektra-backend-qic7.onrender.com';
 let authToken = null; // Ensure this is not declared as a 'const' anywhere!
 let currentUser = {};
 let currentScreen = 'welcome';
+let pendingReferralCode = null;
 
 // ── Performance Utilities ──
 
@@ -208,7 +209,7 @@ function navTo(screen) {
   if (screen === 'home') {
     realTargetViewId = 'dashboard';
   } else if (screen === 'reports') {
-    realTargetViewId = 'dashboard'; // Adjust to your history or reports view container ID if separate
+    realTargetViewId = 'reports'; // Adjust to your history or reports view container ID if separate
   } else if (screen === 'analytics') {
     realTargetViewId = 'dashboard'; 
   }
@@ -268,11 +269,22 @@ window.addEventListener('DOMContentLoaded', async () => {
     splash.style.visibility = 'hidden';
   }
 
-  // 2. Fetch locally stored authentication variables
+  // 2. Capture referral code from URL if present
+  const params = new URLSearchParams(window.location.search);
+  if (params.has('ref')) {
+    pendingReferralCode = params.get('ref')?.trim().toUpperCase() || null;
+    if (pendingReferralCode) {
+      localStorage.setItem('pendingReferralCode', pendingReferralCode);
+    }
+  } else {
+    pendingReferralCode = localStorage.getItem('pendingReferralCode');
+  }
+
+  // 3. Fetch locally stored authentication variables
   let savedToken = localStorage.getItem('vektra_token');
   console.log('Token from storage:', savedToken);
 
-  // 3. Simple Route: If no token exists, send them straight to the entry wall
+  // 4. Simple Route: If no token exists, send them straight to the entry wall
   if (!savedToken || savedToken === "null" || savedToken === "undefined") {
     console.log('No token found - routing to welcome view');
     localStorage.removeItem('vektra_token'); // Clear corrupted states
@@ -467,17 +479,24 @@ async function register() {
   try {
     // Auto-detect user location
     const locationData = await detectUserLocation();
+    const referralInput = document.getElementById('reg-referral')?.value.trim();
+    const referralCode = referralInput || pendingReferralCode || undefined;
+    
+    const bodyPayload = {
+      username,
+      email,
+      password,
+      current_location: locationData.location,
+      currency: locationData.currency
+    };
+    if (referralCode) {
+      bodyPayload.referral_code = referralCode;
+    }
     
     const res = await fetch(`${API}/api/v1/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        username, 
-        email, 
-        password,
-        current_location: locationData.location,
-        currency: locationData.currency
-      })
+      body: JSON.stringify(bodyPayload)
     });
     const data = await res.json();
     if (!res.ok) {
@@ -486,6 +505,8 @@ async function register() {
       return;
     }
     await loginWithCredentials(username, password);
+    localStorage.removeItem('pendingReferralCode');
+    pendingReferralCode = null;
   } catch (err) {
     errEl.textContent = 'Connecting to server... please try again in 30 seconds.';
     errEl.style.display = 'block';
@@ -774,6 +795,7 @@ async function loadDashboard() {
     showToast('Could not load your data. Please refresh.', 'error');
   }
   checkBirthday();
+  checkPaymentReturn();
 }
 
 // ── NOTIFICATION SYSTEM ──
@@ -995,6 +1017,95 @@ function openDailyLog() {
   restoreDraft();
 }
 
+function openWeeklyQuestions() {
+  goTo('weekly-questions');
+  document.getElementById('weekly-questions-form').style.display = 'flex';
+  document.getElementById('monthly-questions-form').style.display = 'none';
+  document.querySelector('#weekly-questions > div:first-child > div:first-child > div:first-child').textContent = 'Weekly Check-in';
+}
+
+function openMonthlyQuestions() {
+  goTo('weekly-questions');
+  document.getElementById('weekly-questions-form').style.display = 'none';
+  document.getElementById('monthly-questions-form').style.display = 'flex';
+  document.querySelector('#weekly-questions > div:first-child > div:first-child > div:first-child').textContent = 'Monthly Goals';
+}
+
+async function submitWeeklyQuestions() {
+  if (!currentUser || !authToken) return;
+  
+  const win = document.getElementById('wq-win').value.trim();
+  const blocker = document.getElementById('wq-blocker').value.trim();
+  const focus = document.getElementById('wq-focus').value.trim();
+  const satisfaction = document.getElementById('inp-wq-satisfaction').value;
+  
+  try {
+    const res = await fetch(`${API}/api/v1/users/${currentUser.id}/weekly-questions`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        biggest_win: win,
+        blockers: blocker,
+        next_week_focus: focus,
+        satisfaction: parseInt(satisfaction),
+        week_number: getWeekNumber(new Date())
+      })
+    });
+    
+    if (res.ok) {
+      showToast('Weekly check-in saved! 🎯', 'success', 3000);
+      goTo('dashboard');
+    } else {
+      showToast('Failed to save weekly check-in', 'error', 3000);
+    }
+  } catch (e) {
+    console.error('Error submitting weekly questions:', e);
+    showToast('Connection error. Try again.', 'error', 3000);
+  }
+}
+
+async function submitMonthlyQuestions() {
+  if (!currentUser || !authToken) return;
+  
+  const goal = document.getElementById('mq-goal').value.trim();
+  const habits = document.getElementById('mq-habits').value.trim();
+  const success = document.getElementById('mq-success').value.trim();
+  const confidence = document.getElementById('inp-mq-confidence').value;
+  
+  try {
+    const res = await fetch(`${API}/api/v1/users/${currentUser.id}/monthly-questions`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        monthly_goal: goal,
+        habits_to_build: habits,
+        success_definition: success,
+        confidence: parseInt(confidence),
+        month: new Date().getMonth() + 1,
+        year: new Date().getFullYear()
+      })
+    });
+    
+    if (res.ok) {
+      showToast('Monthly goals saved! 🚀', 'success', 3000);
+      goTo('dashboard');
+    } else {
+      showToast('Failed to save monthly goals', 'error', 3000);
+    }
+  } catch (e) {
+    console.error('Error submitting monthly questions:', e);
+    showToast('Connection error. Try again.', 'error', 3000);
+  }
+}
+
+function getWeekNumber(date) {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+}
+
 // ── Submit daily log ──
 async function submitLog() {
   if (!currentUser || !authToken) return;
@@ -1094,25 +1205,47 @@ async function submitLog() {
   try {
     const res = await fetch(`${API}/api/v1/users/${currentUser.id}/snapshots`, {
       method: 'POST',
-      headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+      headers: {
+        'Authorization': `Bearer ${authToken}`,
+        'Content-Type': 'application/json'
+      },
       body: JSON.stringify(payload)
     });
+
+    // 1. Handle success
     if (res.ok) {
       const snap = await res.json();
-      // Check for new achievements after log submission
-  checkNewAchievements(snap);
-  
-  showScoreReveal(snap);
+      checkNewAchievements(snap);
+      showScoreReveal(snap);
       clearDraft();
-      
-      // Invalidate snapshots cache since new data was added
       Cache.set(`snapshots_${currentUser.id}`, null, 0);
-    } else {
-      const data = await res.json();
-      errEl.textContent = data.detail || 'Failed to submit. Try again.';
-      errEl.style.display = 'block';
+      return; // Exit early on success
     }
-  } catch(e) {
+
+    // 2. Safely parse JSON for error statuses
+    let data = {};
+    const contentType = res.headers.get('content-type');
+    if (contentType && contentType.includes('application/json')) {
+      data = await res.json();
+    }
+
+    // 3. Handle specific 403 error
+    if (res.status === 403 && data.detail === 'free_tier_limit_reached') {
+      showToast('7-day free trial complete — upgrade to keep logging 🔥', 'warning', 5000);
+      setTimeout(() => {
+        goTo('upgrade');
+        openUpgrade();
+      }, 1500);
+      return;
+    }
+
+    // 4. Handle all other server errors
+    errEl.textContent = data.detail || `Server error: ${res.status}`;
+    errEl.style.display = 'block';
+
+  } catch (e) {
+    // 5. Handle actual network/connection failures
+    console.error(e);
     errEl.textContent = 'Could not connect to server.';
     errEl.style.display = 'block';
   } finally {
@@ -1253,7 +1386,7 @@ async function onboardStep3() {
 }
 
 // ── Load and display report ──
-async function loadReport() {
+async function loadReport(reportType = 'weekly') {
   console.log('loadReport called - START');
   
   if (!currentUser || !authToken) { 
@@ -1283,7 +1416,7 @@ async function loadReport() {
     const res = await fetch(`${API}/api/v1/users/${currentUser.id}/reports/generate`, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({})
+      body: JSON.stringify({ report_type: reportType })
     });
     
     console.log('Report API response status:', res.status);
@@ -1299,6 +1432,30 @@ async function loadReport() {
     
     const report = await res.json();
     console.log('Report data received:', report);
+    
+    // Store current report ID for sharing
+    currentReportId = report.id;
+    
+    // Load existing sharing settings if available
+    if (report.share_with_public !== undefined) {
+      document.getElementById('share-public').checked = report.share_with_public;
+    }
+    if (report.share_with_circles !== undefined) {
+      document.getElementById('share-circles').checked = report.share_with_circles;
+    }
+    if (report.share_anonymously !== undefined) {
+      document.getElementById('share-anonymous').checked = report.share_anonymously;
+    }
+    if (report.custom_message) {
+      document.getElementById('share-message').value = report.custom_message;
+    }
+    if (report.share_theme) {
+      document.getElementById('share-theme').value = report.share_theme;
+    }
+    if (report.link_url) {
+      document.getElementById('share-link').value = report.link_url;
+      document.getElementById('share-link-container').style.display = 'block';
+    }
     
     hideLoader();
     
@@ -1318,7 +1475,17 @@ async function loadReport() {
     const goalsEl = document.getElementById('report-goals');
     
     if (scoreEl) scoreEl.textContent = report.vektra_score ? report.vektra_score.toFixed(0) : '—';
-    if (periodEl) periodEl.textContent = uniqueDays > 0 ? `${uniqueDays} unique day${uniqueDays === 1 ? '' : 's'} logged` : 'No week data yet';
+    if (periodEl) {
+      if (reportType === 'daily') {
+        periodEl.textContent = 'Daily Report';
+      } else if (reportType === 'monthly') {
+        periodEl.textContent = 'Monthly Report';
+      } else if (reportType === 'birthday') {
+        periodEl.textContent = 'Birthday Report';
+      } else {
+        periodEl.textContent = uniqueDays > 0 ? `${uniqueDays} unique day${uniqueDays === 1 ? '' : 's'} logged` : 'No week data yet';
+      }
+    }
     if (daysEl) daysEl.textContent = `${uniqueDays}/7`;
     if (timerEl) timerEl.textContent = `${reportCountdown}/7`;
     if (cashflowEl) {
@@ -1378,6 +1545,118 @@ async function loadReport() {
     hideLoader();
     showToast('Could not load report. Please try again.', 'error');
     if (narrativeEl) narrativeEl.textContent = 'Could not load report. Try again.';
+  }
+}
+
+function switchReport(type) {
+  // Update button styles for all types
+  ['daily', 'weekly', 'monthly'].forEach(t => {
+    const btn = document.getElementById(`rpt-btn-${t}`);
+    if (!btn) return;
+    
+    const isActive = t === type;
+    btn.style.border = isActive ? '2px solid var(--accent)' : '1px solid var(--border)';
+    btn.style.background = isActive ? 'rgba(108,99,255,0.15)' : 'transparent';
+    btn.style.color = isActive ? 'var(--text-primary)' : 'var(--text-secondary)';
+  });
+
+  // Load the correct report
+  if (type === 'daily' && typeof loadDailyReport === 'function') {
+    loadDailyReport();
+  } else {
+    loadReport(type);
+  }
+}
+
+
+function calculateDaysUntilBirthday(dob) {
+  const today = new Date();
+  const currentYear = today.getFullYear();
+  const nextBirthday = new Date(currentYear, dob.getMonth(), dob.getDate());
+  
+  if (nextBirthday < today) {
+    nextBirthday.setFullYear(currentYear + 1);
+  }
+  
+  const diffTime = nextBirthday - today;
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  return diffDays;
+}
+
+let currentReportId = null;
+
+async function updateShareSettings() {
+  // Just update UI state, actual save happens on button click
+  const sharePublic = document.getElementById('share-public').checked;
+  const linkContainer = document.getElementById('share-link-container');
+  
+  if (sharePublic) {
+    linkContainer.style.display = 'block';
+  } else {
+    linkContainer.style.display = 'none';
+  }
+}
+
+async function saveShareSettings() {
+  if (!currentUser || !authToken) {
+    showToast('Please log in first', 'error');
+    return;
+  }
+  
+  if (!currentReportId) {
+    showToast('No report loaded. Generate a report first.', 'error');
+    return;
+  }
+  
+  const shareSettings = {
+    share_with_public: document.getElementById('share-public').checked,
+    share_with_circles: document.getElementById('share-circles').checked,
+    share_anonymously: document.getElementById('share-anonymous').checked,
+    custom_message: document.getElementById('share-message').value.trim(),
+    share_theme: document.getElementById('share-theme').value
+  };
+  
+  try {
+    const res = await fetch(`${API}/api/v1/users/${currentUser.id}/reports/${currentReportId}/share`, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `Bearer ${authToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(shareSettings)
+    });
+    
+    if (res.ok) {
+      const data = await res.json();
+      if (data.link_url) {
+        document.getElementById('share-link').value = data.link_url;
+        document.getElementById('share-link-container').style.display = 'block';
+      }
+      showToast('Sharing settings saved!', 'success');
+    } else {
+      showToast('Failed to save sharing settings', 'error');
+    }
+  } catch (e) {
+    console.error('Error saving share settings:', e);
+    showToast('Connection error. Try again.', 'error');
+  }
+}
+
+async function copyShareLink() {
+  const linkInput = document.getElementById('share-link');
+  if (!linkInput || !linkInput.value) {
+    showToast('No share link available', 'error');
+    return;
+  }
+  
+  try {
+    await navigator.clipboard.writeText(linkInput.value);
+    showToast('Link copied to clipboard!', 'success');
+  } catch (e) {
+    // Fallback for older browsers
+    linkInput.select();
+    document.execCommand('copy');
+    showToast('Link copied to clipboard!', 'success');
   }
 }
 
@@ -1517,11 +1796,35 @@ function renderPaymentHistory(payments) {
   }
 }
 
-async function toggleAutoRenew(enabled, subscriptionId) {
+async function toggleAutoRenew(enabled) {
   if (!currentUser || !authToken) return;
   
   try {
-    const res = await fetch(`${API}/api/v1/users/${currentUser.id}/subscriptions/${subscriptionId}`, {
+    // Get current subscription ID from subscription info
+    const subPlan = document.getElementById('sub-plan')?.textContent;
+    if (!subPlan || subPlan === 'Free') {
+      showToast('Auto-renew not available for free plan', 'error');
+      return;
+    }
+    
+    // Get subscription ID from cache or fetch it
+    const res = await fetch(`${API}/api/v1/subscriptions/current`, {
+      headers: { 'Authorization': `Bearer ${authToken}` }
+    });
+    
+    if (!res.ok) {
+      showToast('Failed to get subscription info', 'error');
+      return;
+    }
+    
+    const subData = await res.json();
+    if (!subData.id || subData.id === 0) {
+      showToast('No active subscription found', 'error');
+      return;
+    }
+    
+    // Update auto-renew setting
+    const updateRes = await fetch(`${API}/api/v1/subscriptions/${subData.id}`, {
       method: 'PATCH',
       headers: {
         'Authorization': `Bearer ${authToken}`,
@@ -1530,7 +1833,7 @@ async function toggleAutoRenew(enabled, subscriptionId) {
       body: JSON.stringify({ auto_renew: enabled })
     });
     
-    if (res.ok) {
+    if (updateRes.ok) {
       showToast(enabled ? 'Auto-renew enabled' : 'Auto-renew disabled', 'success');
       // Invalidate subscription cache
       Cache.set(`subscriptions_${currentUser.id}`, null, 0);
@@ -1556,8 +1859,8 @@ async function openProfile() {
   setProfileTone(profileTone);
   const code = currentUser.username?.toUpperCase() || '—';
   document.getElementById('referral-code').textContent = code;
-  document.getElementById('vek-credits').textContent = '0';
-  document.getElementById('referral-count').textContent = '0';
+  document.getElementById('vek-credits').textContent = currentUser.vek_credit_balance != null ? currentUser.vek_credit_balance : '0';
+  document.getElementById('referral-count').textContent = currentUser.referral_count != null ? currentUser.referral_count : '0';
   
   // Populate body metrics
   document.getElementById('profile-weight').value = currentUser.weight || '';
@@ -1681,42 +1984,71 @@ async function saveProfile() {
 }
 
 // ── Referral system ──
-function copyReferral() {
+// Pass 'e' (the event object) directly into the function parameter
+function copyReferral(e) {
+  // Global variable window.event fallback wrapper 
+  const currentEvent = e || window.event;
   const code = document.getElementById('referral-code').textContent;
+  
   navigator.clipboard.writeText(code).then(() => {
-    const btn = event.target;
-    btn.textContent = 'Copied!';
-    btn.style.background = 'rgba(34,197,94,0.2)';
-    btn.style.borderColor = 'var(--success)';
-    btn.style.color = 'var(--success)';
-    setTimeout(() => {
-      btn.textContent = 'Copy';
-      btn.style.background = 'rgba(108,99,255,0.2)';
-      btn.style.borderColor = 'var(--accent)';
-      btn.style.color = 'var(--accent)';
-    }, 2000);
+    // Hardened element extraction sequence
+    let btn = null;
+    if (currentEvent) {
+      btn = currentEvent.currentTarget || currentEvent.target;
+    }
+    
+    // Safely execute visual rendering even if event extraction drops
+    if (btn) {
+      btn.textContent = 'Copied!';
+      btn.style.background = 'rgba(34,197,94,0.2)';
+      btn.style.borderColor = 'var(--success)';
+      btn.style.color = 'var(--success)';
+      
+      setTimeout(() => {
+        btn.textContent = 'Copy';
+        btn.style.background = 'rgba(108,99,255,0.2)';
+        btn.style.borderColor = 'var(--accent)';
+        btn.style.color = 'var(--accent)';
+      }, 2000);
+    }
   });
 }
 
-function shareReferral() {
-  const code = currentUser?.username?.toUpperCase() || 'VEKTRA';
-  const message = `I've been tracking my trajectory with VEKTRA — the AI-powered self-tracking app that gives you harsh truths about your progress.\n\nUse my referral code ${code} to get started free:\nhttps://meegaw-roophy.github.io/85NAWFBOUND/app/\n\nVector = Magnitude × Direction 🔥`;
+function shareReferral(e) {
+  // Global variable window.event fallback wrapper
+  const currentEvent = e || window.event;
+  const code = currentUser?.username?.toUpperCase() || 'VEXTRA';
+  const baseUrl = `${window.location.origin}${window.location.pathname}`;
+  const link = `${baseUrl}?ref=${encodeURIComponent(code)}`;
   
-  // Always use clipboard on desktop, share sheet on mobile
+  const message = `I've been tracking my trajectory with VEXTRA — the AI-powered self-tracking app that gives you harsh truths about your progress.\n\nUse my referral code: ${code}\n\nVector = Magnitude × Direction 🔥`;
   const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
   
+  let btn = null;
+  if (currentEvent) {
+    btn = currentEvent.currentTarget || currentEvent.target;
+  }
+  
   if (isMobile && navigator.share) {
-    navigator.share({ title: 'Join me on VEKTRA', text: message });
+    navigator.share({ 
+      title: 'Join me on VEXTRA', 
+      text: message,
+      url: link 
+    }).catch((err) => console.log('Share canceled or failed:', err));
   } else {
-    navigator.clipboard.writeText(message).then(() => {
-      const btn = event.target;
-      const original = btn.textContent;
-      btn.textContent = '✓ Copied to clipboard!';
-      btn.style.background = 'var(--success)';
-      setTimeout(() => {
-        btn.textContent = original;
-        btn.style.background = 'linear-gradient(135deg,#6c63ff,#ec4899)';
-      }, 2500);
+    const fullDesktopText = `${message}\nJoin directly here:\n${link}`;
+    navigator.clipboard.writeText(fullDesktopText).then(() => {
+      if (btn) {
+        const original = btn.textContent;
+        btn.textContent = '✓ Copied to clipboard!';
+        const originalBg = btn.style.background;
+        btn.style.background = 'var(--success)';
+        
+        setTimeout(() => {
+          btn.textContent = original;
+          btn.style.background = originalBg || 'linear-gradient(135deg,#6c63ff,#ec4899)';
+        }, 2500);
+      }
     });
   }
 }
@@ -2909,24 +3241,43 @@ function selectPaymentMethod(method) {
   
   // Update button styles
   const stripeBtn = document.getElementById('pay-stripe-btn');
+  const paystackBtn = document.getElementById('pay-paystack-btn');
   const mpesaBtn = document.getElementById('pay-mpesa-btn');
   const stripeForm = document.getElementById('stripe-form');
+  const paystackForm = document.getElementById('paystack-form');
   const mpesaForm = document.getElementById('mpesa-form');
   
   if (method === 'stripe') {
     stripeBtn.style.background = 'rgba(108,99,255,0.2)';
     stripeBtn.style.borderColor = 'var(--accent)';
+    paystackBtn.style.background = 'transparent';
+    paystackBtn.style.borderColor = 'var(--border)';
     mpesaBtn.style.background = 'transparent';
     mpesaBtn.style.borderColor = 'var(--border)';
     stripeForm.style.display = 'block';
+    paystackForm.style.display = 'none';
     mpesaForm.style.display = 'none';
   } else {
-    mpesaBtn.style.background = 'rgba(108,99,255,0.2)';
-    mpesaBtn.style.borderColor = 'var(--accent)';
+    // handle paystack or mpesa selection
     stripeBtn.style.background = 'transparent';
     stripeBtn.style.borderColor = 'var(--border)';
-    mpesaForm.style.display = 'block';
-    stripeForm.style.display = 'none';
+    if (method === 'mpesa') {
+      mpesaBtn.style.background = 'rgba(108,99,255,0.2)';
+      mpesaBtn.style.borderColor = 'var(--accent)';
+      paystackBtn.style.background = 'transparent';
+      paystackBtn.style.borderColor = 'var(--border)';
+      mpesaForm.style.display = 'block';
+      stripeForm.style.display = 'none';
+      paystackForm.style.display = 'none';
+    } else if (method === 'paystack') {
+      paystackBtn.style.background = 'rgba(108,99,255,0.2)';
+      paystackBtn.style.borderColor = 'var(--accent)';
+      mpesaBtn.style.background = 'transparent';
+      mpesaBtn.style.borderColor = 'var(--border)';
+      paystackForm.style.display = 'block';
+      stripeForm.style.display = 'none';
+      mpesaForm.style.display = 'none';
+    }
   }
 }
 
@@ -3000,6 +3351,32 @@ async function processPayment() {
         })
       });
       
+      if (!res.ok) throw new Error('Payment failed');
+    } else if (selectedPaymentMethod === 'paystack') {
+      // Paystack payment processing
+      const email = document.getElementById('paystack-email').value;
+      if (!email) throw new Error('Please enter an email address for Paystack');
+
+      const planPrices = {
+        'tier1': 9.99,
+        'tier2': 19.99,
+        'tier3': 49.99
+      };
+      const amount = planPrices[selectedPlanId] || 9.99;
+
+      const res = await fetch(`${API}/api/v1/users/${currentUser.id}/payments/paystack`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          email: email,
+          amount: amount,
+          currency: 'KES'
+        })
+      });
+
       if (!res.ok) throw new Error('Payment failed');
     }
     
@@ -3691,6 +4068,10 @@ function generateAnalysis() {
 window.generateReport = generateReport;
 window.generateAnalysis = generateAnalysis; // if you still use it
 window.openDailyLog = openDailyLog;
+window.openWeeklyQuestions = openWeeklyQuestions;
+window.openMonthlyQuestions = openMonthlyQuestions;
+window.submitWeeklyQuestions = submitWeeklyQuestions;
+window.submitMonthlyQuestions = submitMonthlyQuestions;
 window.submitLog = submitLog;
 window.logout = logout;
 window.openProfile = openProfile;
@@ -3699,6 +4080,15 @@ window.copyReferral = copyReferral;
 window.shareReferral = shareReferral;
 window.loadSubscriptionInfo = loadSubscriptionInfo;
 window.toggleAutoRenew = toggleAutoRenew;
+window.showForgotPassword = showForgotPassword;
+window.requestPasswordReset = requestPasswordReset;
+window.confirmPasswordReset = confirmPasswordReset;
+window.resendVerificationEmail = resendVerificationEmail;
+window.verifyEmailWithToken = verifyEmailWithToken;
+window.switchReport = switchReport;
+window.updateShareSettings = updateShareSettings;
+window.saveShareSettings = saveShareSettings;
+window.copyShareLink = copyShareLink;
 
 // Expose functions to the window so HTML 'onclick' and 'oninput' can find them
 window.updateSlider = updateSlider;
@@ -4356,29 +4746,50 @@ function startPriceLockCountdown() {
   }, 1000);
 }
 
-function proceedToCheckout() {
-  if (!currentPriceData) return;
-  
-  const termsChecked = document.getElementById('terms-checkbox').checked;
-  if (!termsChecked) {
-    showToast('Please accept the Terms of Service to continue', 'warning');
-    return;
+async function proceedToCheckout() {
+  if (!currentPriceData || !currentUser || !authToken) return;
+
+  const btn = document.getElementById('checkout-btn');
+  btn.textContent = 'Connecting to payment...';
+  btn.disabled = true;
+
+  try {
+    // Convert total to smallest unit (cents/kobo)
+    const amountInSmallest = Math.round(currentPriceData.total * 100);
+
+    const res = await fetch(`${API}/api/v1/users/${currentUser.id}/payments/paystack`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${authToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        email: currentUser.email,
+        amount: currentPriceData.total,
+        currency: currentPriceData.currency || 'KES',
+        tier: selectedTierUpgrade,
+        callback_url: `${window.location.origin}${window.location.pathname}?payment_success=true&tier=${selectedTierUpgrade}`
+      })
+    });
+
+    const data = await res.json();
+
+    // Get Paystack authorization URL
+    const authUrl = data?.external_response?.data?.authorization_url;
+    
+    if (authUrl) {
+      // Redirect to Paystack payment page
+      window.location.href = authUrl;
+    } else {
+      showToast('Could not initialize payment. Try again.', 'error');
+      btn.textContent = `Pay ${currentPriceData.symbol} ${currentPriceData.total.toLocaleString()} →`;
+      btn.disabled = false;
+    }
+  } catch(e) {
+    showToast('Payment connection failed. Try again.', 'error');
+    btn.textContent = `Pay ${currentPriceData.symbol} ${currentPriceData.total.toLocaleString()} →`;
+    btn.disabled = false;
   }
-  
-  if (PAYMENT_PREVIEW_MODE) {
-    showToast('Checkout preview active. No live purchase is processed until backend gateway setup is complete.', 'info');
-    return;
-  }
-  
-  // Determine payment gateway based on currency
-  const isKenyan = currentPriceData.currency === 'KES';
-  const gateway = isKenyan ? 'M-Pesa' : 'Stripe';
-  
-  showToast(`Initiating ${gateway} checkout for ${currentPriceData.symbol} ${currentPriceData.total}...`, 'info');
-  
-  // TODO: Integrate actual payment gateway when API keys available
-  // For Kenya: Call M-Pesa STK push endpoint
-  // For global: Call Stripe Checkout session creation
 }
 
 window.generateInsight = generateInsight;
@@ -4448,7 +4859,158 @@ window.keepBackendAlive = keepBackendAlive;
 
 // ── Forgot Password ──
 function showForgotPassword() {
-  goTo('forgot-password');
+  goTo('password-reset-request');
+}
+
+async function requestPasswordReset() {
+  const email = document.getElementById('reset-email').value.trim();
+  const errEl = document.getElementById('reset-request-error');
+  const successEl = document.getElementById('reset-request-success');
+  
+  errEl.style.display = 'none';
+  successEl.style.display = 'none';
+  
+  if (!email) {
+    errEl.textContent = 'Please enter your email address.';
+    errEl.style.display = 'block';
+    return;
+  }
+  
+  try {
+    const res = await fetch(`${API}/api/v1/auth/request-password-reset`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    });
+    
+    if (res.ok) {
+      successEl.textContent = 'If email exists, reset link sent. Check your inbox.';
+      successEl.style.display = 'block';
+    } else {
+      errEl.textContent = 'Failed to send reset link. Try again.';
+      errEl.style.display = 'block';
+    }
+  } catch (e) {
+    errEl.textContent = 'Connection error. Try again.';
+    errEl.style.display = 'block';
+  }
+}
+
+async function confirmPasswordReset() {
+  const newPassword = document.getElementById('reset-new-password').value;
+  const confirmPassword = document.getElementById('reset-confirm-password').value;
+  const errEl = document.getElementById('reset-confirm-error');
+  
+  errEl.style.display = 'none';
+  
+  if (!newPassword || !confirmPassword) {
+    errEl.textContent = 'Please fill in both password fields.';
+    errEl.style.display = 'block';
+    return;
+  }
+  
+  if (newPassword !== confirmPassword) {
+    errEl.textContent = 'Passwords do not match.';
+    errEl.style.display = 'block';
+    return;
+  }
+  
+  if (newPassword.length < 8) {
+    errEl.textContent = 'Password must be at least 8 characters.';
+    errEl.style.display = 'block';
+    return;
+  }
+  
+  // Get token from URL query parameter
+  const urlParams = new URLSearchParams(window.location.search);
+  const token = urlParams.get('token');
+  
+  if (!token) {
+    errEl.textContent = 'Invalid reset link. Please request a new one.';
+    errEl.style.display = 'block';
+    return;
+  }
+  
+  try {
+    const res = await fetch(`${API}/api/v1/auth/reset-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, new_password: newPassword })
+    });
+    
+    if (res.ok) {
+      showToast('Password reset successfully! Please login.', 'success', 3000);
+      goTo('login');
+    } else {
+      const data = await res.json().catch(() => ({}));
+      errEl.textContent = data.detail || 'Failed to reset password. Link may be expired.';
+      errEl.style.display = 'block';
+    }
+  } catch (e) {
+    errEl.textContent = 'Connection error. Try again.';
+    errEl.style.display = 'block';
+  }
+}
+
+async function resendVerificationEmail() {
+  if (!currentUser || !currentUser.email) {
+    showToast('Please login first', 'error', 3000);
+    return;
+  }
+  
+  try {
+    const res = await fetch(`${API}/api/v1/auth/resend-verification`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: currentUser.email })
+    });
+    
+    if (res.ok) {
+      showToast('Verification email sent!', 'success', 3000);
+    } else {
+      showToast('Failed to send verification email', 'error', 3000);
+    }
+  } catch (e) {
+    showToast('Connection error. Try again.', 'error', 3000);
+  }
+}
+
+async function verifyEmailWithToken() {
+  // Get token from URL query parameter
+  const urlParams = new URLSearchParams(window.location.search);
+  const token = urlParams.get('token');
+  
+  if (!token) {
+    document.getElementById('verify-error').textContent = 'No verification token found.';
+    document.getElementById('verify-error').style.display = 'block';
+    return;
+  }
+  
+  try {
+    const res = await fetch(`${API}/api/v1/auth/verify-email`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token })
+    });
+    
+    if (res.ok) {
+      document.getElementById('verify-success').textContent = 'Email verified successfully!';
+      document.getElementById('verify-success').style.display = 'block';
+      setTimeout(() => {
+        if (currentUser) {
+          currentUser.is_verified = true;
+        }
+        goTo('dashboard');
+      }, 2000);
+    } else {
+      const data = await res.json().catch(() => ({}));
+      document.getElementById('verify-error').textContent = data.detail || 'Invalid or expired token.';
+      document.getElementById('verify-error').style.display = 'block';
+    }
+  } catch (e) {
+    document.getElementById('verify-error').textContent = 'Connection error. Try again.';
+    document.getElementById('verify-error').style.display = 'block';
+  }
 }
 
 async function submitForgotPassword() {
@@ -4499,23 +5061,6 @@ window.debounce = debounce;
 window.Cache = Cache;
 window.dedupedFetch = dedupedFetch;
 
-function switchReport(type) {
-  ['daily','weekly'].forEach(t => {
-    const btn = document.getElementById(`rpt-btn-${t}`);
-    if (t === type) {
-      btn.style.border = '2px solid var(--accent)';
-      btn.style.background = 'rgba(108,99,255,0.15)';
-      btn.style.color = 'var(--text-primary)';
-    } else {
-      btn.style.border = '1px solid var(--border)';
-      btn.style.background = 'transparent';
-      btn.style.color = 'var(--text-secondary)';
-    }
-  });
-  if (type === 'daily') loadDailyReport();
-  else loadReport();
-}
-window.switchReport = switchReport;
 
 async function loadDailyReport() {
   document.getElementById('report-narrative').textContent = 'Loading today\'s summary...';
@@ -4564,7 +5109,7 @@ async function loadDailyReport() {
       document.getElementById('report-narrative').innerHTML = summary;
     } else {
       // Tier 1/2 — AI narrative (needs Claude API)
-      document.getElementById('report-narrative').textContent = 'AI daily summary — connect Claude API key to unlock.';
+      document.getElementById('report-narrative').innerHTML = buildDailySummaryText(snap);
     }
 
     // Engine bars from today's snapshot
@@ -4611,43 +5156,62 @@ window.buildDailySummaryText = buildDailySummaryText;
 
 // ── Birthday Card ──
 async function loadBirthdayCard() {
-  // 1. Await navigation so the UI elements actually exist in the DOM
+  // 1. Move to page and run basic authentication guards
   goTo('birthday-card');
   if (!currentUser || !authToken) return;
 
-  // Set name 
-  const name = currentUser.full_name?.split(' ')[0] || currentUser.username;
-  document.getElementById('bd-name').textContent = name;
+  // 2. Birthday validation check
+  if (!currentUser.dob) {
+    showToast('Please set your date of birth in profile first', 'error');
+    return;
+  }
 
-  // Calculate age safely
-  let ageCalculated = false;
-  if (currentUser.dob) {
-    const dob = new Date(currentUser.dob);
-    // Check if JavaScript actually parsed a valid date
-    if (!isNaN(dob.getTime())) {
-      const today = new Date();
-      let age = today.getFullYear() - dob.getFullYear();
-      
-      // Adjust if birthday hasn't happened yet this calendar year
-      const monthDiff = today.getMonth() - dob.getMonth();
-      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
-        age--;
-      }
-      
-      document.getElementById('bd-age').textContent = `Year ${age + 1} begins today 🚀`;
-      ageCalculated = true;
+  const today = new Date();
+  const dob = new Date(currentUser.dob);
+  
+  if (isNaN(dob.getTime())) {
+    showToast('Invalid date of birth format in profile', 'error');
+    return;
+  }
+
+  const isBirthday = today.getMonth() === dob.getMonth() && today.getDate() === dob.getDate();
+  
+  if (!isBirthday) {
+    if (typeof calculateDaysUntilBirthday === 'function') {
+      const daysUntil = calculateDaysUntilBirthday(dob);
+      showToast(`Your birthday is in ${daysUntil} days! 🎂`, 'info', 3000);
     }
+    // Early exit if it is not their birthday to save API calls
+    return; 
+  }
+
+  // 3. Set profile name and north star text safely
+  const name = currentUser.full_name?.split(' ')[0] || currentUser.username || 'Friend';
+  const nameEl = document.getElementById('bd-name');
+  if (nameEl) nameEl.textContent = name;
+
+  const nsEl = document.getElementById('bd-northstar');
+  if (nsEl) nsEl.textContent = currentUser.north_star || 'Not set yet — update in profile';
+
+  // 4. Calculate exact age milestones
+  let age = today.getFullYear() - dob.getFullYear();
+  const monthDiff = today.getMonth() - dob.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
+    age--;
   }
   
-  if (!ageCalculated) {
-    document.getElementById('bd-age').textContent = "Happy Birthday! 🎂";
+  const ageEl = document.getElementById('bd-age');
+  if (ageEl) {
+    ageEl.textContent = `Year ${age + 1} begins today 🚀`;
   }
 
-  // North star
-  document.getElementById('bd-northstar').textContent = 
-    currentUser.north_star || 'Not set yet — update in profile';
+  // Helper to quickly populate DOM elements safely
+  const setDOMText = (id, val) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = val;
+  };
 
-  // Load snapshots for year stats
+  // 5. Load snapshots for year statistics
   try {
     const res = await fetch(`${API}/api/v1/users/${currentUser.id}/snapshots`, {
       headers: { 'Authorization': `Bearer ${authToken}` }
@@ -4656,47 +5220,77 @@ async function loadBirthdayCard() {
     if (!res.ok) throw new Error(`API error: ${res.status}`);
     const snapshots = await res.json();
 
-    // Fallback UI if there are zero snapshots (No early exit!)
+    // Fallback UI if there are zero snapshots
     if (!snapshots || snapshots.length === 0) {
-      document.getElementById('bd-score').textContent = '—';
-      document.getElementById('bd-best').textContent = '0';
-      document.getElementById('bd-streak').textContent = '🔥 0';
-      document.getElementById('bd-logs').textContent = '0';
-      document.getElementById('bd-avg').textContent = '—';
-      document.getElementById('bd-trajectory').textContent = 'Start logging to build your trajectory';
+      setDOMText('bd-score', '—');
+      setDOMText('bd-best', '0');
+      setDOMText('bd-streak', '🔥 0');
+      setDOMText('bd-logs', '0');
+      setDOMText('bd-avg', '—');
+      setDOMText('bd-trajectory', 'Start logging to build your trajectory');
+      
+      // Trigger animations even on fallback state
+      triggerBirthdayAnimations();
       return;
     }
 
     const scores = snapshots.map(s => s.vektra_score).filter(s => s !== null && s !== undefined);
     
     if (scores.length === 0) {
-      document.getElementById('bd-score').textContent = '—';
-      document.getElementById('bd-best').textContent = '—';
-      document.getElementById('bd-avg').textContent = '—';
+      setDOMText('bd-score', '—');
+      setDOMText('bd-best', '—');
+      setDOMText('bd-avg', '—');
     } else {
       const avgScore = scores.reduce((a, b) => a + b, 0) / scores.length;
       const bestScore = Math.max(...scores);
       
-      document.getElementById('bd-score').textContent = avgScore.toFixed(0);
-      document.getElementById('bd-best').textContent = bestScore.toFixed(0);
-      document.getElementById('bd-avg').textContent = avgScore.toFixed(0);
+      setDOMText('bd-score', avgScore.toFixed(0));
+      setDOMText('bd-best', bestScore.toFixed(0));
+      setDOMText('bd-avg', avgScore.toFixed(0));
       
-      document.getElementById('bd-trajectory').textContent = 
-        avgScore >= 70 ? '🔥 Rising trajectory' :
-        avgScore >= 50 ? '→ Steady vector' : '⚠ Recalibrating';
+      const trajectoryText = avgScore >= 70 ? '🔥 Rising trajectory' :
+                             avgScore >= 50 ? '→ Steady vector' : '⚠ Recalibrating';
+      setDOMText('bd-trajectory', trajectoryText);
     }
 
     const streak = typeof calculateStreak === 'function' ? calculateStreak(snapshots) : 0;
-    document.getElementById('bd-streak').textContent = `🔥 ${streak}`;
-    document.getElementById('bd-logs').textContent = snapshots.length;
+    setDOMText('bd-streak', `🔥 ${streak}`);
+    setDOMText('bd-logs', snapshots.length);
+
+    // Call report hook if needed
+    if (typeof loadReport === 'function') await loadReport('birthday');
+
+    // 🎉 TRIGGER CELEBRATION ANIMATIONS HERE
+    triggerBirthdayAnimations();
 
   } catch(e) {
     console.error('Birthday card network error:', e);
-    // Graceful fallback display for errors
-    document.getElementById('bd-trajectory').textContent = 'Could not load your trajectory stats';
+    setDOMText('bd-trajectory', 'Could not load your trajectory stats');
+    
+    // Still animate the card frame so the screen doesn't stay blank/broken
+    triggerBirthdayAnimations();
   }
 }
 
+// Separate clean helper function for the animation logic
+function triggerBirthdayAnimations() {
+  // 1. Smoothly fade/slide in the main container
+  const container = document.getElementById('birthday-card-container');
+  if (container) {
+    container.classList.add('animate-ready');
+  }
+
+  // 2. Fire the canvas confetti explosion if the library is loaded
+  if (typeof confetti === 'function') {
+    confetti({
+      particleCount: 120,
+      spread: 70,
+      origin: { y: 0.6 },
+      colors: ['#6C63FF', '#FF6584', '#FFD200'] // Matches your UI accents
+    });
+  }
+}
+window.triggerBirthdayAnimations = triggerBirthdayAnimations;
 
 function shareBirthdayCard() {
   const name = currentUser?.username || 'me';
@@ -4727,3 +5321,44 @@ function checkBirthday() {
 window.loadBirthdayCard = loadBirthdayCard;
 window.shareBirthdayCard = shareBirthdayCard;
 window.checkBirthday = checkBirthday;
+
+// ── Check payment return ──
+function checkPaymentReturn() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('payment_success') === 'true') {
+    const tier = params.get('tier') || 'tier1';
+    const ref = params.get('reference');
+    
+    showToast('Payment received! Activating your plan... 🔥', 'success', 5000);
+    
+    // Verify and activate
+    if (ref) verifyAndActivate(ref, tier);
+    
+    // Clean URL
+    window.history.replaceState({}, '', window.location.pathname);
+  }
+}
+
+async function verifyAndActivate(reference, tier) {
+  try {
+    const res = await fetch(`${API}/api/v1/payments/paystack/verify/${reference}`, {
+      headers: { 'Authorization': `Bearer ${authToken}` }
+    });
+    if (res.ok) {
+      // Refresh user data
+      const userRes = await fetch(`${API}/api/v1/users/me`, {
+        headers: { 'Authorization': `Bearer ${authToken}` }
+      });
+      if (userRes.ok) {
+        currentUser = await userRes.json();
+        showToast(`Welcome to ${tier === 'tier2' ? 'Apex' : 'Vector'}! 🔥`, 'success', 5000);
+        goTo('dashboard');
+        loadDashboard();
+      }
+    }
+  } catch(e) {
+    console.log('Verification error:', e);
+  }
+}
+window.checkPaymentReturn = checkPaymentReturn;
+window.verifyAndActivate = verifyAndActivate;

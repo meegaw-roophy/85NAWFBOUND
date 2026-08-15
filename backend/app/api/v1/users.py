@@ -3,6 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.db.session import get_session
 from app.db.models import User
+from app import crud
 from app.core.deps import get_current_user
 from app.core.security import verify_password, get_password_hash
 from pydantic import BaseModel, EmailStr, ConfigDict
@@ -51,6 +52,8 @@ class UserOut(BaseModel):
     created_at: Optional[datetime] = None
     current_location: Optional[str] = None
     dob: Optional[date] = None
+    vek_credit_balance: Optional[int] = 0
+    referral_count: Optional[int] = 0
     
     # 3. FIXED: Kept v2 syntax and removed the redundant v1 "class Config" block
     model_config = ConfigDict(from_attributes=True)
@@ -59,8 +62,11 @@ class UserOut(BaseModel):
 @router.get("/me", response_model=UserOut)
 async def get_me(
     current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_session),
 ):
     """Get current authenticated user profile."""
+    current_user.vek_credit_balance = await crud.get_user_credits_balance(db, current_user.id)
+    current_user.referral_count = await crud.get_user_referral_count(db, current_user.id)
     return current_user
 
 

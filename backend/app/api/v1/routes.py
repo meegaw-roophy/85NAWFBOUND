@@ -7,6 +7,8 @@ from app.db.models import User, Snapshot
 from .snapshots import router as snapshots_router
 from .reports import router as reports_router
 from .auth import router as auth_router
+from .auth_extended import router as auth_extended_router
+from .oauth import router as oauth_router
 from .payments import router as payments_router
 from .webhooks import router as webhooks_router
 from .users import router as users_router
@@ -23,6 +25,7 @@ from .wagers import router as wagers_router
 from .trash_talk import router as trash_talk_router
 from .notifications import router as notifications_router
 from .pricing import router as pricing_router
+from .questions import router as questions_router
 
 router = APIRouter()
 
@@ -33,10 +36,11 @@ async def health():
 
 router.include_router(admin_router, prefix="/admin", tags=["admin"])
 router.include_router(snapshots_router)
-router.include_router(reports_router)
+router.include_router(auth_router)
+router.include_router(auth_extended_router)
+router.include_router(oauth_router)
 router.include_router(payments_router)
 router.include_router(webhooks_router)
-router.include_router(auth_router)
 router.include_router(users_router)
 router.include_router(goals_router, prefix="/goals", tags=["goals"])
 router.include_router(subscriptions_router, prefix="/subscriptions", tags=["subscriptions"])
@@ -50,3 +54,4 @@ router.include_router(wagers_router, prefix="/wagers", tags=["wagers"])
 router.include_router(trash_talk_router, prefix="/trash-talk", tags=["trash-talk"])
 router.include_router(notifications_router, prefix="/notifications", tags=["notifications"])
 router.include_router(pricing_router)
+router.include_router(questions_router, prefix="/questions", tags=["questions"])

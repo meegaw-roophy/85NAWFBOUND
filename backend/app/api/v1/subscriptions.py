@@ -193,3 +193,43 @@ async def get_payment_history(
         }
         for p in payments
     ]
+
+
+@router.patch("/{subscription_id}")
+async def update_subscription(
+    subscription_id: int,
+    payload: dict,
+    db: AsyncSession = Depends(get_session),
+    current_user: User = Depends(get_current_user)
+):
+    """Update subscription settings (e.g., auto_renew)"""
+    result = await db.execute(
+        select(Subscription).where(
+            Subscription.id == subscription_id,
+            Subscription.user_id == current_user.id
+        )
+    )
+    subscription = result.scalar_one_or_none()
+    
+    if not subscription:
+        raise HTTPException(status_code=404, detail="Subscription not found")
+    
+    # Update auto_renew if provided
+    if 'auto_renew' in payload:
+        subscription.auto_renew = payload['auto_renew']
+    
+    # Update webhook settings if provided
+    if 'webhook_url' in payload:
+        subscription.webhook_url = payload['webhook_url']
+    if 'webhook_secret' in payload:
+        subscription.webhook_secret = payload['webhook_secret']
+    
+    db.add(subscription)
+    await db.commit()
+    await db.refresh(subscription)
+    
+    return {
+        "id": subscription.id,
+        "auto_renew": subscription.auto_renew,
+        "webhook_url": subscription.webhook_url
+    }

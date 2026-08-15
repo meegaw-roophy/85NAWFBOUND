@@ -24,6 +24,22 @@ class User(Base):
     full_name               = Column(String(255), nullable=True)
     dob                     = Column(Date,        nullable=True)   # birthday card trigger + age calc
 
+    # ── email verification ───────────────────
+    is_verified             = Column(Boolean,     default=False)
+    verification_token      = Column(String(255), nullable=True)
+    verification_expires_at = Column(DateTime,    nullable=True)
+
+    # ── password reset ───────────────────────
+    reset_token             = Column(String(255), nullable=True)
+    reset_expires_at        = Column(DateTime,    nullable=True)
+
+    # ── OAuth providers ─────────────────────
+    oauth_provider          = Column(String(50),  nullable=True)  # google/apple/github
+    oauth_id                = Column(String(255), nullable=True)  # provider's user ID
+    oauth_access_token      = Column(Text,       nullable=True)  # encrypted access token
+    oauth_refresh_token     = Column(Text,       nullable=True)  # encrypted refresh token
+    oauth_token_expires_at  = Column(DateTime,    nullable=True)  # token expiry
+
     # ── financial baseline ────────────────────
     initial_net_worth       = Column(Float,       nullable=True, default=0.0)
     currency                = Column(String(10),  nullable=True, default='USD')  # auto-detected
@@ -55,6 +71,48 @@ class User(Base):
     referrals_made          = relationship('Referral',    foreign_keys='Referral.referrer_id', back_populates='referrer', cascade='all, delete')
     achievements            = relationship('Achievement', back_populates='user', cascade='all, delete')
     circles                 = relationship('CircleMember', back_populates='user', cascade='all, delete')
+    weekly_questions        = relationship('WeeklyQuestion', back_populates='user', cascade='all, delete')
+    monthly_questions       = relationship('MonthlyQuestion', back_populates='user', cascade='all, delete')
+
+
+# ─────────────────────────────────────────────
+#  WEEKLY QUESTIONS
+# ─────────────────────────────────────────────
+class WeeklyQuestion(Base):
+    __tablename__ = 'weekly_questions'
+
+    id                      = Column(Integer, primary_key=True, index=True)
+    user_id                 = Column(Integer, ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
+    created_at              = Column(DateTime, default=datetime.datetime.utcnow)
+    week_number             = Column(Integer, nullable=False)  # ISO week number
+    year                    = Column(Integer, nullable=False)
+    
+    biggest_win             = Column(Text, nullable=True)
+    blockers                = Column(Text, nullable=True)
+    next_week_focus         = Column(Text, nullable=True)
+    satisfaction            = Column(Integer, nullable=True)  # 1-10 scale
+    
+    user                    = relationship('User', back_populates='weekly_questions')
+
+
+# ─────────────────────────────────────────────
+#  MONTHLY QUESTIONS
+# ─────────────────────────────────────────────
+class MonthlyQuestion(Base):
+    __tablename__ = 'monthly_questions'
+
+    id                      = Column(Integer, primary_key=True, index=True)
+    user_id                 = Column(Integer, ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
+    created_at              = Column(DateTime, default=datetime.datetime.utcnow)
+    month                   = Column(Integer, nullable=False)  # 1-12
+    year                    = Column(Integer, nullable=False)
+    
+    monthly_goal            = Column(Text, nullable=True)
+    habits_to_build         = Column(Text, nullable=True)
+    success_definition      = Column(Text, nullable=True)
+    confidence              = Column(Integer, nullable=True)  # 1-10 scale
+    
+    user                    = relationship('User', back_populates='monthly_questions')
 
 
 # ─────────────────────────────────────────────
@@ -250,6 +308,15 @@ class Report(Base):
     pdf_url         = Column(String(500), nullable=True)  # PDF download link
     video_url       = Column(String(500), nullable=True)  # video report link
 
+    # ── sharing customization ─────────────────
+    share_with_public   = Column(Boolean, default=False)  # publicly accessible
+    share_with_circles  = Column(Boolean, default=False)  # share with circles
+    share_anonymously   = Column(Boolean, default=False)  # hide user identity
+    custom_message      = Column(Text,    nullable=True)  # custom message for shared report
+    share_theme         = Column(String(20), nullable=True, default='dark')  # light/dark/custom
+    share_password      = Column(String(255), nullable=True)  # password-protected sharing
+    share_expires_at    = Column(DateTime, nullable=True)  # when sharing link expires
+
     # ── delivery ──────────────────────────────
     delivered       = Column(Boolean,  default=False)
     opened          = Column(Boolean,  default=False)
@@ -268,8 +335,9 @@ class Subscription(Base):
     user_id                 = Column(Integer,  ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
     created_at              = Column(DateTime, default=datetime.datetime.utcnow)
 
-    provider                = Column(String(50),  nullable=False, default='stripe')  # stripe / mpesa
+    provider                = Column(String(50),  nullable=False, default='paystack')  # paystack / stripe / mpesa
     provider_customer_id    = Column(String(255), nullable=True)
+    provider_subscription_id = Column(String(255), nullable=True)  # external subscription ID
     plan                    = Column(String(50),  nullable=True)   # free/tier1/tier2/tier3
     duration_days           = Column(Integer,     nullable=True)   # chosen duration from slider
     discount_pct            = Column(Float,       nullable=True)   # applied discount %
@@ -277,8 +345,14 @@ class Subscription(Base):
     amount_paid             = Column(Float,       nullable=True)   # final amount paid
     currency                = Column(String(10),  nullable=True, default='USD')
     active                  = Column(Boolean,     default=True)
+    auto_renew              = Column(Boolean,     default=False)  # auto-renew on expiry
     starts_at               = Column(DateTime,    nullable=True)
     expires_at              = Column(DateTime,    nullable=True)
+    
+    # ── webhook handling ───────────────────────
+    webhook_url             = Column(String(500), nullable=True)  # webhook endpoint
+    webhook_secret          = Column(String(255), nullable=True)  # webhook signature secret
+    last_webhook_at         = Column(DateTime,    nullable=True)  # last webhook received
 
     user = relationship('User', back_populates='subscriptions')
 

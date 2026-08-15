@@ -7,6 +7,7 @@ class UserCreate(BaseModel):
     username: str
     email: EmailStr
     password: str
+    referral_code: Optional[str] = None
     full_name: Optional[str] = None
     dob: Optional[date] = None
     current_location: Optional[str] = None
@@ -210,6 +211,13 @@ class StripePaymentRequest(BaseModel):
 class MpesaPaymentRequest(BaseModel):
     phone_number: str
     amount: float
+
+
+class PaystackPaymentRequest(BaseModel):
+    email: str
+    amount: float
+    currency: Optional[str] = 'KES'
+    callback_url: Optional[str] = None
 
 
 class Token(BaseModel):

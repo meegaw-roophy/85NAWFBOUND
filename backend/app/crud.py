@@ -1,5 +1,5 @@
 from datetime import datetime, date, timedelta
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List, Optional
 from app.db.models import User, Snapshot, Report, Subscription, Payment, Goal
@@ -114,6 +114,57 @@ async def create_user(db: AsyncSession, username: str, email: str, password_hash
 async def get_user_by_username(db: AsyncSession, username: str) -> Optional[User]:
     result = await db.execute(select(User).where(User.username == username))
     return result.scalars().first()
+
+
+async def get_user_by_username_case_insensitive(db: AsyncSession, username: str) -> Optional[User]:
+    result = await db.execute(select(User).where(func.lower(User.username) == username.lower()))
+    return result.scalars().first()
+
+
+async def create_referral(db: AsyncSession, referrer_id: int, referred_email: Optional[str] = None, referred_user_id: Optional[int] = None, credits_awarded: int = 0) -> 'Referral':
+    from app.db.models import Referral
+    referral = Referral(
+        referrer_id=referrer_id,
+        referred_email=referred_email,
+        referred_user_id=referred_user_id,
+        credits_awarded=credits_awarded,
+        converted=True,
+        converted_at=datetime.utcnow() if referred_user_id else None,
+    )
+    db.add(referral)
+    await db.commit()
+    await db.refresh(referral)
+    return referral
+
+
+async def create_vek_credit(db: AsyncSession, user_id: int, amount: int, reason: Optional[str] = None, redeemed: bool = False, redeemed_for: Optional[str] = None):
+    from app.db.models import VekCredit
+    credit = VekCredit(
+        user_id=user_id,
+        amount=amount,
+        reason=reason,
+        redeemed=redeemed,
+        redeemed_for=redeemed_for
+    )
+    db.add(credit)
+    await db.commit()
+    await db.refresh(credit)
+    return credit
+
+
+async def get_user_credits_balance(db: AsyncSession, user_id: int) -> int:
+    from app.db.models import VekCredit
+    result = await db.execute(
+        select(func.coalesce(func.sum(VekCredit.amount), 0)).where(VekCredit.user_id == user_id).where(VekCredit.redeemed == False)
+    )
+    return result.scalar_one() or 0
+
+
+async def get_user_referral_count(db: AsyncSession, user_id: int) -> int:
+    from app.db.models import Referral
+    result = await db.execute(
+        select(func.count(Referral.id)).where(Referral.referrer_id == user_id))
+    return result.scalar_one() or 0
 
 
 async def get_user_by_email(db: AsyncSession, email: str) -> Optional[User]:

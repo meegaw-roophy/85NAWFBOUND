@@ -1,8 +1,11 @@
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 from app.db.session import get_session
+from app.db.models import User, Subscription
 from app.services.payment_service import verify_stripe_webhook
 from app import crud
+from datetime import datetime, timedelta
 
 router = APIRouter()
 
@@ -61,3 +64,115 @@ async def mpesa_webhook(payload: dict, db: AsyncSession = Depends(get_session)):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Payment not found")
 
     return {"received": True, "payment_id": payment_id, "status": status_value}
+
+
+@router.post("/webhooks/paystack")
+async def paystack_webhook(
+    request: Request,
+    x_paystack_signature: str = Header(None),
+    db: AsyncSession = Depends(get_session),
+):
+    """Handle Paystack webhook events for subscription management"""
+    body = await request.body()
+    
+    # TODO: Verify webhook signature using x_paystack_signature
+    # For now, we'll process the webhook without signature verification
+    
+    try:
+        payload = await request.json()
+    except Exception:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid JSON")
+    
+    event = payload.get("event")
+    data = payload.get("data", {})
+    
+    if event == "charge.success":
+        # Payment successful - activate subscription
+        reference = data.get("reference")
+        metadata = data.get("metadata", {})
+        user_id = metadata.get("user_id")
+        tier = metadata.get("tier", "tier1")
+        
+        if reference and user_id:
+            # Find payment by reference
+            result = await db.execute(
+                select(Subscription).where(
+                    Subscription.provider_subscription_id == reference
+                )
+            )
+            subscription = result.scalar_one_or_none()
+            
+            if subscription:
+                subscription.active = True
+                subscription.last_webhook_at = datetime.utcnow()
+                db.add(subscription)
+                await db.commit()
+                
+                # Update user tier
+                user_result = await db.execute(select(User).where(User.id == int(user_id)))
+                user = user_result.scalar_one_or_none()
+                if user:
+                    user.tier = tier
+                    db.add(user)
+                    await db.commit()
+    
+    elif event == "subscription.disable":
+        # Subscription disabled/expired
+        reference = data.get("subscription_code")
+        result = await db.execute(
+            select(Subscription).where(
+                Subscription.provider_subscription_id == reference
+            )
+        )
+        subscription = result.scalar_one_or_none()
+        
+        if subscription:
+            subscription.active = False
+            subscription.last_webhook_at = datetime.utcnow()
+            db.add(subscription)
+            await db.commit()
+    
+    elif event == "subscription.not_renew":
+        # Subscription not renewed (auto-renew disabled)
+        reference = data.get("subscription_code")
+        result = await db.execute(
+            select(Subscription).where(
+                Subscription.provider_subscription_id == reference
+            )
+        )
+        subscription = result.scalar_one_or_none()
+        
+        if subscription:
+            subscription.auto_renew = False
+            subscription.last_webhook_at = datetime.utcnow()
+            db.add(subscription)
+            await db.commit()
+    
+    return {"received": True, "event": event}
+
+
+async def check_and_renew_subscriptions(db: AsyncSession):
+    """Check for expired subscriptions with auto-renew enabled and renew them"""
+    now = datetime.utcnow()
+    
+    # Find subscriptions that are expiring within 24 hours and have auto_renew enabled
+    result = await db.execute(
+        select(Subscription).where(
+            Subscription.active == True,
+            Subscription.auto_renew == True,
+            Subscription.expires_at <= now + timedelta(hours=24),
+            Subscription.expires_at > now
+        )
+    )
+    subscriptions = result.scalars().all()
+    
+    for sub in subscriptions:
+        # TODO: Implement actual renewal logic with Paystack API
+        # For now, just extend the subscription by the original duration
+        if sub.duration_days:
+            sub.expires_at = sub.expires_at + timedelta(days=sub.duration_days)
+            sub.last_webhook_at = now
+            db.add(sub)
+    
+    await db.commit()
+    return len(subscriptions)

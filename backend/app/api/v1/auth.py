@@ -22,6 +22,14 @@ async def register(payload: UserCreate, db: AsyncSession = Depends(get_session))
         raise HTTPException(status_code=400, detail="Email already registered")
     pw_hash = get_password_hash(payload.password)
     user = await crud.create_user(db, username=payload.username, email=payload.email, password_hash=pw_hash, full_name=payload.full_name, dob=payload.dob, current_location=payload.current_location, language=payload.language, primary_goal=payload.primary_goal)
+
+    if payload.referral_code:
+        referrer = await crud.get_user_by_username_case_insensitive(db, payload.referral_code)
+        if referrer and referrer.id != user.id:
+            await crud.create_referral(db, referrer_id=referrer.id, referred_email=user.email, referred_user_id=user.id, credits_awarded=10)
+            await crud.create_vek_credit(db, user.id, amount=10, reason='referral-welcome')
+            await crud.create_vek_credit(db, referrer.id, amount=10, reason='referral')
+
     return user
 
 

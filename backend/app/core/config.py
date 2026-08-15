@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     STRIPE_API_KEY: str = ""
     STRIPE_WEBHOOK_SECRET: str = ""
     SECRET_KEY: str = "change-me"
+    PAYSTACK_SECRET_KEY: str = ""
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # one week
 
     model_config = SettingsConfigDict(env_file=".env")

@@ -146,6 +146,8 @@ Constraint: Keep the final response under 380 words. Every single character must
         """
         score = summary.get('report_score', summary.get('avg_vektra_score', 50)) or 50
         days = summary.get('unique_days_logged', summary.get('days_logged', 0)) or 0
+        entries = summary.get('days_logged', days) or 0
+        report_countdown = summary.get('report_countdown', max(0, 7 - days)) or 0
         cash_flow = summary.get('net_cash_flow', 0) or 0
         goals_hit = summary.get('goals_hit', 0) or 0
         goals_set = summary.get('goals_set', 0) or 0
@@ -158,7 +160,6 @@ Constraint: Keep the final response under 380 words. Every single character must
         procrastination_days = summary.get('procrastination_days', 0) or 0
         survival_runway = summary.get('survival_runway', None)
         best_decisions = summary.get('best_decisions', []) or []
-        countdown = summary.get('report_countdown', 0) or 0
 
         goal_rate = round(goals_hit / goals_set * 100) if goals_set > 0 else None
 
@@ -214,7 +215,7 @@ Constraint: Keep the final response under 380 words. Every single character must
         # ── System Numbers compilation ────────────────────────────────────────
         numbers = [f"Net Cash Velocity: {cash_flow:+.0f}"]
         if goals_set > 0: numbers.append(f"Execution Efficiency: {goals_hit}/{goals_set} ({goal_rate}%)")
-        numbers.extend([f"Data Integrity: captured across {days} unique days logged", f"Days logged: {days}/7", f"Weekly countdown: {countdown}/7", f"Recovery Index: {sleep:.1f}h mean", f"Deep Work Duration: {focus_hours:.1f}h/day"])
+        numbers.extend([f"Data Integrity: {days}/7 logs", f"Recovery Index: {sleep:.1f}h mean", f"Deep Work Duration: {focus_hours:.1f}h/day"])
         if survival_runway is not None: numbers.append(f"Capital Runway: {survival_runway:.0f} cycles remaining")
 
         # ── Action Directive Decision Tree ────────────────────────────────────
@@ -236,9 +237,11 @@ Constraint: Keep the final response under 380 words. Every single character must
         killers_text = "\n".join(f"→ {k}" for k in killers)
         numbers_text = "\n".join(f"→ {n}" for n in numbers)
         trend_section = f"\n{trend_line}" if trend_line else ""
+        cadence_line = f"Data integrity: {entries} entries across {days} unique days logged. Days logged: {days}/7. Weekly countdown: {report_countdown}/7."
 
         return f"""🎯 TRAJECTORY STATUS: {trajectory}
 {momentum}{trend_section}
+{cadence_line}
 
 🏆 TARGETED VECTOR WINS:
 {wins_text}

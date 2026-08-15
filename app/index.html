@@ -44,6 +44,12 @@
     <div class="welcome-desc">Track what matters, measure what moves, and see the trajectory behind every choice.</div>
     <button class="btn-primary" onclick="goTo('register')">Get Started</button>
     <button class="btn-secondary" onclick="goTo('login')">I already have an account</button>
+    
+    <div style="margin-top:2rem;font-size:11px;color:var(--text-muted)">
+      <span onclick="goTo('terms')" style="cursor:pointer;margin:0 8px">Terms</span>
+      <span onclick="goTo('privacy')" style="cursor:pointer;margin:0 8px">Privacy</span>
+      <span onclick="goTo('about')" style="cursor:pointer;margin:0 8px">About</span>
+    </div>
   </div>
 
 <!-- SCREEN 3: REGISTER -->
@@ -56,22 +62,27 @@
     
     <div style="margin-bottom:16px">
       <label style="font-size:12px;color:var(--text-secondary);letter-spacing:0.08em;text-transform:uppercase;display:block;margin-bottom:6px">Full Name</label>
-      <input id="reg-name" type="text" placeholder="Elvis Obulemire" style="width:100%;padding:14px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:15px;outline:none;font-family:var(--font)">
+      <input id="reg-name" type="text" placeholder="John Bob" style="width:100%;padding:14px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:15px;outline:none;font-family:var(--font)">
     </div>
 
     <div style="margin-bottom:16px">
       <label style="font-size:12px;color:var(--text-secondary);letter-spacing:0.08em;text-transform:uppercase;display:block;margin-bottom:6px">Username</label>
-      <input id="reg-username" type="text" placeholder="roophy" style="width:100%;padding:14px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:15px;outline:none;font-family:var(--font)">
+      <input id="reg-username" type="text" placeholder="sivle" style="width:100%;padding:14px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:15px;outline:none;font-family:var(--font)">
     </div>
 
     <div style="margin-bottom:16px">
       <label style="font-size:12px;color:var(--text-secondary);letter-spacing:0.08em;text-transform:uppercase;display:block;margin-bottom:6px">Email</label>
-      <input id="reg-email" type="email" placeholder="you@email.com" style="width:100%;padding:14px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:15px;outline:none;font-family:var(--font)">
+      <input id="reg-email" type="email" placeholder="you@example.com" style="width:100%;padding:14px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:15px;outline:none;font-family:var(--font)">
+    </div>
+
+    <div style="margin-bottom:16px">
+      <label style="font-size:12px;color:var(--text-secondary);letter-spacing:0.08em;text-transform:uppercase;display:block;margin-bottom:6px">Password</label>
+      <input id="reg-password" type="password" placeholder="Min 8 chars + symbol" style="width:100%;padding:14px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:15px;outline:none;font-family:var(--font)">
     </div>
 
     <div style="margin-bottom:24px">
-      <label style="font-size:12px;color:var(--text-secondary);letter-spacing:0.08em;text-transform:uppercase;display:block;margin-bottom:6px">Password</label>
-      <input id="reg-password" type="password" placeholder="Min 8 chars + symbol" style="width:100%;padding:14px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:15px;outline:none;font-family:var(--font)">
+      <label style="font-size:12px;color:var(--text-secondary);letter-spacing:0.08em;text-transform:uppercase;display:block;margin-bottom:6px">Referral code <span style="color:var(--text-muted);font-weight:400">(optional)</span></label>
+      <input id="reg-referral" type="text" placeholder="ABCD1234 or friend username" style="width:100%;padding:14px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:15px;outline:none;font-family:var(--font)">
     </div>
 
     <div id="reg-error" style="display:none;color:var(--danger);font-size:13px;margin-bottom:16px;text-align:center"></div>
@@ -104,7 +115,7 @@
 
     <div class="text-field" style="margin-bottom:16px">
       <label>Your primary goal <span style="color:var(--text-muted);font-weight:400">(optional)</span></label>
-      <textarea id="ob-goal" placeholder="e.g. Become the youngest black self-made billionaire from Kenya by age 21" style="min-height:100px"></textarea>
+      <textarea id="ob-goal" placeholder="e.g. Make $1B ARR by end of 2026!" style="min-height:100px"></textarea>
     </div>
 
     <div class="text-field" style="margin-bottom:16px">
@@ -113,16 +124,13 @@
     </div>
 
     <div class="text-field" style="margin-bottom:24px">
-      <label style="font-size:12px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.08em;display:block;margin-bottom:6px">Date of Birth </label>
+      <label style="font-size:12px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.08em;display:block;margin-bottom:6px">Date of Birth *</label>
       <input type="date" id="ob-dob" style="width:100%;padding:12px 14px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;font-family:var(--font);outline:none">
     </div>
 
     <div id="ob1-error" style="display:none;color:var(--danger);font-size:13px;margin-bottom:12px;text-align:center"></div>
 
     <button id="ob1-btn" class="btn-primary" onclick="onboardStep1()">Continue →</button>
-    <div style="text-align:center;margin-top:16px;display:flex;flex-direction:column;gap:8px">
-      <span onclick="goTo('dashboard')" style="font-size:13px;color:var(--text-muted);cursor:pointer">Skip onboarding → Start using VEKTRA</span>
-    </div>
   </div>
 </div>
 
@@ -199,9 +207,8 @@
     <div id="ob3-error" style="display:none;color:var(--danger);font-size:13px;margin-bottom:12px;text-align:center"></div>
 
     <button id="ob3-btn" class="btn-primary" onclick="onboardStep3()">Launch VEKTRA 🚀</button>
-    <div style="text-align:center;margin-top:16px;display:flex;flex-direction:column;gap:8px">
+    <div style="text-align:center;margin-top:16px">
       <span onclick="goTo('onboard-2')" style="font-size:13px;color:var(--text-muted);cursor:pointer">← Back</span>
-      <span onclick="goTo('dashboard')" style="font-size:13px;color:var(--text-muted);cursor:pointer">Skip → Start using VEKTRA</span>
     </div>
   </div>
 </div>
@@ -228,7 +235,7 @@
 
     <button id="login-btn" class="btn-primary" onclick="login()">Sign In</button>
     <div style="text-align:center;margin-top:12px">
-      <span onclick="showForgotPassword()" style="font-size:13px;color:var(--text-muted);cursor:pointer">Forgot password?</span>
+      <span onclick="showForgotPassword()" style="font-size:13px;color:var(--accent);cursor:pointer">Forgot password?</span>
     </div>
 
     <div style="text-align:center;margin-top:20px;font-size:14px;color:var(--text-muted)">
@@ -236,6 +243,82 @@
       <span onclick="goTo('register')" style="color:var(--accent);cursor:pointer">Get Started</span>
     </div>
 
+  </div>
+</div>
+
+<!-- SCREEN: EMAIL VERIFICATION -->
+<div id="email-verify" style="display:none;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:2rem;">
+  
+  <div class="welcome-logo" style="margin-bottom:4px">VEKTRA</div>
+  <div style="font-size:13px;color:var(--text-muted);margin-bottom:36px">Verify your email</div>
+
+  <div style="width:100%;max-width:320px;text-align:center">
+    <div style="font-size:48px;margin-bottom:1rem">📧</div>
+    <div style="font-size:16px;font-weight:600;color:var(--text-primary);margin-bottom:8px">Check your inbox</div>
+    <div style="font-size:13px;color:var(--text-muted);margin-bottom:1.5rem">We sent a verification link to your email. Click it to activate your account.</div>
+
+    <div id="verify-error" style="display:none;color:var(--danger);font-size:13px;margin-bottom:12px;text-align:center"></div>
+    <div id="verify-success" style="display:none;color:var(--success);font-size:13px;margin-bottom:12px;text-align:center"></div>
+
+    <button class="btn-primary" onclick="verifyEmailWithToken()">I've verified my email</button>
+    
+    <div style="margin-top:16px">
+      <span onclick="resendVerificationEmail()" style="font-size:13px;color:var(--accent);cursor:pointer">Resend verification email</span>
+    </div>
+    
+    <div style="margin-top:12px">
+      <span onclick="goTo('dashboard')" style="font-size:13px;color:var(--text-muted);cursor:pointer">Skip for now</span>
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN: PASSWORD RESET REQUEST -->
+<div id="password-reset-request" style="display:none;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:2rem;">
+  
+  <div class="welcome-logo" style="margin-bottom:4px">VEKTRA</div>
+  <div style="font-size:13px;color:var(--text-muted);margin-bottom:36px">Reset your password</div>
+
+  <div style="width:100%;max-width:320px">
+    <div style="margin-bottom:16px">
+      <label style="font-size:12px;color:var(--text-secondary);letter-spacing:0.08em;text-transform:uppercase;display:block;margin-bottom:6px">Email</label>
+      <input id="reset-email" type="email" placeholder="your@email.com" style="width:100%;padding:14px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:15px;outline:none;font-family:var(--font)">
+    </div>
+
+    <div id="reset-request-error" style="display:none;color:var(--danger);font-size:13px;margin-bottom:12px;text-align:center"></div>
+    <div id="reset-request-success" style="display:none;color:var(--success);font-size:13px;margin-bottom:12px;text-align:center"></div>
+
+    <button class="btn-primary" onclick="requestPasswordReset()">Send Reset Link</button>
+    
+    <div style="text-align:center;margin-top:16px">
+      <span onclick="goTo('login')" style="font-size:13px;color:var(--text-muted);cursor:pointer">← Back to login</span>
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN: PASSWORD RESET CONFIRM -->
+<div id="password-reset-confirm" style="display:none;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:2rem;">
+  
+  <div class="welcome-logo" style="margin-bottom:4px">VEKTRA</div>
+  <div style="font-size:13px;color:var(--text-muted);margin-bottom:36px">Set new password</div>
+
+  <div style="width:100%;max-width:320px">
+    <div style="margin-bottom:16px">
+      <label style="font-size:12px;color:var(--text-secondary);letter-spacing:0.08em;text-transform:uppercase;display:block;margin-bottom:6px">New Password</label>
+      <input id="reset-new-password" type="password" placeholder="Min 8 characters, 1 symbol" style="width:100%;padding:14px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:15px;outline:none;font-family:var(--font)">
+    </div>
+
+    <div style="margin-bottom:16px">
+      <label style="font-size:12px;color:var(--text-secondary);letter-spacing:0.08em;text-transform:uppercase;display:block;margin-bottom:6px">Confirm Password</label>
+      <input id="reset-confirm-password" type="password" placeholder="Confirm new password" style="width:100%;padding:14px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:15px;outline:none;font-family:var(--font)">
+    </div>
+
+    <div id="reset-confirm-error" style="display:none;color:var(--danger);font-size:13px;margin-bottom:12px;text-align:center"></div>
+
+    <button class="btn-primary" onclick="confirmPasswordReset()">Reset Password</button>
+    
+    <div style="text-align:center;margin-top:16px">
+      <span onclick="goTo('login')" style="font-size:13px;color:var(--text-muted);cursor:pointer">← Back to login</span>
+    </div>
   </div>
 </div>
 
@@ -350,6 +433,9 @@
     View Weekly Report
   </button>
   <div style="font-size:12px;color:var(--text-muted);margin-top:10px;line-height:1.5">Your first weekly report becomes available after 3 logged days. Keep logging to unlock richer insights and trajectory guidance.</div>
+
+  <button class="btn-secondary" style="margin-top:12px" onclick="openWeeklyQuestions()">📋 Weekly Check-in</button>
+  <div style="font-size:12px;color:var(--text-muted);margin-top:10px;line-height:1.5">Answer weekly reflection questions for deeper insights. Takes 2 minutes.</div>
 
   <button class="btn-secondary" style="margin-top:12px; margin-bottom: 1rem;" onclick="openHistory()">📋 View Log History</button>
 
@@ -571,6 +657,77 @@
 
 </div>
 
+<!-- SCREEN: WEEKLY/MONTHLY QUESTIONS -->
+<div id="weekly-questions" style="display:none;flex-direction:column;min-height:100vh;padding:1.5rem;max-width:420px;margin:0 auto">
+
+  <!-- Header -->
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;padding-top:1rem">
+    <div>
+      <div style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.1em">Weekly Check-in</div>
+      <div style="font-size:18px;font-weight:700">Reflection Questions</div>
+    </div>
+    <div onclick="goTo('dashboard')" style="color:var(--text-muted);cursor:pointer;font-size:13px">← Back</div>
+  </div>
+
+  <div style="background:rgba(108,99,255,0.1);border:1px solid rgba(108,99,255,0.3);border-radius:var(--radius-sm);padding:1rem;margin-bottom:1.5rem;font-size:13px;color:var(--text-secondary)">
+    These questions help us understand your progress beyond daily metrics. Answer once per week for better insights.
+  </div>
+
+  <!-- Weekly Questions -->
+  <div id="weekly-questions-form" style="display:flex;flex-direction:column;gap:1.5rem">
+    <div class="text-field">
+      <label>What was your biggest win this week?</label>
+      <textarea id="wq-win" placeholder="Describe your biggest achievement or breakthrough..." style="min-height:80px"></textarea>
+    </div>
+
+    <div class="text-field">
+      <label>What's holding you back right now?</label>
+      <textarea id="wq-blocker" placeholder="Any obstacles, distractions, or challenges..." style="min-height:80px"></textarea>
+    </div>
+
+    <div class="text-field">
+      <label>What will you focus on next week?</label>
+      <textarea id="wq-focus" placeholder="Your main priority for the upcoming week..." style="min-height:80px"></textarea>
+    </div>
+
+    <div class="slider-field">
+      <div class="slider-label"><span>Overall satisfaction with this week</span><span id="val-wq-satisfaction">5</span></div>
+      <input type="range" min="1" max="10" value="5" id="inp-wq-satisfaction" oninput="updateSlider('wq-satisfaction')">
+    </div>
+
+    <div style="margin-top:1rem">
+      <button class="btn-primary" onclick="submitWeeklyQuestions()">Submit Weekly Check-in →</button>
+    </div>
+  </div>
+
+  <!-- Monthly Questions (hidden by default) -->
+  <div id="monthly-questions-form" style="display:none;flex-direction:column;gap:1.5rem">
+    <div class="text-field">
+      <label>What's your main goal for this month?</label>
+      <textarea id="mq-goal" placeholder="Your primary objective for the month..." style="min-height:80px"></textarea>
+    </div>
+
+    <div class="text-field">
+      <label>What habits do you want to build this month?</label>
+      <textarea id="mq-habits" placeholder="List 1-3 habits you want to develop..." style="min-height:80px"></textarea>
+    </div>
+
+    <div class="text-field">
+      <label>What will make this month successful?</label>
+      <textarea id="mq-success" placeholder="Define what success looks like..." style="min-height:80px"></textarea>
+    </div>
+
+    <div class="slider-field">
+      <div class="slider-label"><span>Confidence level for this month</span><span id="val-mq-confidence">5</span></div>
+      <input type="range" min="1" max="10" value="5" id="inp-mq-confidence" oninput="updateSlider('mq-confidence')">
+    </div>
+
+    <div style="margin-top:1rem">
+      <button class="btn-primary" onclick="submitMonthlyQuestions()">Submit Monthly Goals →</button>
+    </div>
+  </div>
+</div>
+
 <!-- SCREEN: REPORTS -->
 <div id="reports" style="display:none;flex-direction:column;min-height:100vh;padding:1.5rem;max-width:420px;margin:0 auto">
 
@@ -595,6 +752,10 @@
     <button id="rpt-btn-weekly" onclick="switchReport('weekly')"
       style="flex:1;padding:10px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;font-size:13px;font-weight:600;font-family:var(--font)">
       Weekly
+    </button>
+    <button id="rpt-btn-monthly" onclick="switchReport('monthly')"
+      style="flex:1;padding:10px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;font-size:13px;font-weight:600;font-family:var(--font)">
+      Monthly
     </button>
   </div>
 
@@ -659,6 +820,53 @@
 
   <!-- Regenerate -->
   <button class="btn-secondary" style="margin-bottom:3rem" onclick="loadReport()">↺ Regenerate Report</button>
+
+  <!-- Share Report -->
+  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
+    <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">Share Report</div>
+    
+    <div style="margin-bottom:12px">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:8px">
+        <input type="checkbox" id="share-public" onchange="updateShareSettings()" style="accent-color:var(--accent)">
+        <span style="font-size:13px;color:var(--text-secondary)">Make publicly accessible</span>
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:8px">
+        <input type="checkbox" id="share-circles" onchange="updateShareSettings()" style="accent-color:var(--accent)">
+        <span style="font-size:13px;color:var(--text-secondary)">Share with circles</span>
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:8px">
+        <input type="checkbox" id="share-anonymous" onchange="updateShareSettings()" style="accent-color:var(--accent)">
+        <span style="font-size:13px;color:var(--text-secondary)">Share anonymously (hide identity)</span>
+      </label>
+    </div>
+    
+    <div style="margin-bottom:12px">
+      <label style="font-size:12px;color:var(--text-muted);margin-bottom:6px;display:block">Custom message</label>
+      <textarea id="share-message" placeholder="Add a personal message..." style="width:100%;padding:10px 12px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:13px;font-family:var(--font);outline:none;resize:vertical;min-height:60px"></textarea>
+    </div>
+    
+    <div style="margin-bottom:12px">
+      <label style="font-size:12px;color:var(--text-muted);margin-bottom:6px;display:block">Theme</label>
+      <select id="share-theme" onchange="updateShareSettings()" style="width:100%;padding:10px 12px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:13px;font-family:var(--font);outline:none">
+        <option value="dark">Dark</option>
+        <option value="light">Light</option>
+        <option value="custom">Custom</option>
+      </select>
+    </div>
+    
+    <div id="share-link-container" style="display:none;margin-bottom:12px">
+      <label style="font-size:12px;color:var(--text-muted);margin-bottom:6px;display:block">Share link</label>
+      <div style="display:flex;gap:8px">
+        <input id="share-link" type="text" readonly style="flex:1;padding:10px 12px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:12px;font-family:var(--font);outline:none">
+        <button onclick="copyShareLink()" style="padding:10px 16px;background:var(--accent);border:none;border-radius:var(--radius-sm);color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font)">Copy</button>
+      </div>
+    </div>
+    
+    <button class="btn-primary" onclick="saveShareSettings()">Save Sharing Settings</button>
+  </div>
+
+  <!-- BD Card-->
+  <button class="btn-secondary" style="margin-top:12px" onclick="loadBirthdayCard()">🎂 My Birthday Card</button>
 
 </div>
 
@@ -836,7 +1044,7 @@
       </div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-top:12px">
         <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
-          <input type="checkbox" id="auto-renew" style="accent-color:var(--accent)">
+          <input type="checkbox" id="auto-renew" onchange="toggleAutoRenew(this.checked)" style="accent-color:var(--accent)">
           <span style="font-size:12px;color:var(--text-secondary)">Auto-renew</span>
         </label>
         <button onclick="goTo('upgrade')" style="padding:6px 12px;background:rgba(108,99,255,0.2);border:1px solid var(--accent);border-radius:var(--radius-sm);color:var(--accent);font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font)">Upgrade</button>
@@ -937,7 +1145,7 @@
     <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">Your Referral Code</div>
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem">
       <div id="referral-code" style="font-size:22px;font-weight:800;letter-spacing:0.1em;background:linear-gradient(135deg,#6c63ff,#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">—</div>
-      <button onclick="copyReferral()" style="padding:8px 14px;background:rgba(108,99,255,0.2);border:1px solid var(--accent);border-radius:var(--radius-sm);color:var(--accent);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font)">Copy</button>
+      <button onclick="copyReferral(event)" style="padding:8px 14px;background:rgba(108,99,255,0.2);border:1px solid var(--accent);border-radius:var(--radius-sm);color:var(--accent);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font)">Copy</button>
     </div>
     <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-muted);margin-bottom:.75rem">
       <span>Friends joined</span>
@@ -947,7 +1155,7 @@
       <span>VEK Credits earned</span>
       <span id="vek-credits" style="color:var(--gold);font-weight:600">0</span>
     </div>
-    <button onclick="shareReferral()" style="width:100%;padding:10px;background:linear-gradient(135deg,#6c63ff,#ec4899);border:none;border-radius:var(--radius-sm);color:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:var(--font)">Share VEKTRA 🔥</button>
+    <button onclick="shareReferral(event)" style="width:100%;padding:10px;background:linear-gradient(135deg,#6c63ff,#ec4899);border:none;border-radius:var(--radius-sm);color:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:var(--font)">Share VEKTRA 🔥</button>
   </div>
 
 </div>
@@ -1299,6 +1507,7 @@
       
       <div style="display:flex;gap:8px;margin-bottom:12px">
         <button id="pay-stripe-btn" onclick="selectPaymentMethod('stripe')" style="flex:1;padding:12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:transparent;color:var(--text-secondary);cursor:pointer;font-size:13px;font-family:var(--font)">💳 Stripe</button>
+        <button id="pay-paystack-btn" onclick="selectPaymentMethod('paystack')" style="flex:1;padding:12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:transparent;color:var(--text-secondary);cursor:pointer;font-size:13px;font-family:var(--font)">🏦 Paystack</button>
         <button id="pay-mpesa-btn" onclick="selectPaymentMethod('mpesa')" style="flex:1;padding:12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:transparent;color:var(--text-secondary);cursor:pointer;font-size:13px;font-family:var(--font)">📱 M-Pesa</button>
       </div>
 
@@ -1317,6 +1526,12 @@
             <input type="text" id="stripe-cvc" placeholder="123" style="width:100%;padding:10px 12px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;font-family:var(--font);outline:none">
           </div>
         </div>
+      </div>
+
+      <!-- Paystack Form -->
+      <div id="paystack-form" style="display:none">
+        <label style="font-size:12px;color:var(--text-muted);margin-bottom:6px;display:block">Email</label>
+        <input type="email" id="paystack-email" placeholder="you@domain.com" style="width:100%;padding:10px 12px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;font-family:var(--font);outline:none;margin-bottom:12px">
       </div>
 
       <!-- M-Pesa Form -->
@@ -1529,8 +1744,7 @@
     <div style="display:flex;align-items:start;gap:8px;margin-bottom:.75rem">
       <input type="checkbox" id="terms-checkbox" style="margin-top:3px;accent-color:var(--accent);cursor:pointer">
       <label for="terms-checkbox" style="font-size:12px;color:var(--text-muted);cursor:pointer;line-height:1.4">
-        I agree to the <span style="color:var(--accent)">Terms of Service</span> and understand that:
-        no refunds, upgrades are prorated, cancellation stops renewal at period end.
+        I agree to the <span style="color:var(--accent);cursor:pointer;text-decoration:underline" onclick="goTo('terms')">Terms of Service</span>, <span style="color:var(--accent);cursor:pointer;text-decoration:underline" onclick="goTo('privacy')">Privacy Policy</span>, and <span style="color:var(--accent);cursor:pointer;text-decoration:underline" onclick="goTo('refund')">Refund Policy</span>. No refunds, upgrades are prorated, cancellation stops renewal at period end.
       </label>
     </div>
 
@@ -1639,6 +1853,154 @@
     </div>
   </div>
 
+  <!-- SCREEN: TERMS OF SERVICE -->
+  <div id="terms" style="display:none;flex-direction:column;align-items:center;min-height:100vh;padding:2rem;background:var(--bg-primary)">
+    <div style="max-width:600px;width:100%;text-align:left">
+      <button onclick="goTo('dashboard')" style="background:transparent;border:none;color:var(--text-secondary);font-size:14px;cursor:pointer;margin-bottom:1rem">← Back</button>
+      <h1 style="font-size:28px;font-weight:800;margin-bottom:1rem;color:var(--text-primary)">Terms of Service</h1>
+      <div style="font-size:13px;color:var(--text-secondary);line-height:1.6">
+        <p style="margin-bottom:1rem"><strong>Last Updated:</strong> August 2026</p>
+        
+        <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">1. Acceptance of Terms</h2>
+        <p style="margin-bottom:1rem">By accessing and using VEKTRA, you accept and agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use our service.</p>
+        
+        <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">2. Service Description</h2>
+        <p style="margin-bottom:1rem">VEKTRA is a personal progress tracking application that helps users monitor their daily activities, goals, and personal metrics through data logging and AI-powered insights.</p>
+        
+        <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">3. User Responsibilities</h2>
+        <p style="margin-bottom:1rem">Users are responsible for maintaining the confidentiality of their account credentials and for all activities that occur under their account. You agree to provide accurate and complete information.</p>
+        
+        <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">4. Subscription and Payment</h2>
+        <p style="margin-bottom:1rem">VEKTRA offers both free and paid subscription tiers. Paid subscriptions are billed in advance for the selected duration. No refunds will be provided for unused portions of a subscription period.</p>
+        
+        <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">5. Cancellation</h2>
+        <p style="margin-bottom:1rem">You may cancel your subscription at any time. Cancellation will take effect at the end of the current billing period. You will retain access until the period expires.</p>
+        
+        <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">6. Data and Privacy</h2>
+        <p style="margin-bottom:1rem">Your data is stored securely and processed according to our Privacy Policy. We do not sell your personal data to third parties.</p>
+        
+        <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">7. Disclaimer</h2>
+        <p style="margin-bottom:1rem">VEKTRA is provided "as is" without warranties of any kind. We are not liable for any damages arising from use of the service.</p>
+        
+        <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">8. Changes to Terms</h2>
+        <p style="margin-bottom:1rem">We reserve the right to modify these terms at any time. Continued use of the service constitutes acceptance of updated terms.</p>
+        
+        <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">9. Contact</h2>
+        <p style="margin-bottom:1rem">For questions about these terms, contact us through the app or via email.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREEN: PRIVACY POLICY -->
+  <div id="privacy" style="display:none;flex-direction:column;align-items:center;min-height:100vh;padding:2rem;background:var(--bg-primary)">
+    <div style="max-width:600px;width:100%;text-align:left">
+      <button onclick="goTo('dashboard')" style="background:transparent;border:none;color:var(--text-secondary);font-size:14px;cursor:pointer;margin-bottom:1rem">← Back</button>
+      <h1 style="font-size:28px;font-weight:800;margin-bottom:1rem;color:var(--text-primary)">Privacy Policy</h1>
+      <div style="font-size:13px;color:var(--text-secondary);line-height:1.6">
+        <p style="margin-bottom:1rem"><strong>Last Updated:</strong> August 2026</p>
+        
+        <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">1. Information We Collect</h2>
+        <p style="margin-bottom:1rem">We collect information you provide directly, including your username, email, date of birth, and the data you log through daily snapshots (mood, finances, goals, activities, etc.).</p>
+        
+        <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">2. How We Use Your Data</h2>
+        <p style="margin-bottom:1rem">Your data is used to provide personalized insights, generate reports, calculate trajectory scores, and improve our services. We use AI to analyze your logged data for pattern recognition and coaching insights.</p>
+        
+        <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">3. Data Storage and Security</h2>
+        <p style="margin-bottom:1rem">Your data is stored securely on Supabase with encryption at rest. We implement industry-standard security measures to protect your information.</p>
+        
+        <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">4. Data Sharing</h2>
+        <p style="margin-bottom:1rem">We do not sell your personal data to third parties. Your data may be shared with service providers (like AI APIs) only as necessary to provide the service, under strict confidentiality agreements.</p>
+        
+        <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">5. Your Rights</h2>
+        <p style="margin-bottom:1rem">You have the right to access, correct, or delete your personal data. You can export your data at any time through the app. Account deletion permanently removes all your data.</p>
+        
+        <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">6. Cookies and Tracking</h2>
+        <p style="margin-bottom:1rem">We use essential cookies for app functionality. We do not use tracking cookies for advertising purposes.</p>
+        
+        <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">7. Children's Privacy</h2>
+        <p style="margin-bottom:1rem">VEKTRA is not intended for users under 13 years of age. We do not knowingly collect data from children.</p>
+        
+        <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">8. International Data Transfers</h2>
+        <p style="margin-bottom:1rem">Your data may be processed and stored in servers located outside your country. We ensure appropriate safeguards are in place.</p>
+        
+        <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">9. Policy Updates</h2>
+        <p style="margin-bottom:1rem">We may update this policy from time to time. Significant changes will be communicated through the app.</p>
+        
+        <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">10. Contact</h2>
+        <p style="margin-bottom:1rem">For privacy-related inquiries, contact us through the app or via email.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREEN: REFUND POLICY -->
+  <div id="refund" style="display:none;flex-direction:column;align-items:center;min-height:100vh;padding:2rem;background:var(--bg-primary)">
+    <div style="max-width:600px;width:100%;text-align:left">
+      <button onclick="goTo('dashboard')" style="background:transparent;border:none;color:var(--text-secondary);font-size:14px;cursor:pointer;margin-bottom:1rem">← Back</button>
+      <h1 style="font-size:28px;font-weight:800;margin-bottom:1rem;color:var(--text-primary)">Refund Policy</h1>
+      <div style="font-size:13px;color:var(--text-secondary);line-height:1.6">
+        <p style="margin-bottom:1rem"><strong>Last Updated:</strong> August 2026</p>
+        
+        <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">1. No Refunds</h2>
+        <p style="margin-bottom:1rem">All subscription purchases are final and non-refundable. Once a subscription is purchased, you will not be eligible for a refund of any unused portion.</p>
+        
+        <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">2. Prorated Upgrades</h2>
+        <p style="margin-bottom:1rem">When upgrading between tiers, the remaining value of your current subscription may be prorated and applied to the new tier at our discretion.</p>
+        
+        <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">3. Service Interruptions</h2>
+        <p style="margin-bottom:1rem">In the unlikely event of extended service outages (exceeding 48 hours), affected users may be eligible for account credit extensions at our sole discretion.</p>
+        
+        <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">4. Payment Processing Errors</h2>
+        <p style="margin-bottom:1rem">If you are charged in error due to a payment processing failure, please contact us within 30 days for resolution and potential refund.</p>
+        
+        <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">5. Cancellation Policy</h2>
+        <p style="margin-bottom:1rem">You can cancel your subscription at any time. Cancellation takes effect at the end of your current billing period. No refunds are provided for the remaining period.</p>
+        
+        <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">6. Exceptions</h2>
+        <p style="margin-bottom:1rem">Refund requests will only be considered in exceptional circumstances at our sole discretion. Each case is reviewed individually.</p>
+        
+        <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">7. Contact</h2>
+        <p style="margin-bottom:1rem">For refund-related inquiries, contact us through the app or via email with your transaction details.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREEN: ABOUT US -->
+  <div id="about" style="display:none;flex-direction:column;align-items:center;min-height:100vh;padding:2rem;background:var(--bg-primary)">
+    <div style="max-width:600px;width:100%;text-align:left">
+      <button onclick="goTo('dashboard')" style="background:transparent;border:none;color:var(--text-secondary);font-size:14px;cursor:pointer;margin-bottom:1rem">← Back</button>
+      <h1 style="font-size:28px;font-weight:800;margin-bottom:1rem;color:var(--text-primary)">About VEKTRA</h1>
+      <div style="font-size:13px;color:var(--text-secondary);line-height:1.6">
+        
+        <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">Our Mission</h2>
+        <p style="margin-bottom:1rem">VEKTRA exists to help individuals understand their trajectory. We believe that self-awareness through data is the foundation of meaningful growth. Vector = Magnitude × Direction.</p>
+        
+        <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">What We Do</h2>
+        <p style="margin-bottom:1rem">VEKTRA is a personal progress tracking application that combines daily logging, AI-powered insights, and trajectory scoring to help you see the patterns behind your choices. We don't just track what you do—we help you understand where you're going.</p>
+        
+        <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">The Philosophy</h2>
+        <p style="margin-bottom:1rem">Most people drift through life without measuring their momentum. VEKTRA changes that by quantifying the five pillars of personal growth: Financial, Mental, Execution, Body, and Growth. Your trajectory score is a single number that tells you if you're building momentum or losing it.</p>
+        
+        <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">How It Works</h2>
+        <p style="margin-bottom:1rem">Log your daily data—mood, finances, focus hours, sleep, goals, and more. Our engine calculates your trajectory score across five dimensions. Get AI-generated reports that tell you the truth about your progress, not what you Want to hear.</p>
+        
+        <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">Privacy First</h2>
+        <p style="margin-bottom:1rem">Your data belongs to you. We don't sell it. We don't use it for advertising. We use it only to give you better insights about yourself. You can export or delete your data at any time.</p>
+        
+        <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">Built for Builders</h2>
+        <p style="margin-bottom:1rem">VEKTRA is designed for people who are serious about growth. Entrepreneurs, developers, creators, athletes—anyone who wants to measure their momentum and optimize their trajectory.</p>
+        
+        <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">Contact</h2>
+        <p style="margin-bottom:1rem">Have questions or feedback? Reach out through the app or contact us via email. We're constantly improving VEKTRA based on user input.</p>
+        
+        <div style="margin-top:2rem;padding:1rem;background:rgba(108,99,255,0.1);border:1px solid rgba(108,99,255,0.2);border-radius:var(--radius)">
+          <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.5rem">The Equation</div>
+          <div style="font-size:24px;font-weight:800;color:var(--text-primary)">Vector = Magnitude × Direction</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:0.5rem">How much you're doing × Where you're going = Your Trajectory</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <!-- ── BOTTOM NAVIGATION CONTAINER ── -->
@@ -1678,6 +2040,7 @@
 <div id="live-server-hook"></div>
 
 <script type="module" src="js/app.js"></script>
+<script src="https://jsdelivr.net"></script>
 
 <!-- Ensure this is the absolute last script block before </body> -->
 <script>
@@ -1694,7 +2057,7 @@
     }
 
     // 2. Loop through and hide all sibling view sections inside the app layout
-    const screens = ['welcome', 'login', 'register', 'dashboard', 'onboard-1', 'daily-log'];
+    const screens = ['welcome', 'login', 'register', 'dashboard', 'onboard-1', 'daily-log', 'terms', 'privacy', 'refund', 'about'];
     screens.forEach(id => {
       const el = document.getElementById(id);
       if (el) el.style.display = 'none';

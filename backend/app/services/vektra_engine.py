@@ -591,17 +591,26 @@ def calculate_vektra_score(
     previous_snapshot: dict = None,
     current_streak: int = 0,
     user_tier: str = 'free',
+    score_history: list = None,
+    goal_completion_rate: float = 0.0,
 ) -> VektraScoreResult:
     """
     Master engine — combines all 5 sub-engines into one trajectory score.
 
     Free tier:   Arithmetic mean of 5 engines
-    Tier 1:      Arithmetic mean + streak bonus
+    Tier 1:      Arithmetic mean + streak bonus + trend analysis
     Tier 2:      70% Geometric Mean + 30% Arithmetic Mean (punishes imbalance)
-                 + streak bonus + cross-engine penalties
+                 + streak bonus + cross-engine penalties + adaptive weights
+
+    V3.0 Refinements:
+    - Trend analysis: considers score trajectory over time
+    - Adaptive weights: slightly boosts weakest engine
+    - Goal completion integration: rewards consistent goal hitting
+    - Refined streak bonus: logarithmic scaling with diminishing returns
     """
     prev = previous_snapshot or {}
     all_flags = []
+    score_history = score_history or []
 
     # ── Run all sub-engines ──────────────────────────────
     financial = calculate_financial_score(
@@ -676,6 +685,18 @@ def calculate_vektra_score(
         growth['score'],
     ]
 
+    # ── Adaptive weights (tier2): boost weakest engine slightly ──
+    if user_tier == 'tier2':
+        min_score_idx = scores.index(min(scores))
+        engine_names = ['financial', 'mental', 'execution', 'body', 'growth']
+        weakest_engine = engine_names[min_score_idx]
+        W[weakest_engine] = min(0.40, W[weakest_engine] + 0.05)  # +5% boost, capped at 40%
+        # Rebalance other weights proportionally
+        total_boost = 0.05
+        for name in engine_names:
+            if name != weakest_engine:
+                W[name] = max(0.05, W[name] - (total_boost / 4))
+
     # ── Master score calculation ─────────────────────────
     arithmetic = sum(s * w for s, w in zip(scores, W.values()))
 
@@ -686,6 +707,27 @@ def calculate_vektra_score(
     else:
         master = arithmetic
 
+    # ── Trend analysis (tier1+) ─────────────────────────────
+    if user_tier in ['tier1', 'tier2'] and len(score_history) >= 3:
+        recent_avg = sum(score_history[-3:]) / 3
+        if recent_avg > master:
+            # Declining trend - small penalty
+            trend_penalty = (recent_avg - master) * 0.1
+            master = max(0.0, master - trend_penalty)
+            all_flags.append('DECLINING_TREND')
+        elif recent_avg < master:
+            # Improving trend - small bonus
+            trend_bonus = (master - recent_avg) * 0.05
+            master = min(100.0, master + trend_bonus)
+
+    # ── Goal completion integration (all tiers) ────────────
+    if goal_completion_rate > 0.7:
+        goal_bonus = (goal_completion_rate - 0.7) * 5.0  # Up to +1.5 points for 100% completion
+        master = min(100.0, master + goal_bonus)
+    elif goal_completion_rate < 0.3 and goal_completion_rate > 0:
+        goal_penalty = (0.3 - goal_completion_rate) * 3.0  # Up to -0.9 points for 0% completion
+        master = max(0.0, master - goal_penalty)
+
     # ── Cross-engine penalties (tier1+) ─────────────────
     if user_tier in ['tier1', 'tier2']:
         if body['score'] < 40:
@@ -695,9 +737,11 @@ def calculate_vektra_score(
             master *= 0.96  # Financial stress dampener
             all_flags.append('FINANCIAL_STRESS')
 
-    # ── Streak bonus (capped at +5 points) ───────────────
-    streak_bonus = min(5.0, current_streak * 0.25)
-    master = _clamp(master + streak_bonus)
+    # ── Refined streak bonus (logarithmic with diminishing returns) ──
+    if current_streak > 0:
+        # Logarithmic scaling: 1 day = 0.5, 7 days = 2.0, 30 days = 3.4, capped at 5.0
+        streak_bonus = min(5.0, math.log(current_streak + 1) * 0.8)
+        master = _clamp(master + streak_bonus)
 
     # ── Shadow score (unrealized potential) ──────────────
     # What you could score if execution was at 100%
@@ -781,9 +825,9 @@ if __name__ == "__main__":
     prev = {'current_net_worth': 15000}
 
     for tier in ['free', 'tier1', 'tier2']:
-        result = calculate_vektra_score(test_snapshot, prev, current_streak=5, user_tier=tier)
+        result = calculate_vektra_score(test_snapshot, prev, current_streak=5, user_tier=tier, score_history=[65, 68, 70], goal_completion_rate=0.8)
         print(f"\n{'='*55}")
-        print(f"  VEKTRA ENGINE V2.0 — TIER: {tier.upper()}")
+        print(f"  VEKTRA ENGINE V3.0 — TIER: {tier.upper()}")
         print(f"{'='*55}")
         print(f"  Financial:   {result.financial_score}/100")
         print(f"  Mental:      {result.mental_score}/100")

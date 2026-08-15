@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  
+  body {
+    width: 1080px;
+    height: 1920px;
+    background: #080810;
+    font-family: 'Inter', -apple-system, sans-serif;
+    overflow: hidden;
+  }
+
+  .card {
+    width: 1080px;
+    height: 1920px;
+    background: #080810;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 80px 90px;
+  }
+
+  /* Background glow */
+  .glow-purple {
+    position: absolute;
+    width: 700px;
+    height: 700px;
+    background: radial-gradient(circle, rgba(108,99,255,0.25) 0%, transparent 70%);
+    top: 350px;
+    left: 50%;
+    transform: translateX(-50%);
+    pointer-events: none;
+  }
+
+  .glow-pink {
+    position: absolute;
+    width: 500px;
+    height: 500px;
+    background: radial-gradient(circle, rgba(236,72,153,0.15) 0%, transparent 70%);
+    top: 500px;
+    left: 50%;
+    transform: translateX(-50%);
+    pointer-events: none;
+  }
+
+  /* Top bar */
+  .top-bar {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 100px;
+    z-index: 1;
+  }
+
+  .logo {
+    font-size: 38px;
+    font-weight: 900;
+    letter-spacing: 0.12em;
+    background: linear-gradient(135deg, #6c63ff, #ec4899);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .date {
+    font-size: 26px;
+    color: rgba(255,255,255,0.3);
+    font-weight: 400;
+    letter-spacing: 0.05em;
+  }
+
+  /* Birthday greeting */
+  .greeting {
+    z-index: 1;
+    text-align: center;
+    margin-bottom: 60px;
+  }
+
+  .greeting-small {
+    font-size: 28px;
+    color: rgba(255,255,255,0.4);
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    margin-bottom: 16px;
+  }
+
+  .greeting-name {
+    font-size: 72px;
+    font-weight: 900;
+    color: #f0f0f5;
+    letter-spacing: -0.02em;
+    line-height: 1;
+  }
+
+  /* Score hero */
+  .score-section {
+    z-index: 1;
+    text-align: center;
+    margin-bottom: 70px;
+  }
+
+  .score-label {
+    font-size: 24px;
+    color: rgba(255,255,255,0.3);
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    margin-bottom: 16px;
+  }
+
+  .score-number {
+    font-size: 220px;
+    font-weight: 900;
+    background: linear-gradient(135deg, #6c63ff, #a855f7, #ec4899);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 0.9;
+    letter-spacing: -0.05em;
+  }
+
+  .score-trajectory {
+    font-size: 32px;
+    color: rgba(255,255,255,0.5);
+    margin-top: 20px;
+    letter-spacing: 0.05em;
+  }
+
+  /* Divider */
+  .divider {
+    width: 120px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(108,99,255,0.6), transparent);
+    margin: 0 auto 70px;
+    z-index: 1;
+  }
+
+  /* AI Message */
+  .ai-message {
+    z-index: 1;
+    text-align: center;
+    padding: 0 20px;
+    margin-bottom: 70px;
+  }
+
+  .ai-message-text {
+    font-size: 38px;
+    color: rgba(255,255,255,0.75);
+    line-height: 1.5;
+    font-weight: 400;
+    font-style: italic;
+  }
+
+  .ai-message-text strong {
+    color: #fff;
+    font-style: normal;
+    font-weight: 700;
+  }
+
+  /* Stats row */
+  .stats-row {
+    z-index: 1;
+    display: flex;
+    gap: 24px;
+    margin-bottom: 70px;
+    width: 100%;
+  }
+
+  .stat-box {
+    flex: 1;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 24px;
+    padding: 36px 20px;
+    text-align: center;
+  }
+
+  .stat-label {
+    font-size: 20px;
+    color: rgba(255,255,255,0.3);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 12px;
+  }
+
+  .stat-value {
+    font-size: 48px;
+    font-weight: 800;
+    color: #fff;
+  }
+
+  /* North star */
+  .north-star {
+    z-index: 1;
+    width: 100%;
+    border-left: 3px solid rgba(108,99,255,0.6);
+    padding-left: 32px;
+    margin-bottom: 80px;
+  }
+
+  .north-star-label {
+    font-size: 22px;
+    color: rgba(108,99,255,0.8);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    margin-bottom: 12px;
+  }
+
+  .north-star-text {
+    font-size: 34px;
+    color: rgba(255,255,255,0.6);
+    line-height: 1.4;
+    font-style: italic;
+  }
+
+  /* Bottom tagline */
+  .bottom {
+    z-index: 1;
+    margin-top: auto;
+    text-align: center;
+  }
+
+  .tagline {
+    font-size: 26px;
+    color: rgba(255,255,255,0.2);
+    letter-spacing: 0.1em;
+  }
+
+  .url {
+    font-size: 24px;
+    color: rgba(108,99,255,0.5);
+    margin-top: 12px;
+    letter-spacing: 0.05em;
+  }
+</style>
+</head>
+<body>
+<div class="card">
+  <!-- Background glows -->
+  <div class="glow-purple"></div>
+  <div class="glow-pink"></div>
+
+  <!-- Top bar -->
+  <div class="top-bar">
+    <div class="logo">VEKTRA</div>
+    <div class="date">Aug 5, 2026</div>
+  </div>
+
+  <!-- Greeting -->
+  <div class="greeting">
+    <div class="greeting-small">Happy Birthday</div>
+    <div class="greeting-name">Roophy</div>
+  </div>
+
+  <!-- Score -->
+  <div class="score-section">
+    <div class="score-label">Trajectory Score</div>
+    <div class="score-number">74</div>
+    <div class="score-trajectory">🔥 Rising trajectory</div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- AI Message -->
+  <div class="ai-message">
+    <div class="ai-message-text">
+      <strong>45 days logged. 71 average.</strong><br>
+      You showed up when most wouldn't.<br>
+      Year 21 is yours to own.
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-row">
+    <div class="stat-box">
+      <div class="stat-label">Best Score</div>
+      <div class="stat-value">80</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-label">Streak</div>
+      <div class="stat-value">🔥 12</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-label">Days In</div>
+      <div class="stat-value">45</div>
+    </div>
+  </div>
+
+  <!-- North Star -->
+  <div class="north-star">
+    <div class="north-star-label">North Star</div>
+    <div class="north-star-text">"Leave Juja — by Sept 2026"</div>
+  </div>
+
+  <!-- Bottom -->
+  <div class="bottom">
+    <div class="tagline">Vector = Magnitude × Direction</div>
+    <div class="url">vektra.app</div>
+  </div>
+</div>
+</body>
+</html>
