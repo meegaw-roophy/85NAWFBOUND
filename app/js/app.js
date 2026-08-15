@@ -5154,13 +5154,16 @@ ${tomorrow}
 window.loadDailyReport = loadDailyReport;
 window.buildDailySummaryText = buildDailySummaryText;
 
-// ── Birthday Card ──
+/**
+ * Asynchronously checks profile credentials, fetches stats snapshots,
+ * and initializes the visual birthday card experience.
+ */
 async function loadBirthdayCard() {
-  // 1. Move to page and run basic authentication guards
+  // 1. Route navigation to target screen structure
   goTo('birthday-card');
   if (!currentUser || !authToken) return;
 
-  // 2. Birthday validation check
+  // 2. Perform baseline profiling validation checks
   if (!currentUser.dob) {
     showToast('Please set your date of birth in profile first', 'error');
     return;
@@ -5174,6 +5177,7 @@ async function loadBirthdayCard() {
     return;
   }
 
+  // Check month and day matches today
   const isBirthday = today.getMonth() === dob.getMonth() && today.getDate() === dob.getDate();
   
   if (!isBirthday) {
@@ -5181,11 +5185,10 @@ async function loadBirthdayCard() {
       const daysUntil = calculateDaysUntilBirthday(dob);
       showToast(`Your birthday is in ${daysUntil} days! 🎂`, 'info', 3000);
     }
-    // Early exit if it is not their birthday to save API calls
-    return; 
+    return; // Fast exit gate to prevent unnecessary server load
   }
 
-  // 3. Set profile name and north star text safely
+  // 3. Inject descriptive name and target data variables safely
   const name = currentUser.full_name?.split(' ')[0] || currentUser.username || 'Friend';
   const nameEl = document.getElementById('bd-name');
   if (nameEl) nameEl.textContent = name;
@@ -5193,7 +5196,7 @@ async function loadBirthdayCard() {
   const nsEl = document.getElementById('bd-northstar');
   if (nsEl) nsEl.textContent = currentUser.north_star || 'Not set yet — update in profile';
 
-  // 4. Calculate exact age milestones
+  // 4. Compute generational milestone age differences
   let age = today.getFullYear() - dob.getFullYear();
   const monthDiff = today.getMonth() - dob.getMonth();
   if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
@@ -5205,22 +5208,22 @@ async function loadBirthdayCard() {
     ageEl.textContent = `Year ${age + 1} begins today 🚀`;
   }
 
-  // Helper to quickly populate DOM elements safely
+  // Localized fail-safe inner DOM manipulation helper
   const setDOMText = (id, val) => {
     const el = document.getElementById(id);
     if (el) el.textContent = val;
   };
 
-  // 5. Load snapshots for year statistics
+  // 5. Gather year-to-date telemetry metric snapshots
   try {
     const res = await fetch(`${API}/api/v1/users/${currentUser.id}/snapshots`, {
       headers: { 'Authorization': `Bearer ${authToken}` }
     });
     
-    if (!res.ok) throw new Error(`API error: ${res.status}`);
+    if (!res.ok) throw new Error(`API Endpoint connection issue: ${res.status}`);
     const snapshots = await res.json();
 
-    // Fallback UI if there are zero snapshots
+    // Default zero-state UI fallback boundaries
     if (!snapshots || snapshots.length === 0) {
       setDOMText('bd-score', '—');
       setDOMText('bd-best', '0');
@@ -5229,11 +5232,11 @@ async function loadBirthdayCard() {
       setDOMText('bd-avg', '—');
       setDOMText('bd-trajectory', 'Start logging to build your trajectory');
       
-      // Trigger animations even on fallback state
       triggerBirthdayAnimations();
       return;
     }
 
+    // Filter array payload data nodes
     const scores = snapshots.map(s => s.vektra_score).filter(s => s !== null && s !== undefined);
     
     if (scores.length === 0) {
@@ -5257,52 +5260,56 @@ async function loadBirthdayCard() {
     setDOMText('bd-streak', `🔥 ${streak}`);
     setDOMText('bd-logs', snapshots.length);
 
-    // Call report hook if needed
+    // Trigger internal analytics/reporting operations hooks
     if (typeof loadReport === 'function') await loadReport('birthday');
 
-    // 🎉 TRIGGER CELEBRATION ANIMATIONS HERE
+    // Fire graphics/celebration modules
     triggerBirthdayAnimations();
 
   } catch(e) {
-    console.error('Birthday card network error:', e);
+    console.error('Birthday card pipeline exception caught:', e);
     setDOMText('bd-trajectory', 'Could not load your trajectory stats');
     
-    // Still animate the card frame so the screen doesn't stay blank/broken
+    // Always trigger presentation tier even when endpoints throw
     triggerBirthdayAnimations();
   }
 }
 
-// Separate clean helper function for the animation logic
+/**
+ * Executes CSS animation rendering classes and launches external particle systems.
+ */
 function triggerBirthdayAnimations() {
-  // 1. Smoothly fade/slide in the main container
-  const container = document.getElementById('birthday-card-container');
-  if (container) {
-    container.classList.add('animate-ready');
+  const screen = document.getElementById('birthday-card');
+  if (screen) {
+    screen.classList.add('animate-ready');
   }
 
-  // 2. Fire the canvas confetti explosion if the library is loaded
+  // Trigger high-density colorful particle spray burst
   if (typeof confetti === 'function') {
     confetti({
-      particleCount: 120,
-      spread: 70,
-      origin: { y: 0.6 },
-      colors: ['#6C63FF', '#FF6584', '#FFD200'] // Matches your UI accents
+      particleCount: 140,
+      spread: 75,
+      origin: { y: 0.65 },
+      colors: ['#6c63ff', '#ec4899', '#ffd200']
     });
   }
 }
-window.triggerBirthdayAnimations = triggerBirthdayAnimations;
 
+/**
+ * Placeholder share handler action definition
+ */
 function shareBirthdayCard() {
-  const name = currentUser?.username || 'me';
-  const score = document.getElementById('bd-score').textContent;
-  const message = `It's my birthday and VEKTRA says my trajectory score is ${score}/100 🎂\n\nKnow your vector:\nhttps://meegaw-roophy.github.io/85NAWFBOUND/app/\n\nVector = Magnitude × Direction 🔥`;
-  
   if (navigator.share) {
-    navigator.share({ title: 'My VEKTRA Birthday Card', text: message });
+    navigator.share({
+      title: 'VEKTRA Birthday Milestones',
+      text: `Checked my year progress vector on my birthday!`,
+      url: window.location.href
+    }).catch(console.error);
   } else {
-    navigator.clipboard.writeText(message).then(() => {
-      showToast('Birthday card copied! Share it anywhere 🎂', 'success');
-    });
+    // Clipboard copy fallback procedure
+    navigator.clipboard.writeText(`My VEKTRA Trajectory score is active today!`)
+      .then(() => showToast('Card metrics copied to clipboard!', 'success'))
+      .catch(() => showToast('Unable to share card content', 'error'));
   }
 }
 
@@ -5321,6 +5328,7 @@ function checkBirthday() {
 window.loadBirthdayCard = loadBirthdayCard;
 window.shareBirthdayCard = shareBirthdayCard;
 window.checkBirthday = checkBirthday;
+window.triggerBirthdayAnimations = triggerBirthdayAnimations;
 
 // ── Check payment return ──
 function checkPaymentReturn() {

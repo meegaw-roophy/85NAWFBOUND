@@ -1788,70 +1788,272 @@
     </div>
   </div>
 
-  <!-- SCREEN: BIRTHDAY CARD -->
-  <div id="birthday-card" style="display:none;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:1.5rem;background:linear-gradient(135deg,#0a0a0f,#1a0a2e)">
+<!-- SCREEN: BIRTHDAY CARD -->
+<div id="birthday-card">
+  <div class="bd-card-max-wrapper">
+    
+    <!-- Outer Card Shell containing Premium Glow Engine -->
+    <div id="bd-card">
+      <div class="bd-card-glow"></div>
+      
+      <div style="font-size:48px; margin-bottom:.5rem;">🎂</div>
+      
+      <div style="font-size:12px; color:var(--accent, #6c63ff); text-transform:uppercase; letter-spacing:.15em; margin-bottom:.5rem;">Happy Birthday</div>
+      
+      <div id="bd-name">—</div>
+      
+      <div id="bd-age">Year — begins today</div>
 
-    <div style="width:100%;max-width:380px">
-      <!-- Card -->
-      <div id="bd-card" style="background:linear-gradient(135deg,#1a1a2e,#16213e);border:1px solid rgba(108,99,255,0.4);border-radius:20px;padding:2rem;text-align:center;box-shadow:0 0 40px rgba(108,99,255,0.2)">
-        
-        <div style="font-size:48px;margin-bottom:.5rem">🎂</div>
-        
-        <div style="font-size:12px;color:var(--accent);text-transform:uppercase;letter-spacing:.15em;margin-bottom:.5rem">Happy Birthday</div>
-        
-        <div id="bd-name" style="font-size:28px;font-weight:800;margin-bottom:.25rem">—</div>
-        
-        <div id="bd-age" style="font-size:14px;color:var(--text-muted);margin-bottom:2rem">Year — begins today</div>
+      <!-- Score highlight -->
+      <div class="bd-score-highlight">
+        <div style="font-size:11px; color:var(--text-muted, #8b9bb4); text-transform:uppercase; letter-spacing:.1em; margin-bottom:.5rem;">Your Trajectory Score</div>
+        <div id="bd-score">—</div>
+        <div id="bd-trajectory"></div>
+      </div>
 
-        <!-- Score highlight -->
-        <div style="background:rgba(108,99,255,0.1);border:1px solid rgba(108,99,255,0.2);border-radius:var(--radius);padding:1.25rem;margin-bottom:1.5rem">
-          <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:.5rem">Your Trajectory Score</div>
-          <div id="bd-score" style="font-size:56px;font-weight:900;background:linear-gradient(135deg,#6c63ff,#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1">—</div>
-          <div id="bd-trajectory" style="font-size:13px;color:var(--text-muted);margin-top:.5rem"></div>
+      <!-- Year stats Grid -->
+      <div class="bd-stats-grid">
+        <div class="bd-stat-box">
+          <div class="bd-stat-label">BEST SCORE</div>
+          <div id="bd-best">—</div>
         </div>
-
-        <!-- Year stats -->
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:1.5rem">
-          <div style="background:rgba(255,255,255,0.03);border-radius:var(--radius-sm);padding:.75rem">
-            <div style="font-size:10px;color:var(--text-muted);margin-bottom:4px">BEST SCORE</div>
-            <div id="bd-best" style="font-size:20px;font-weight:700">—</div>
-          </div>
-          <div style="background:rgba(255,255,255,0.03);border-radius:var(--radius-sm);padding:.75rem">
-            <div style="font-size:10px;color:var(--text-muted);margin-bottom:4px">BEST STREAK</div>
-            <div id="bd-streak" style="font-size:20px;font-weight:700">—</div>
-          </div>
-          <div style="background:rgba(255,255,255,0.03);border-radius:var(--radius-sm);padding:.75rem">
-            <div style="font-size:10px;color:var(--text-muted);margin-bottom:4px">DAYS LOGGED</div>
-            <div id="bd-logs" style="font-size:20px;font-weight:700">—</div>
-          </div>
-          <div style="background:rgba(255,255,255,0.03);border-radius:var(--radius-sm);padding:.75rem">
-            <div style="font-size:10px;color:var(--text-muted);margin-bottom:4px">AVG SCORE</div>
-            <div id="bd-avg" style="font-size:20px;font-weight:700">—</div>
-          </div>
+        <div class="bd-stat-box">
+          <div class="bd-stat-label">BEST STREAK</div>
+          <div id="bd-streak">—</div>
         </div>
-
-        <!-- North star -->
-        <div style="background:rgba(108,99,255,0.08);border-left:2px solid var(--accent);border-radius:0 var(--radius-sm) var(--radius-sm) 0;padding:.75rem 1rem;margin-bottom:1.5rem;text-align:left">
-          <div style="font-size:10px;color:var(--accent);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px">North Star</div>
-          <div id="bd-northstar" style="font-size:13px;color:var(--text-secondary);font-style:italic;line-height:1.5"></div>
+        <div class="bd-stat-box">
+          <div class="bd-stat-label">DAYS LOGGED</div>
+          <div id="bd-logs">—</div>
         </div>
-
-        <!-- VEKTRA branding -->
-        <div style="font-size:11px;color:var(--text-muted);letter-spacing:.1em">
-          <span style="background:linear-gradient(135deg,#6c63ff,#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;font-weight:800">VEKTRA</span>
-          &nbsp;·&nbsp; Vector = Magnitude × Direction
+        <div class="bd-stat-box">
+          <div class="bd-stat-label">AVG SCORE</div>
+          <div id="bd-avg">—</div>
         </div>
       </div>
 
-      <!-- Actions -->
-      <button class="btn-primary" style="margin-top:1rem" onclick="shareBirthdayCard()">
+      <!-- North star -->
+      <div class="bd-northstar-container">
+        <div style="font-size:10px; color:var(--accent, #6c63ff); text-transform:uppercase; letter-spacing:.1em; margin-bottom:4px;">North Star</div>
+        <div id="bd-northstar"></div>
+      </div>
+
+      <!-- VEKTRA branding -->
+      <div style="font-size:11px; color:var(--text-muted, #8b9bb4); letter-spacing:.1em;">
+        <span class="bd-brand-gradient">VEKTRA</span>
+        &nbsp;·&nbsp; Vector = Magnitude × Direction
+      </div>
+    </div>
+
+    <!-- Actions Footer Wrapper -->
+    <div class="bd-action-footer">
+      <button class="btn-primary" style="margin-top:1rem; width:100%;" onclick="shareBirthdayCard()">
         Share My Card 🎂
       </button>
-      <button class="btn-secondary" style="margin-top:12px" onclick="goTo('dashboard')">
+      <button class="btn-secondary" style="margin-top:12px; width:100%;" onclick="goTo('dashboard')">
         Back to Dashboard
       </button>
     </div>
+
   </div>
+</div>
+
+<style>
+/* --- SCREEN WRAPPER STYLES --- */
+#birthday-card {
+  display: none; /* Managed by routing engine */
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, #0a0a0f, #1a0a2e);
+}
+
+.bd-card-max-wrapper {
+  width: 100%;
+  max-width: 380px;
+}
+
+/* --- THE CARD FRAME WITH INITIAL STATE --- */
+#bd-card {
+  position: relative;
+  z-index: 1;
+  background: linear-gradient(135deg, #1a1a2e, #16213e);
+  border: 1px solid rgba(108, 99, 255, 0.4);
+  border-radius: 20px;
+  padding: 2rem;
+  text-align: center;
+  box-shadow: 0 0 40px rgba(108, 99, 255, 0.2);
+  
+  /* Initial state for Entry Animation */
+  opacity: 0;
+  transform: translateY(25px);
+  transition: opacity 0.6s cubic-bezier(0.25, 1, 0.5, 1), transform 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+/* --- CARD TEXT ELEMENTS --- */
+#bd-name {
+  font-size: 28px;
+  font-weight: 800;
+  margin-bottom: .25rem;
+  color: #ffffff;
+}
+
+#bd-age {
+  font-size: 14px;
+  color: var(--text-muted, #8b9bb4);
+  margin-bottom: 2rem;
+}
+
+/* --- INNER COMPONENTS WITH STAGGER ENTRY INTENSITY --- */
+.bd-score-highlight {
+  background: rgba(108, 99, 255, 0.1);
+  border: 1px solid rgba(108, 99, 255, 0.2);
+  border-radius: var(--radius, 12px);
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+#bd-score {
+  font-size: 56px;
+  font-weight: 900;
+  background: linear-gradient(135deg, #6c63ff, #ec4899);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  line-height: 1;
+}
+
+#bd-trajectory {
+  font-size: 13px;
+  color: var(--text-muted, #8b9bb4);
+  margin-top: .5rem;
+}
+
+.bd-stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 1.5rem;
+}
+
+.bd-stat-box {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: var(--radius-sm, 8px);
+  padding: .75rem;
+}
+
+.bd-stat-label {
+  font-size: 10px;
+  color: var(--text-muted, #8b9bb4);
+  margin-bottom: 4px;
+}
+
+#bd-best, #bd-streak, #bd-logs, #bd-avg {
+  font-size: 20px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.bd-northstar-container {
+  background: rgba(108, 99, 255, 0.08);
+  border-left: 2px solid var(--accent, #6c63ff);
+  border-radius: 0 var(--radius-sm, 8px) var(--radius-sm, 8px) 0;
+  padding: .75rem 1rem;
+  margin-bottom: 1.5rem;
+  text-align: left;
+}
+
+#bd-northstar {
+  font-size: 13px;
+  color: var(--text-secondary, #cbd5e1);
+  font-style: italic;
+  line-height: 1.5;
+}
+
+.bd-brand-gradient {
+  background: linear-gradient(135deg, #6c63ff, #ec4899);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: 800;
+}
+
+/* --- ACTIONS FOOTER ANIMATION TARGET --- */
+.bd-action-footer {
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.5s ease-out 0.5s, transform 0.5s ease-out 0.5s;
+}
+
+/* --- THE PREMIUM ROTATING GLOW BLANKET --- */
+.bd-card-glow {
+  position: absolute;
+  top: -8px;
+  left: -8px;
+  right: -8px;
+  bottom: -8px;
+  background: linear-gradient(135deg, var(--accent, #6c63ff), #ec4899, #ffd200);
+  background-size: 200% 200%;
+  border-radius: 24px;
+  z-index: -1;
+  filter: blur(30px);
+  opacity: 0;
+  transition: opacity 0.8s ease-in-out 0.1s;
+  animation: ambientAuraMovement 8s ease infinite;
+}
+
+@keyframes ambientAuraMovement {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* --- CONNECTIVE TRIGGER HOOKS FROM JS --- */
+#birthday-card.animate-ready #bd-card {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+#birthday-card.animate-ready .bd-card-glow {
+  opacity: 0.3;
+}
+
+#birthday-card.animate-ready .bd-action-footer {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Cascade Animation delay chains for child elements */
+.bd-score-highlight, .bd-stat-box, .bd-northstar-container {
+  opacity: 0;
+  transform: scale(0.95);
+}
+
+#birthday-card.animate-ready .bd-score-highlight {
+  animation: componentReveal 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.15) forwards 0.2s;
+}
+
+#birthday-card.animate-ready .bd-stat-box {
+  animation: componentReveal 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.15) forwards;
+}
+#birthday-card.animate-ready .bd-stat-grid .bd-stat-box:nth-child(1) { animation-delay: 0.30s; }
+#birthday-card.animate-ready .bd-stat-grid .bd-stat-box:nth-child(2) { animation-delay: 0.35s; }
+#birthday-card.animate-ready .bd-stat-grid .bd-stat-box:nth-child(3) { animation-delay: 0.40s; }
+#birthday-card.animate-ready .bd-stat-grid .bd-stat-box:nth-child(4) { animation-delay: 0.45s; }
+
+#birthday-card.animate-ready .bd-northstar-container {
+  animation: componentReveal 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.15) forwards 0.5s;
+}
+
+@keyframes componentReveal {
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+</style>
+
 
   <!-- SCREEN: TERMS OF SERVICE -->
   <div id="terms" style="display:none;flex-direction:column;align-items:center;min-height:100vh;padding:2rem;background:var(--bg-primary)">
