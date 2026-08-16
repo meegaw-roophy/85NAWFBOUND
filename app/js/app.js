@@ -4487,6 +4487,8 @@ function selectTier(tier) {
   
   ['tier1','tier2','tier3'].forEach(t => {
     const btn = document.getElementById(`tier-btn-${t}`);
+    if (!btn) return; // Skip if element doesn't exist
+    
     if (t === tier) {
       btn.style.border = '2px solid var(--accent)';
       btn.style.background = 'rgba(108,99,255,0.15)';

@@ -11,6 +11,8 @@ from app.core.config import settings
 PAYSTACK_BASE = "https://api.paystack.co"
 
 def get_headers():
+    if not settings.PAYSTACK_SECRET_KEY:
+        raise ValueError("PAYSTACK_SECRET_KEY not configured. Please add it to your environment variables.")
     return {
         "Authorization": f"Bearer {settings.PAYSTACK_SECRET_KEY}",
         "Content-Type": "application/json"

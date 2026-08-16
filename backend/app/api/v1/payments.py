@@ -16,38 +16,17 @@ from app.core.deps import get_current_user
 from app.services.payment_service import create_stripe_subscription, initiate_mpesa_payment
 from app.services.paystack_service import initialize_payment as initialize_paystack_payment
 
-router = APIRouter()
+router = APIRouter(tags=["payments"])
 
 
-@router.post("/users/{user_id}/subscriptions", response_model=SubscriptionOut)
-async def upsert_subscription(
-    user_id: int,
-    payload: SubscriptionCreate,
-    db: AsyncSession = Depends(get_session),
-    current_user=Depends(get_current_user),
-):
-    if current_user.id != user_id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not allowed")
-    subscription = await crud.create_or_update_subscription(db, user_id, payload.dict(exclude_none=True))
-    return subscription
-
-
-@router.get("/users/{user_id}/subscriptions", response_model=List[SubscriptionOut])
-async def get_subscriptions(user_id: int, db: AsyncSession = Depends(get_session), current_user=Depends(get_current_user)):
-    if current_user.id != user_id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not allowed")
-    subscriptions = await crud.list_subscriptions(db, user_id)
-    return subscriptions
-
-
-@router.get("/users/{user_id}/payments", response_model=List[PaymentOut])
+@router.get("", response_model=List[PaymentOut])
 async def list_payments(user_id: int, db: AsyncSession = Depends(get_session), current_user=Depends(get_current_user)):
     if current_user.id != user_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not allowed")
     return await crud.list_payments(db, user_id)
 
 
-@router.post("/users/{user_id}/payments/stripe", response_model=PaymentOut)
+@router.post("/stripe", response_model=PaymentOut)
 async def stripe_payment(
     user_id: int,
     payload: StripePaymentRequest,
@@ -75,7 +54,7 @@ async def stripe_payment(
     return payment
 
 
-@router.post("/users/{user_id}/payments/mpesa", response_model=PaymentOut)
+@router.post("/mpesa", response_model=PaymentOut)
 async def mpesa_payment(
     user_id: int,
     payload: MpesaPaymentRequest,
@@ -96,7 +75,7 @@ async def mpesa_payment(
     return payment
 
 
-@router.post("/users/{user_id}/payments/paystack", response_model=PaymentOut)
+@router.post("/paystack", response_model=PaymentOut)
 async def paystack_payment(
     user_id: int,
     payload: PaystackPaymentRequest,
@@ -106,43 +85,51 @@ async def paystack_payment(
     if current_user.id != user_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not allowed")
 
-    # Create local pending payment record
-    payment = await crud.create_payment(db, user_id, {
-        "provider": "paystack",
-        "provider_customer_id": payload.email,
-        "amount": payload.amount,
-        "currency": (payload.currency or 'KES').lower(),
-        "status": "pending",
-        "external_response": None,
-    })
-
-    # Initialize Paystack transaction
-    result = await initialize_paystack_payment(
-        email=payload.email,
-        amount_kobo=int(payload.amount * 100),
-        reference=str(payment.id),
-        metadata={
-        "local_payment_id": str(payment.id), 
-        "user_id": str(user_id),
-        "tier": payload.tier or 'tier1'
-        },
-        currency=payload.currency or 'KES',
-        callback_url=payload.callback_url,
-    )
-
-    # Update local payment with Paystack response
-    status = result.get('status') or (result.get('data', {}).get('status') if isinstance(result, dict) else 'pending')
-    provider_payment_id = None
     try:
-        provider_payment_id = result.get('data', {}).get('reference')
-    except Exception:
+        # Create local pending payment record
+        payment = await crud.create_payment(db, user_id, {
+            "provider": "paystack",
+            "provider_customer_id": payload.email,
+            "amount": payload.amount,
+            "currency": (payload.currency or 'KES').lower(),
+            "status": "pending",
+            "external_response": None,
+        })
+
+        # Initialize Paystack transaction
+        result = await initialize_paystack_payment(
+            email=payload.email,
+            amount_kobo=int(payload.amount * 100),
+            reference=str(payment.id),
+            metadata={
+            "local_payment_id": str(payment.id), 
+            "user_id": str(user_id),
+            "tier": payload.tier or 'tier1'
+            },
+            currency=payload.currency or 'KES',
+            callback_url=payload.callback_url,
+        )
+
+        # Update local payment with Paystack response
+        status = result.get('status') or (result.get('data', {}).get('status') if isinstance(result, dict) else 'pending')
         provider_payment_id = None
+        try:
+            provider_payment_id = result.get('data', {}).get('reference')
+        except Exception:
+            provider_payment_id = None
 
-    payment = await crud.update_payment_status(db, payment.id, status or 'pending', result, provider_payment_id=provider_payment_id)
-    return payment
+        payment = await crud.update_payment_status(db, payment.id, status or 'pending', result, provider_payment_id=provider_payment_id)
+        return payment
+        
+    except ValueError as e:
+        # Configuration error (missing API key)
+        raise HTTPException(status_code=500, detail=f"Payment provider not configured: {str(e)}")
+    except Exception as e:
+        # Other errors
+        raise HTTPException(status_code=500, detail=f"Payment initialization failed: {str(e)}")
 
 
-@router.post("/users/{user_id}/payments/{payment_id}/status", response_model=PaymentOut)
+@router.post("/{payment_id}/status", response_model=PaymentOut)
 async def update_payment_status(
     user_id: int,
     payment_id: int,
