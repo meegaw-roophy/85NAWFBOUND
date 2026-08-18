@@ -153,46 +153,74 @@ DISCOUNT_CAPS = {
 # ─────────────────────────────────────────────
 def calculate_discount(days: int, tier: str) -> float:
     """
-    Linear discount from 0% at day 30 to max% at day 366.
-    No complexity — clean and honest.
+    Discount formula: ((((days-30)/336)^k)/m)
+    k = 1.9 (between 1.5-2.0)
+    m = 6 for tier1 (Vector), 5 for tier2 (Apex)
     """
     if days <= 30:
         return 0.0
-    cap = DISCOUNT_CAPS.get(tier, DISCOUNT_CAPS["tier1"])
-    progress = ((days - 30) / 336) ** 1.9  # 0.0 to 1.0
-    return cap * progress
+    
+    k = 1.9
+    m = 6 if tier == "tier1" else 5 if tier == "tier2" else 4
+    progress = ((days - 30) / 336) ** k
+    discount_rate = progress / m
+    return discount_rate  # Cap at 25%
+
+
+def calculate_bonus_days(discount_rate: float) -> int:
+    """
+    Calculate bonus days from discount rate.
+    Bonus days = discount_rate * days (approximate)
+    """
+    # For display purposes, we calculate approximate bonus days
+    # This is the number of "free" days equivalent to the discount
+    return int(discount_rate * 30)  # Rough approximation for display
 
 
 def days_to_local_price(days: int, tier: str, country_code: str, currency: str) -> dict:
     """
     Core pricing calculation.
-    Returns everything needed for the UI.
+    
+    Handles exact 30-day requests as exactly 1 month without 30.5 scaling factors,
+    and applies the fractional formula for any period from 31 to 366 days.
     """
     fx = get_fx_rates()
     
+    # Restrict input bounds between 30 and 366 days
     days = max(30, min(366, days))
+    
     ppp = PPP_FACTORS.get(country_code, PPP_FACTORS["DEFAULT"])
     base_usd = BASE_USD_MONTHLY.get(tier, BASE_USD_MONTHLY["tier1"])
     
-    # PPP adjusted monthly price in USD
+    # PPP adjusted monthly price in USD (X)
     monthly_usd = base_usd * ppp
     
     # Convert to local currency
     rate = fx.get(currency, 1.0)
-    monthly_local = monthly_usd * rate
+    monthly_local = monthly_usd * rate  # This is X in local currency
     
-    # Full price for selected days (no discount)
-    full_price = monthly_local * days / 30.5
-    
-    # Apply discount
+    # Fetch discount rate based on active tier and days
     discount_rate = calculate_discount(days, tier)
-    discount_amount = full_price * discount_rate
-    total = full_price - discount_amount
     
-    # Monthly equivalent after discount
-    monthly_equivalent = total / (days / 30.5)
+    # --- CONDITION CONDITIONAL SPLIT ---
+    if days == 30:
+        # Treat exactly 30 days as exactly 1 flat month (No 30.5 fraction factors)
+        full_price = monthly_local
+        total = monthly_local
+        monthly_equivalent = total
+    else:
+        # For 31 to 366 days, apply the original 30.5 fraction factors (2 / 61)
+        full_price = monthly_local * days * 2 / 61
+        total = full_price * (1 - discount_rate)
+        monthly_equivalent = total / (days / 30.5)
     
-    # Expiry date (exactly the days selected — no bonus days shown separately)
+    # Calculate discount savings
+    discount_amount = full_price - total
+    
+    # Calculate bonus days from discount rate
+    bonus_days = calculate_bonus_days(discount_rate)
+    
+    # Expiry date calculation
     now = datetime.datetime.now(datetime.timezone.utc)
     expires_at = (now + datetime.timedelta(days=days)).replace(
         hour=23, minute=59, second=59, microsecond=0
@@ -207,18 +235,19 @@ def days_to_local_price(days: int, tier: str, country_code: str, currency: str) 
         "total": round(total, 2),
         "monthly_equivalent": round(monthly_equivalent, 2),
         "you_save": round(discount_amount, 2),
+        "bonus_days": bonus_days,
         "expires_at": expires_at.isoformat(),
         "symbol": CURRENCY_SYMBOLS.get(currency, "$"),
         "currency": currency,
     }
-
 
 # ─────────────────────────────────────────────
 #  API MODELS
 # ─────────────────────────────────────────────
 class PriceRequest(BaseModel):
     tier: str
-    days: int
+    days: Optional[int] = None
+    amount: Optional[float] = None
     currency: Optional[str] = "USD"
     country_code: Optional[str] = "DEFAULT"
 
@@ -245,12 +274,64 @@ async def calculate_price(
     current_user: User = Depends(get_current_user)
 ):
     """Calculate final price — single source of truth."""
-    result = days_to_local_price(
-        days=req.days,
-        tier=req.tier,
-        country_code=req.country_code or "DEFAULT",
-        currency=req.currency or "USD",
-    )
+    
+    # If amount is provided, calculate days from amount (reverse calculation)
+    if req.amount is not None:
+        fx = get_fx_rates()
+        ppp = PPP_FACTORS.get(req.country_code, PPP_FACTORS["DEFAULT"])
+        base_usd = BASE_USD_MONTHLY.get(req.tier, BASE_USD_MONTHLY["tier1"])
+        monthly_usd = base_usd * ppp
+        rate = fx.get(req.currency, 1.0)
+        monthly_local = monthly_usd * rate  # X in local currency
+        
+        # Reverse calculation: solve for days from amount
+        # amount = (X*days*2/61) * (1-discount_rate)
+        # This is complex because discount_rate depends on days
+        # We'll use iterative approximation
+        
+        def calculate_total_for_days(d):
+            discount = calculate_discount(int(d), req.tier)
+            return (monthly_local * d * 2 / 61) * (1 - discount)
+        
+        # Binary search to find days that match the amount
+        low, high = 30, 366
+        days = 30
+        tolerance = 0.01
+        
+        for _ in range(50):  # Max iterations
+            mid = (low + high) / 2
+            total_at_mid = calculate_total_for_days(mid)
+            
+            if abs(total_at_mid - req.amount) < tolerance:
+                days = int(mid)
+                break
+            
+            if total_at_mid < req.amount:
+                low = mid
+            else:
+                high = mid
+        
+        days = max(30, min(366, int(days)))
+        
+        # Calculate with the found days
+        result = days_to_local_price(
+            days=days,
+            tier=req.tier,
+            country_code=req.country_code or "DEFAULT",
+            currency=req.currency or "USD",
+        )
+        
+        # Override total with user's entered amount (this is what they pay)
+        result["total"] = req.amount
+        
+    else:
+        # Original days-based calculation
+        result = days_to_local_price(
+            days=req.days or 30,
+            tier=req.tier,
+            country_code=req.country_code or "DEFAULT",
+            currency=req.currency or "USD",
+        )
 
     now = datetime.datetime.now(datetime.timezone.utc)
     price_locked_until = (now + datetime.timedelta(minutes=15)).isoformat()

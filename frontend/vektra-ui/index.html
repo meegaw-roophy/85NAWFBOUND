@@ -1630,6 +1630,11 @@
       </button>
     </div>
 
+    <!-- View Packages Link -->
+    <div style="text-align:center;margin-bottom:1.5rem">
+      <span onclick="goTo('packages')" style="font-size:13px;color:var(--accent);cursor:pointer;text-decoration:underline">View detailed package features →</span>
+    </div>
+
     <!-- Duration Selection -->
     <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
       <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.5rem">Commitment Period</div>
@@ -1753,6 +1758,62 @@
       Accept Terms to Preview
     </button>
     <div style="font-size:12px;color:var(--text-muted);text-align:center">Preview mode only — payment flow is visible, but live charges are disabled until backend gateway setup is complete.</div>
+
+  </div>
+
+  <!-- SCREEN: PACKAGES / FEATURES -->
+  <div id="packages" style="display:none;flex-direction:column;min-height:100vh;padding:1.5rem;max-width:420px;margin:0 auto">
+
+    <!-- Header -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;padding-top:1rem">
+      <div>
+        <div style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.1em">Packages</div>
+        <div style="font-size:18px;font-weight:700">Choose Your Tier</div>
+      </div>
+      <div onclick="goTo('upgrade')" style="color:var(--text-muted);cursor:pointer;font-size:13px">← Back</div>
+    </div>
+
+    <!-- Vector Package -->
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+        <div>
+          <div style="font-size:16px;font-weight:700;color:var(--text-primary)">Vector</div>
+          <div style="font-size:12px;color:var(--text-muted)">For the focused builder</div>
+        </div>
+        <div style="font-size:24px">🎯</div>
+      </div>
+      <ul style="list-style:none;padding:0;margin:0;font-size:13px;color:var(--text-secondary);line-height:1.8">
+        <li style="margin-bottom:8px">✓ Unlimited daily logging</li>
+        <li style="margin-bottom:8px">✓ Weekly AI harsh-truth reports</li>
+        <li style="margin-bottom:8px">✓ Full score breakdown</li>
+        <li style="margin-bottom:8px">✓ Streak tracking</li>
+        <li style="margin-bottom:8px">✓ Financial engine</li>
+        <li style="margin-bottom:8px">✓ Log history</li>
+        <li>✓ Birthday trajectory card</li>
+      </ul>
+    </div>
+
+    <!-- Apex Package -->
+    <div style="background:linear-gradient(135deg,rgba(108,99,255,0.1),rgba(236,72,153,0.1));border:1px solid var(--accent);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+        <div>
+          <div style="font-size:16px;font-weight:700;color:var(--accent)">Apex</div>
+          <div style="font-size:12px;color:var(--text-muted)">For the serious operator</div>
+        </div>
+        <div style="font-size:24px">⚡</div>
+      </div>
+      <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.75rem">Everything in Vector, plus:</div>
+      <ul style="list-style:none;padding:0;margin:0;font-size:13px;color:var(--text-secondary);line-height:1.8">
+        <li style="margin-bottom:8px">✓ Monthly deep reports</li>
+        <li style="margin-bottom:8px">✓ Quarterly strategy report</li>
+        <li style="margin-bottom:8px">✓ Custom AI tone</li>
+        <li style="margin-bottom:8px">✓ Early feature access</li>
+        <li>👑 Founder badge</li>
+      </ul>
+    </div>
+
+    <!-- CTA -->
+    <button onclick="goTo('upgrade')" style="width:100%;padding:14px;background:linear-gradient(135deg,#6c63ff,#ec4899);border:none;border-radius:var(--radius-sm);color:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:var(--font)">Choose a Plan →</button>
 
   </div>
 
