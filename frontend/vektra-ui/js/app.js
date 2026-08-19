@@ -4813,7 +4813,7 @@ async function proceedToCheckout() {
       amount: currentPriceData.total,
       currency: currentPriceData.currency || 'KES',
       tier: selectedTierUpgrade,
-      callback_url: `${window.location.origin}${window.location.pathname}?payment_success=true&tier=${selectedTierUpgrade}`
+      callback_url: window.location.origin + window.location.pathname + '?payment_success=true&tier=' + selectedTierUpgrade
     };
     
     console.log('Sending payment request:', payload);
@@ -4828,16 +4828,22 @@ async function proceedToCheckout() {
       body: JSON.stringify(payload)
     });
 
-    const data = await res.json();
-    console.log('Payment response:', data);
-
     if (!res.ok) {
-      console.error('Payment error:', data);
-      showToast(data.detail || 'Payment initialization failed', 'error');
+      const text = await res.text();
+      console.error('Payment error response:', text);
+      try {
+        const data = JSON.parse(text);
+        showToast(data.detail || 'Payment initialization failed', 'error');
+      } catch {
+        showToast(`Payment failed (${res.status}): ${text.substring(0, 100)}`, 'error');
+      }
       btn.textContent = `Pay ${currentPriceData.symbol} ${currentPriceData.total.toLocaleString()} →`;
       btn.disabled = false;
       return;
     }
+
+    const data = await res.json();
+    console.log('Payment response:', data);
 
     // Get Paystack authorization URL
     const authUrl = data?.external_response?.data?.authorization_url;

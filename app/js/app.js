@@ -3373,15 +3373,11 @@ async function processPayment() {
         body: JSON.stringify({
           email: email,
           amount: amount,
-          currency: 'KES',
-          tier: selectedPlanId || 'tier1'
+          currency: 'KES'
         })
       });
 
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body.detail || 'Payment failed');
-      }
+      if (!res.ok) throw new Error('Payment failed');
     }
     
     showToast('Payment successful! Subscription activated.', 'success');
@@ -4664,26 +4660,45 @@ async function calculatePrice(days) {
   document.getElementById('price-content').style.display = 'none';
 
   try {
+    const amount = parseFloat(document.getElementById('amount-input').value);
+    const body = {
+      tier: selectedTierUpgrade,
+      currency: currentUser.currency || 'USD',
+      country_code: currentUser.current_location ? getCountryCode() : 'DEFAULT'
+    };
+    
+    // Send amount if user is using amount input, otherwise send days
+    if (document.getElementById('tab-amount').style.display === 'block') {
+      body.amount = amount;
+    } else {
+      body.days = days;
+    }
+
     const res = await fetch(`${API}/api/v1/pricing/calculate`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${authToken}`,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({
-        tier: selectedTierUpgrade,
-        days: days,
-        currency: currentUser.currency || 'USD',
-        country_code: currentUser.current_location ? getCountryCode() : 'DEFAULT'
-      })
+      body: JSON.stringify(body)
     });
 
-    if (!res.ok) return;
+    if (!res.ok) {
+      console.error('Price calculation error:', res.status);
+      document.getElementById('price-loading').style.display = 'none';
+      document.getElementById('price-content').style.display = 'none';
+      showToast('Price calculation failed. Please try again.', 'error');
+      return;
+    }
+    
     currentPriceData = await res.json();
     renderPriceCard(currentPriceData);
 
   } catch(e) {
     console.log('Price calculation error:', e);
+    document.getElementById('price-loading').style.display = 'none';
+    document.getElementById('price-content').style.display = 'none';
+    showToast('Price calculation failed. Please try again.', 'error');
   }
 }
 
@@ -4706,6 +4721,7 @@ function renderPriceCard(data) {
   const symbol = data?.symbol || getPricingForCurrency(currency).symbol || '$';
   const savings = data?.you_save || 0;
   const discountPct = data?.discount_rate_pct || 0;
+  const bonusDays = data?.bonus_days || 0;
 
   document.getElementById('price-loading').style.display = 'none';
   document.getElementById('price-content').style.display = 'block';
@@ -4720,7 +4736,8 @@ function renderPriceCard(data) {
 
   if (savings > 0) {
     document.getElementById('price-saved').textContent = `${symbol} ${savings.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
-    document.getElementById('price-bonus-days').textContent = `Discount ${discountPct.toFixed(1)}% applied`;
+    const bonusText = bonusDays > 0 ? `Discount ${discountPct.toFixed(1)}% applied — You get ${bonusDays} days free` : `Discount ${discountPct.toFixed(1)}% applied`;
+    document.getElementById('price-bonus-days').textContent = bonusText;
     document.getElementById('savings-card').style.display = 'block';
   } else {
     document.getElementById('savings-card').style.display = 'none';
@@ -4729,39 +4746,78 @@ function renderPriceCard(data) {
   const btn = document.getElementById('checkout-btn');
   const termsChecked = document.getElementById('terms-checkbox').checked;
   btn.disabled = !termsChecked;
-  btn.textContent = termsChecked ? `Preview ${symbol} ${amount.toLocaleString(undefined, { maximumFractionDigits: 2 })} →` : 'Accept Terms to Preview';
+  btn.textContent = termsChecked ? `Pay ${symbol} ${amount.toLocaleString(undefined, { maximumFractionDigits: 2 })} →` : 'Accept Terms to Pay';
+
+  // Start price lock countdown
+  startPriceLockCountdown();
 }
 
 function startPriceLockCountdown() {
-  clearInterval(priceLockInterval);
-  priceLockSeconds = 900;
+  // Safe clear — checks if an interval instance actually exists first
+  if (priceLockInterval) {
+    clearInterval(priceLockInterval);
+  }
   
+  // Set to 15 minutes (900 seconds)
+  priceLockSeconds = 900; 
+  
+  // Fetch the element once outside the loop to optimize runtime execution
+  const timerElement = document.getElementById('price-lock-timer');
+  const sliderElement = document.getElementById('days-slider');
+  
+  if (!timerElement) {
+    console.warn("⚠️ Telemetry Error: 'price-lock-timer' element not found in DOM.");
+    return; // Stop execution early if target layout container is missing
+  }
+
   priceLockInterval = setInterval(() => {
     priceLockSeconds--;
+    
+    // Calculate layout metrics
     const mins = Math.floor(priceLockSeconds / 60);
     const secs = priceLockSeconds % 60;
-    const el = document.getElementById('price-lock-timer');
-    if (el) el.textContent = `Price locked for ${mins}:${secs.toString().padStart(2,'0')}`;
     
+    // Format output with structural padding
+    timerElement.textContent = `Price locked for ${mins}:${secs.toString().padStart(2, '0')}`;
+    
+    // Expiration Logic Hook
     if (priceLockSeconds <= 0) {
       clearInterval(priceLockInterval);
-      if (el) el.textContent = '⚠ Price lock expired — recalculating...';
-      const days = parseInt(document.getElementById('days-slider').value);
-      calculatePrice(days);
+      timerElement.textContent = '⚠ Price lock expired — recalculating...';
+      
+      if (sliderElement) {
+        // Enforce safe mathematical integer parsing (base-10 radix)
+        const days = parseInt(sliderElement.value, 10);
+        calculatePrice(days);
+      } else {
+        console.error("⚠️ UI Error: 'days-slider' element not found.");
+      }
     }
   }, 1000);
 }
 
 async function proceedToCheckout() {
-  if (!currentPriceData || !currentUser || !authToken) return;
+  if (!currentPriceData || !currentUser || !authToken) {
+    console.error('Missing required data:', { currentPriceData, currentUser, hasToken: !!authToken });
+    showToast('Missing payment information. Please try selecting your plan again.', 'error');
+    return;
+  }
 
   const btn = document.getElementById('checkout-btn');
   btn.textContent = 'Connecting to payment...';
   btn.disabled = true;
 
   try {
-    // Convert total to smallest unit (cents/kobo)
-    const amountInSmallest = Math.round(currentPriceData.total * 100);
+    const payload = {
+      email: currentUser.email,
+      amount: currentPriceData.total,
+      currency: currentPriceData.currency || 'KES',
+      tier: selectedTierUpgrade,
+      callback_url: window.location.origin + window.location.pathname + '?payment_success=true&tier=' + selectedTierUpgrade
+    };
+    
+    console.log('Sending payment request:', payload);
+    console.log('Payment URL:', `${API}/api/v1/users/${currentUser.id}/payments/paystack`);
 
     const res = await fetch(`${API}/api/v1/users/${currentUser.id}/payments/paystack`, {
       method: 'POST',
@@ -4769,21 +4825,25 @@ async function proceedToCheckout() {
         'Authorization': `Bearer ${authToken}`,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({
-        email: currentUser.email,
-        amount: currentPriceData.total,
-        currency: currentPriceData.currency || 'KES',
-        tier: selectedTierUpgrade,
-        callback_url: `${window.location.origin}${window.location.pathname}?payment_success=true&tier=${selectedTierUpgrade}`
-      })
+      body: JSON.stringify(payload)
     });
 
     if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      throw new Error(body?.detail || 'Could not initialize payment. Try again.');
+      const text = await res.text();
+      console.error('Payment error response:', text);
+      try {
+        const data = JSON.parse(text);
+        showToast(data.detail || 'Payment initialization failed', 'error');
+      } catch {
+        showToast(`Payment failed (${res.status}): ${text.substring(0, 100)}`, 'error');
+      }
+      btn.textContent = `Pay ${currentPriceData.symbol} ${currentPriceData.total.toLocaleString()} →`;
+      btn.disabled = false;
+      return;
     }
 
     const data = await res.json();
+    console.log('Payment response:', data);
 
     // Get Paystack authorization URL
     const authUrl = data?.external_response?.data?.authorization_url;
@@ -4792,12 +4852,14 @@ async function proceedToCheckout() {
       // Redirect to Paystack payment page
       window.location.href = authUrl;
     } else {
-      showToast(data?.detail || 'Could not initialize payment. Try again.', 'error');
+      console.error('No auth URL in response:', data);
+      showToast('Could not initialize payment. Try again.', 'error');
       btn.textContent = `Pay ${currentPriceData.symbol} ${currentPriceData.total.toLocaleString()} →`;
       btn.disabled = false;
     }
   } catch(e) {
-    showToast(e.message || 'Payment connection failed. Try again.', 'error');
+    console.error('Payment connection error:', e);
+    showToast('Payment connection failed. Try again.', 'error');
     btn.textContent = `Pay ${currentPriceData.symbol} ${currentPriceData.total.toLocaleString()} →`;
     btn.disabled = false;
   }
