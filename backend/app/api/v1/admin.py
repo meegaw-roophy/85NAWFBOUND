@@ -7,6 +7,7 @@ from app.db.session import get_session
 from app.api.v1.auth import get_current_user
 from app.db.models import User, Snapshot, Report, Subscription, Payment, Achievement
 from app import crud
+import random
 
 router = APIRouter()
 
@@ -226,7 +227,7 @@ async def get_user_details(
 @router.put("/admin/users/{user_id}/tier")
 async def update_user_tier(
     user_id: int,
-    tier: str = Query(..., regex="^(free|tier1|tier2|tier3)$"),
+    tier: str = Query(..., pattern="^(free|tier1|tier2|tier3)$"),
     db: AsyncSession = Depends(get_session),
     admin_user: User = Depends(require_admin)
 ):

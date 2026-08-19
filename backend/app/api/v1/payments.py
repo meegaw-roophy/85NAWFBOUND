@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException
+from fastapi import status as http_status
 from typing import List
 from app.schemas import (
     SubscriptionCreate,
@@ -22,7 +23,7 @@ router = APIRouter(tags=["payments"])
 @router.get("", response_model=List[PaymentOut])
 async def list_payments(user_id: int, db: AsyncSession = Depends(get_session), current_user=Depends(get_current_user)):
     if current_user.id != user_id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not allowed")
+        raise HTTPException(status_code=http_status.HTTP_403_FORBIDDEN, detail="Not allowed")
     return await crud.list_payments(db, user_id)
 
 
@@ -34,7 +35,7 @@ async def stripe_payment(
     current_user=Depends(get_current_user),
 ):
     if current_user.id != user_id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not allowed")
+        raise HTTPException(status_code=http_status.HTTP_403_FORBIDDEN, detail="Not allowed")
     payment = await crud.create_payment(db, user_id, {
         "provider": "stripe",
         "provider_customer_id": payload.customer_id,
@@ -62,7 +63,7 @@ async def mpesa_payment(
     current_user=Depends(get_current_user),
 ):
     if current_user.id != user_id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not allowed")
+        raise HTTPException(status_code=http_status.HTTP_403_FORBIDDEN, detail="Not allowed")
     result = initiate_mpesa_payment(payload.phone_number, payload.amount)
     payment = await crud.create_payment(db, user_id, {
         "provider": "mpesa",
@@ -83,7 +84,7 @@ async def paystack_payment(
     current_user=Depends(get_current_user),
 ):
     if current_user.id != user_id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not allowed")
+        raise HTTPException(status_code=http_status.HTTP_403_FORBIDDEN, detail="Not allowed")
 
     try:
         # Create local pending payment record
@@ -102,9 +103,9 @@ async def paystack_payment(
             amount_kobo=int(payload.amount * 100),
             reference=str(payment.id),
             metadata={
-            "local_payment_id": str(payment.id), 
-            "user_id": str(user_id),
-            "tier": payload.tier or 'tier1'
+                "local_payment_id": str(payment.id), 
+                "user_id": str(user_id),
+                "tier": payload.tier or 'tier1'
             },
             currency=payload.currency or 'KES',
             callback_url=payload.callback_url,
@@ -112,27 +113,32 @@ async def paystack_payment(
 
         if result.get("status") is False:
             payment = await crud.update_payment_status(db, payment.id, "failed", result)
-            raise HTTPException(status_code=400, detail=result.get("message") or "Paystack initialization failed")
+            raise HTTPException(status_code=http_status.HTTP_400_BAD_REQUEST, detail=result.get("message") or "Paystack initialization failed")
 
-        # Update local payment with Paystack response
-        status = result.get('status') or (result.get('data', {}).get('status') if isinstance(result, dict) else 'pending')
+        # FIX: Renamed 'status' variable to 'paystack_status' to bypass FastAPI namespace shadowing error
+        raw_status = result.get('status')
+        if isinstance(raw_status, bool):
+            paystack_status = 'success' if raw_status else 'pending'
+        elif isinstance(raw_status, str):
+            paystack_status = raw_status.lower()
+        else:
+            paystack_status = 'pending'
+            
         provider_payment_id = None
         try:
             provider_payment_id = result.get('data', {}).get('reference')
         except Exception:
             provider_payment_id = None
 
-        payment = await crud.update_payment_status(db, payment.id, status or 'pending', result, provider_payment_id=provider_payment_id)
+        payment = await crud.update_payment_status(db, payment.id, paystack_status, result, provider_payment_id=provider_payment_id)
         return payment
         
     except ValueError as e:
-        # Configuration error (missing API key)
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Payment provider not configured: {str(e)}")
+        raise HTTPException(status_code=http_status.HTTP_400_BAD_REQUEST, detail=f"Payment provider not configured: {str(e)}")
     except HTTPException:
         raise
     except Exception as e:
-        # Other errors
-        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=f"Payment initialization failed: {str(e)}")
+        raise HTTPException(status_code=http_status.HTTP_502_BAD_GATEWAY, detail=f"Payment initialization failed: {str(e)}")
 
 
 @router.post("/{payment_id}/status", response_model=PaymentOut)
@@ -144,11 +150,12 @@ async def update_payment_status(
     current_user=Depends(get_current_user),
 ):
     if current_user.id != user_id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not allowed")
+        raise HTTPException(status_code=http_status.HTTP_403_FORBIDDEN, detail="Not allowed")
     payment = await crud.update_payment_status(db, payment_id, payload.status, payload.external_response)
     if not payment:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Payment not found")
+        raise HTTPException(status_code=http_status.HTTP_404_NOT_FOUND, detail="Payment not found")
     return payment
+
 
 @router.get("/payments/paystack/verify/{reference}")
 async def verify_paystack(
@@ -160,9 +167,7 @@ async def verify_paystack(
     result = await verify_payment(reference)
     
     if result.get('data', {}).get('status') == 'success':
-        # Activate user tier based on metadata
         metadata = result.get('data', {}).get('metadata', {})
-        # Update user tier
         current_user.tier = metadata.get('tier', 'tier1')
         db.add(current_user)
         await db.commit()
