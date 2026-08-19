@@ -110,6 +110,10 @@ async def paystack_payment(
             callback_url=payload.callback_url,
         )
 
+        if result.get("status") is False:
+            payment = await crud.update_payment_status(db, payment.id, "failed", result)
+            raise HTTPException(status_code=400, detail=result.get("message") or "Paystack initialization failed")
+
         # Update local payment with Paystack response
         status = result.get('status') or (result.get('data', {}).get('status') if isinstance(result, dict) else 'pending')
         provider_payment_id = None
@@ -123,10 +127,12 @@ async def paystack_payment(
         
     except ValueError as e:
         # Configuration error (missing API key)
-        raise HTTPException(status_code=500, detail=f"Payment provider not configured: {str(e)}")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Payment provider not configured: {str(e)}")
+    except HTTPException:
+        raise
     except Exception as e:
         # Other errors
-        raise HTTPException(status_code=500, detail=f"Payment initialization failed: {str(e)}")
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=f"Payment initialization failed: {str(e)}")
 
 
 @router.post("/{payment_id}/status", response_model=PaymentOut)

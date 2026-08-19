@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, ConfigDict
+from pydantic import BaseModel, EmailStr, ConfigDict, Field
 from typing import Optional, Any
 from datetime import datetime, date, time
 
@@ -206,18 +206,21 @@ class PaymentOut(BaseModel):
 class StripePaymentRequest(BaseModel):
     customer_id: Optional[str] = None
     price_id: str
+    tier: Optional[str] = 'tier1'
 
 
 class MpesaPaymentRequest(BaseModel):
     phone_number: str
-    amount: float
+    amount: float = Field(..., gt=0)
+    tier: Optional[str] = 'tier1'
 
 
 class PaystackPaymentRequest(BaseModel):
     email: str
-    amount: float
+    amount: float = Field(..., gt=0)
     currency: Optional[str] = 'KES'
     callback_url: Optional[str] = None
+    tier: Optional[str] = 'tier1'
 
 
 class Token(BaseModel):

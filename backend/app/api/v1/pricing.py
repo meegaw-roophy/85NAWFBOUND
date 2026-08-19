@@ -10,9 +10,9 @@ Philosophy:
     - Nothing else.
 
 Base prices (after 1.3333 multiplier applied internally):
-    Tier 1: $16.50/month target → charge $22/month → user sees local currency
-    Tier 2: $41.25/month target → charge $55/month → user sees local currency
-    Tier 3: $82.50/month target → charge $110/month → user sees local currency
+    Tier 1: $15.00/month target → charge $20/month → user sees local currency
+    Tier 2: $37.50/month target → charge $50/month → user sees local currency
+    Tier 3: $75.00/month target → charge $100/month → user sees local currency
 
 Discount caps:
     Tier 1: max 16.667% at 366 days (2 month free equivalent)
@@ -135,9 +135,9 @@ PPP_FACTORS = {
 #  Charged: $22/$55 (covers all fees/taxes)
 # ─────────────────────────────────────────────
 BASE_USD_MONTHLY = {
-    "tier1": 22,
-    "tier2": 55,
-    "tier3": 110,
+    "tier1": 20,
+    "tier2": 50,
+    "tier3": 100,
 }
 
 # Discount caps per tier
@@ -167,14 +167,12 @@ def calculate_discount(days: int, tier: str) -> float:
     return discount_rate  # Cap at 25%
 
 
-def calculate_bonus_days(discount_rate: float) -> int:
+def calculate_bonus_days(discount_rate: float, days: int) -> int:
     """
     Calculate bonus days from discount rate.
-    Bonus days = discount_rate * days (approximate)
+    Bonus days = discount_rate * days (the free days equivalent to the discount)
     """
-    # For display purposes, we calculate approximate bonus days
-    # This is the number of "free" days equivalent to the discount
-    return int(discount_rate * 30)  # Rough approximation for display
+    return int(discount_rate * days)
 
 
 def days_to_local_price(days: int, tier: str, country_code: str, currency: str) -> dict:
@@ -218,7 +216,7 @@ def days_to_local_price(days: int, tier: str, country_code: str, currency: str) 
     discount_amount = full_price - total
     
     # Calculate bonus days from discount rate
-    bonus_days = calculate_bonus_days(discount_rate)
+    bonus_days = calculate_bonus_days(discount_rate, days)
     
     # Expiry date calculation
     now = datetime.datetime.now(datetime.timezone.utc)
@@ -263,6 +261,7 @@ class PriceResponse(BaseModel):
     monthly_equivalent: float
     expires_at: str
     price_locked_until: str
+    bonus_days: int
 
 
 # ─────────────────────────────────────────────
@@ -282,16 +281,19 @@ async def calculate_price(
         base_usd = BASE_USD_MONTHLY.get(req.tier, BASE_USD_MONTHLY["tier1"])
         monthly_usd = base_usd * ppp
         rate = fx.get(req.currency, 1.0)
-        monthly_local = monthly_usd * rate  # X in local currency
+        monthly_local = monthly_usd * rate  # This is X (monthly price)
         
-        # Reverse calculation: solve for days from amount
-        # amount = (X*days*2/61) * (1-discount_rate)
-        # This is complex because discount_rate depends on days
-        # We'll use iterative approximation
+        # Reverse calculation using the formula: amount = (X*d*2/61) * (1 - ((d-30)/336)^k / m)
+        # Rearranged to solve for d using binary search
+        k = 1.9
+        m = 6 if req.tier == "tier1" else 5 if req.tier == "tier2" else 4
         
         def calculate_total_for_days(d):
-            discount = calculate_discount(int(d), req.tier)
-            return (monthly_local * d * 2 / 61) * (1 - discount)
+            """Calculate total price for given days using forward formula"""
+            discount_rate = ((d - 30) / 336) ** k / m
+            discount_rate = min(discount_rate, 0.25)  # Cap at 25%
+            total = (monthly_local * d * 2 / 61) * (1 - discount_rate)
+            return total
         
         # Binary search to find days that match the amount
         low, high = 30, 366
@@ -347,6 +349,7 @@ async def calculate_price(
         monthly_equivalent=result["monthly_equivalent"],
         expires_at=result["expires_at"],
         price_locked_until=price_locked_until,
+        bonus_days=result["bonus_days"],
     )
 
 
@@ -381,7 +384,7 @@ async def get_tiers(current_user: User = Depends(get_current_user)):
                     "Birthday trajectory card",
                 ],
                 "cta": "Choose Vector",
-                "price_usd": 22,
+                "price_usd": 20,
             },
             {
                 "id": "tier2",
@@ -396,7 +399,7 @@ async def get_tiers(current_user: User = Depends(get_current_user)):
                     "👑 Founder badge",
                 ],
                 "cta": "Choose Apex",
-                "price_usd": 55,
+                "price_usd": 50,
             },
             {
                 "id": "tier3",
@@ -409,7 +412,7 @@ async def get_tiers(current_user: User = Depends(get_current_user)):
                     "Early access to new modules",
                 ],
                 "cta": "Choose Founder",
-                "price_usd": 110,
+                "price_usd": 100,
             }
         ]
     }

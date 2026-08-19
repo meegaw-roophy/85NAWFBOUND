@@ -3373,11 +3373,15 @@ async function processPayment() {
         body: JSON.stringify({
           email: email,
           amount: amount,
-          currency: 'KES'
+          currency: 'KES',
+          tier: selectedPlanId || 'tier1'
         })
       });
 
-      if (!res.ok) throw new Error('Payment failed');
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.detail || 'Payment failed');
+      }
     }
     
     showToast('Payment successful! Subscription activated.', 'success');
@@ -4774,6 +4778,11 @@ async function proceedToCheckout() {
       })
     });
 
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body?.detail || 'Could not initialize payment. Try again.');
+    }
+
     const data = await res.json();
 
     // Get Paystack authorization URL
@@ -4783,12 +4792,12 @@ async function proceedToCheckout() {
       // Redirect to Paystack payment page
       window.location.href = authUrl;
     } else {
-      showToast('Could not initialize payment. Try again.', 'error');
+      showToast(data?.detail || 'Could not initialize payment. Try again.', 'error');
       btn.textContent = `Pay ${currentPriceData.symbol} ${currentPriceData.total.toLocaleString()} →`;
       btn.disabled = false;
     }
   } catch(e) {
-    showToast('Payment connection failed. Try again.', 'error');
+    showToast(e.message || 'Payment connection failed. Try again.', 'error');
     btn.textContent = `Pay ${currentPriceData.symbol} ${currentPriceData.total.toLocaleString()} →`;
     btn.disabled = false;
   }

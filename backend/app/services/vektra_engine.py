@@ -738,6 +738,7 @@ def calculate_vektra_score(
             all_flags.append('FINANCIAL_STRESS')
 
     # ── Refined streak bonus (logarithmic with diminishing returns) ──
+    streak_bonus = 0.0
     if current_streak > 0:
         # Logarithmic scaling: 1 day = 0.5, 7 days = 2.0, 30 days = 3.4, capped at 5.0
         streak_bonus = min(5.0, math.log(current_streak + 1) * 0.8)

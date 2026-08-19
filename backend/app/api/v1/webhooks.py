@@ -2,10 +2,12 @@ from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.db.session import get_session
-from app.db.models import User, Subscription
+from app.db.models import User, Subscription, Payment
 from app.services.payment_service import verify_stripe_webhook
+from app.services.paystack_service import verify_webhook_signature
 from app import crud
 from datetime import datetime, timedelta
+from app.core.config import settings
 
 router = APIRouter()
 
@@ -74,50 +76,55 @@ async def paystack_webhook(
 ):
     """Handle Paystack webhook events for subscription management"""
     body = await request.body()
-    
-    # TODO: Verify webhook signature using x_paystack_signature
-    # For now, we'll process the webhook without signature verification
-    
+    if not verify_webhook_signature(body, x_paystack_signature, settings.PAYSTACK_WEBHOOK_SECRET):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid Paystack signature")
+
     try:
         payload = await request.json()
     except Exception:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid JSON")
-    
+
     event = payload.get("event")
     data = payload.get("data", {})
-    
+
     if event == "charge.success":
-        # Payment successful - activate subscription
         reference = data.get("reference")
-        metadata = data.get("metadata", {})
+        metadata = data.get("metadata", {}) if isinstance(data.get("metadata"), dict) else {}
         user_id = metadata.get("user_id")
         tier = metadata.get("tier", "tier1")
-        
-        if reference and user_id:
-            # Find payment by reference
-            result = await db.execute(
-                select(Subscription).where(
-                    Subscription.provider_subscription_id == reference
-                )
+
+        if reference:
+            payment_result = await db.execute(
+                select(Payment).where(Payment.provider_payment_id == reference)
             )
-            subscription = result.scalar_one_or_none()
-            
+            payment = payment_result.scalar_one_or_none()
+            if payment:
+                payment.status = "succeeded"
+                payment.external_response = payload
+                db.add(payment)
+                await db.commit()
+
+        if user_id:
+            user_result = await db.execute(select(User).where(User.id == int(user_id)))
+            user = user_result.scalar_one_or_none()
+            if user:
+                user.tier = tier
+                db.add(user)
+                await db.commit()
+
+            subscription_result = await db.execute(
+                select(Subscription).where(Subscription.user_id == int(user_id)).order_by(Subscription.created_at.desc())
+            )
+            subscription = subscription_result.scalar_one_or_none()
             if subscription:
                 subscription.active = True
+                subscription.provider_subscription_id = reference
                 subscription.last_webhook_at = datetime.utcnow()
+                subscription.expires_at = (subscription.expires_at or datetime.utcnow()) + timedelta(days=subscription.duration_days or 30)
                 db.add(subscription)
                 await db.commit()
-                
-                # Update user tier
-                user_result = await db.execute(select(User).where(User.id == int(user_id)))
-                user = user_result.scalar_one_or_none()
-                if user:
-                    user.tier = tier
-                    db.add(user)
-                    await db.commit()
-    
+
     elif event == "subscription.disable":
-        # Subscription disabled/expired
         reference = data.get("subscription_code")
         result = await db.execute(
             select(Subscription).where(
@@ -125,15 +132,14 @@ async def paystack_webhook(
             )
         )
         subscription = result.scalar_one_or_none()
-        
+
         if subscription:
             subscription.active = False
             subscription.last_webhook_at = datetime.utcnow()
             db.add(subscription)
             await db.commit()
-    
+
     elif event == "subscription.not_renew":
-        # Subscription not renewed (auto-renew disabled)
         reference = data.get("subscription_code")
         result = await db.execute(
             select(Subscription).where(
@@ -141,13 +147,13 @@ async def paystack_webhook(
             )
         )
         subscription = result.scalar_one_or_none()
-        
+
         if subscription:
             subscription.auto_renew = False
             subscription.last_webhook_at = datetime.utcnow()
             db.add(subscription)
             await db.commit()
-    
+
     return {"received": True, "event": event}
 
 

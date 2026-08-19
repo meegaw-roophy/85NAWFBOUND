@@ -8,6 +8,8 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..",
 
 from app.main import app
 from app.api.v1.pricing import calculate_discount, days_to_local_price
+from app.schemas import StripePaymentRequest, PaystackPaymentRequest
+from app.services.paystack_service import verify_webhook_signature
 
 client = TestClient(app)
 
@@ -34,3 +36,22 @@ def test_pricing_uses_simple_total_and_savings():
     assert result["discount_rate_pct"] == 0.0
     assert result["you_save"] == 0.0
     assert result["total"] == pytest.approx(result["full_price"])
+
+
+def test_payment_requests_accept_tier_metadata():
+    stripe_req = StripePaymentRequest(customer_id="cus_123", price_id="price_123", tier="tier2")
+    paystack_req = PaystackPaymentRequest(email="user@example.com", amount=1500, currency="KES", tier="tier1")
+
+    assert stripe_req.tier == "tier2"
+    assert paystack_req.tier == "tier1"
+
+
+def test_paystack_signature_verification():
+    secret = "paystack-secret"
+    payload = b'{"event":"charge.success","data":{"reference":"ref_123"}}'
+    import hmac
+    import hashlib
+    signature = hmac.new(secret.encode(), payload, hashlib.sha512).hexdigest()
+
+    assert verify_webhook_signature(payload, signature, secret) is True
+    assert verify_webhook_signature(payload, "bad-signature", secret) is False
