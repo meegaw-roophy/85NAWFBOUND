@@ -105,7 +105,9 @@ async def paystack_payment(
             metadata={
                 "local_payment_id": str(payment.id), 
                 "user_id": str(user_id),
-                "tier": payload.tier or 'tier1'
+                "tier": payload.tier or 'tier1',
+                "special_offer": bool(payload.special_offer),
+                "access_expires_at": "2027-01-01T23:59:59+03:00" if payload.special_offer else None,
             },
             currency=payload.currency or 'KES',
             callback_url=payload.callback_url,

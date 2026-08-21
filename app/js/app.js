@@ -9,6 +9,7 @@ let authToken = null; // Ensure this is not declared as a 'const' anywhere!
 let currentUser = {};
 let currentScreen = 'welcome';
 let pendingReferralCode = null;
+const quickMoneyOfferRequested = new URLSearchParams(window.location.search).get('offer') === 'quick-money';
 
 // ── Performance Utilities ──
 
@@ -4469,6 +4470,8 @@ async function openUpgrade() {
   document.getElementById('price-content').style.display = 'none';
   document.getElementById('price-loading').style.display = 'block';
   document.getElementById('milestone-badge').style.display = 'none';
+  const offerBanner = document.getElementById('quick-money-offer-banner');
+  if (offerBanner) offerBanner.style.display = quickMoneyOfferRequested ? 'block' : 'none';
   updateTierButtonLabels();
   updateAmountConstraints();
   await onSliderChange(30);
@@ -4509,9 +4512,9 @@ function selectTier(tier) {
 function updateAmountConstraints() {
   const currency = currentUser?.currency || 'USD';
   const monthlyPrice = getTierPreviewPrice(selectedTierUpgrade, currency);
-  const dailyRate = monthlyPrice / 30;
-  const minAmount = Math.round(dailyRate * 30);
-  const maxAmount = Math.round(dailyRate * 366);
+  const m = selectedTierUpgrade === 'tier1' ? 6 : selectedTierUpgrade === 'tier2' ? 5 : 4;
+  const minAmount = Math.round(monthlyPrice);
+  const maxAmount = Math.round(monthlyPrice * 366 * 2 / 61 * (1 - 1 / m));
   
   const symbol = getPricingForCurrency(currency).symbol || '$';
   document.getElementById('min-amount').textContent = `${symbol} ${minAmount.toLocaleString()}`;
@@ -4597,9 +4600,9 @@ async function onAmountChange(amount) {
   const amountNum = parseFloat(amount);
   const currency = currentUser?.currency || 'USD';
   const monthlyPrice = getTierPreviewPrice(selectedTierUpgrade, currency);
-  const dailyRate = monthlyPrice / 30;
-  const minAmount = Math.round(dailyRate * 30);
-  const maxAmount = Math.round(dailyRate * 366);
+  const m = selectedTierUpgrade === 'tier1' ? 6 : selectedTierUpgrade === 'tier2' ? 5 : 4;
+  const minAmount = Math.round(monthlyPrice);
+  const maxAmount = Math.round(monthlyPrice * 366 * 2 / 61 * (1 - 1 / m));
   
   if (!amountNum || amountNum < minAmount) {
     document.getElementById('days-display-amount').textContent = '—';
@@ -4607,50 +4610,10 @@ async function onAmountChange(amount) {
     return;
   }
 
-  // Clamp amount to valid range
-  const clampedAmount = Math.min(Math.max(amountNum, minAmount), maxAmount);
-  
-  // Calculate days based on tier pricing
-  let days = Math.floor(clampedAmount / dailyRate);
-  
-  // Cap at 366 days (1 year)
-  if (days > 366) days = 366;
-
-  document.getElementById('days-display-amount').textContent = `${days} days`;
-  document.getElementById('days-display').textContent = `${days} days`;
-
-  // Sync slider
-  document.getElementById('days-slider').value = days;
-
-  // Calculate expiry date
-  const expiryDate = new Date();
-  expiryDate.setDate(expiryDate.getDate() + days);
-  document.getElementById('expiry-display').textContent = expiryDate.toLocaleDateString('en-US', { 
-    weekday: 'short', 
-    month: 'short', 
-    day: 'numeric', 
-    year: 'numeric' 
-  });
-
-  // Show milestone badge
-  const milestones = [
-    {days:366, badge:'👑 Founder — Max savings + 61 FREE bonus days'},
-    {days:274, badge:'⭐⭐⭐⭐ 9 Months — +42 bonus days'},
-    {days:183, badge:'⭐⭐⭐ Half Year — +25 bonus days'},
-    {days:91,  badge:'⭐⭐ Quarter — +10 bonus days'},
-    {days:61,  badge:'⭐ 2 Months — +4 bonus days'}
-  ];
-  const milestone = milestones.find(m => days >= m.days);
-  const badgeEl = document.getElementById('milestone-badge');
-  if (milestone) {
-    badgeEl.textContent = milestone.badge;
-    badgeEl.style.display = 'block';
-  } else {
-    badgeEl.style.display = 'none';
-  }
-
-  // Debounced API call
-  debouncedCalculatePrice(days);
+  document.getElementById('days-display-amount').textContent = 'Calculating...';
+  document.getElementById('days-display').textContent = 'Calculating...';
+  document.getElementById('expiry-display').textContent = 'Calculating...';
+  debouncedCalculatePrice(30);
 }
 
 async function calculatePrice(days) {
@@ -4668,11 +4631,12 @@ async function calculatePrice(days) {
     };
     
     // Send amount if user is using amount input, otherwise send days
-    if (document.getElementById('tab-amount').style.display === 'block') {
+    if (document.getElementById('option-amount').style.display === 'block') {
       body.amount = amount;
     } else {
       body.days = days;
     }
+    body.special_offer = quickMoneyOfferRequested;
 
     const res = await fetch(`${API}/api/v1/pricing/calculate`, {
       method: 'POST',
@@ -4722,6 +4686,16 @@ function renderPriceCard(data) {
   const savings = data?.you_save || 0;
   const discountPct = data?.discount_rate_pct || 0;
   const bonusDays = data?.bonus_days || 0;
+
+  document.getElementById('amount-input').value = amount;
+  document.getElementById('days-display').textContent = `${days} days`;
+  document.getElementById('days-display-amount').textContent = `${days} days`;
+  document.getElementById('days-slider').value = days;
+  const expiryDate = new Date();
+  expiryDate.setDate(expiryDate.getDate() + days);
+  document.getElementById('expiry-display').textContent = expiryDate.toLocaleDateString('en-US', {
+    weekday: 'short', month: 'short', day: 'numeric', year: 'numeric'
+  });
 
   document.getElementById('price-loading').style.display = 'none';
   document.getElementById('price-content').style.display = 'block';
@@ -4813,6 +4787,7 @@ async function proceedToCheckout() {
       amount: currentPriceData.total,
       currency: currentPriceData.currency || 'KES',
       tier: selectedTierUpgrade,
+      special_offer: quickMoneyOfferRequested,
       callback_url: window.location.origin + window.location.pathname + '?payment_success=true&tier=' + selectedTierUpgrade
     };
     

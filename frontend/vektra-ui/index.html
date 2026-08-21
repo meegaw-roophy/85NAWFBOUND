@@ -1,5 +1,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%236c63ff' width='100' height='100' rx='20'/><text x='50' y='65' font-size='50' font-family='Arial' font-weight='bold' fill='white' text-anchor='middle'>V</text></svg>">
 <link rel="stylesheet" href="css/style.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -97,7 +98,68 @@
   </div>
 </div>
 
-<!-- ONBOARDING STEP 1: NORTH STAR -->
+<!-- EMAIL VERIFICATION SCREEN -->
+<div id="email-verification" style="display:none;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:2rem;">
+  <div style="width:100%;max-width:320px;text-align:center">
+    <div style="font-size:48px;margin-bottom:1rem">📧</div>
+    <h2 style="font-size:22px;font-weight:700;margin-bottom:0.5rem;color:var(--text-primary)">Verify your email</h2>
+    <p style="font-size:14px;color:var(--text-secondary);line-height:1.5;margin-bottom:2rem">We sent a verification link to your email. Click it to activate your account.</p>
+    
+    <div id="verify-error" style="display:none;color:var(--danger);font-size:13px;margin-bottom:1rem"></div>
+    
+    <button id="resend-verify-btn" class="btn-secondary" onclick="resendVerificationEmail()" style="width:100%;margin-bottom:1rem">Resend verification email</button>
+    <button class="btn-primary" onclick="verifyEmailWithToken()" style="width:100%">I've verified my email</button>
+    
+    <div style="margin-top:1.5rem;font-size:13px;color:var(--text-muted)">
+      Wrong email? <span onclick="goTo('login')" style="color:var(--accent);cursor:pointer">Sign in with different account</span>
+    </div>
+  </div>
+</div>
+
+<!-- PASSWORD RESET REQUEST SCREEN -->
+<div id="password-reset-request" style="display:none;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:2rem;">
+  <div style="width:100%;max-width:320px">
+    <div style="font-size:48px;margin-bottom:1rem;text-align:center">🔑</div>
+    <h2 style="font-size:22px;font-weight:700;margin-bottom:0.5rem;color:var(--text-primary)">Reset password</h2>
+    <p style="font-size:14px;color:var(--text-secondary);line-height:1.5;margin-bottom:1.5rem">Enter your username and email to request a reset.</p>
+    
+    <div style="margin-bottom:1rem">
+      <input id="forgot-username" type="text" placeholder="Username" style="width:100%;padding:14px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:15px;outline:none;font-family:var(--font)">
+    </div>
+    <div style="margin-bottom:1rem">
+      <input id="forgot-email" type="email" placeholder="you@example.com" style="width:100%;padding:14px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:15px;outline:none;font-family:var(--font)">
+    </div>
+    
+    <div id="forgot-error" style="display:none;color:var(--danger);font-size:13px;margin-bottom:1rem"></div>
+    <div id="forgot-success" style="display:none;color:var(--success);font-size:13px;margin-bottom:1rem"></div>
+    
+    <button class="btn-primary" onclick="submitForgotPassword()" style="width:100%;margin-bottom:1rem">Send reset request</button>
+    <button class="btn-secondary" onclick="goTo('login')" style="width:100%">Back to login</button>
+  </div>
+</div>
+
+<!-- PASSWORD RESET SCREEN -->
+<div id="password-reset" style="display:none;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:2rem;">
+  <div style="width:100%;max-width:320px">
+    <div style="font-size:48px;margin-bottom:1rem;text-align:center">🔐</div>
+    <h2 style="font-size:22px;font-weight:700;margin-bottom:0.5rem;color:var(--text-primary)">New password</h2>
+    <p style="font-size:14px;color:var(--text-secondary);line-height:1.5;margin-bottom:1.5rem">Enter your new password below.</p>
+    
+    <div style="margin-bottom:1rem">
+      <input id="reset-new-password" type="password" placeholder="New password (min 8 chars)" style="width:100%;padding:14px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:15px;outline:none;font-family:var(--font)">
+    </div>
+    <div style="margin-bottom:1rem">
+      <input id="reset-confirm-password" type="password" placeholder="Confirm new password" style="width:100%;padding:14px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:15px;outline:none;font-family:var(--font)">
+    </div>
+    
+    <div id="reset-confirm-error" style="display:none;color:var(--danger);font-size:13px;margin-bottom:1rem"></div>
+    
+    <button class="btn-primary" onclick="confirmPasswordReset()" style="width:100%;margin-bottom:1rem">Update password</button>
+    <button class="btn-secondary" onclick="goTo('login')" style="width:100%">Back to login</button>
+  </div>
+</div>
+
+
 <div id="onboard-1" style="display:none;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:2rem;">
   
   <div style="width:100%;max-width:320px">
@@ -235,7 +297,7 @@
 
     <button id="login-btn" class="btn-primary" onclick="login()">Sign In</button>
     <div style="text-align:center;margin-top:12px">
-      <span onclick="showForgotPassword()" style="font-size:13px;color:var(--accent);cursor:pointer">Forgot password?</span>
+      <span onclick="goTo('password-reset-request')" style="font-size:13px;color:var(--accent);cursor:pointer">Forgot password?</span>
     </div>
 
     <div style="text-align:center;margin-top:20px;font-size:14px;color:var(--text-muted)">
@@ -1095,9 +1157,6 @@
         <option value="12">December</option>
       </select>
       <select id="replay-year" onchange="loadMonthlyReplay()" style="flex:1;padding:10px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;font-family:var(--font);outline:none">
-        <option value="2024">2024</option>
-        <option value="2025">2025</option>
-        <option value="2026">2026</option>
       </select>
     </div>
     <div id="monthly-replay-content" style="font-size:13px;color:var(--text-primary);line-height:1.5">Select a month to view replay...</div>
@@ -1156,6 +1215,65 @@
       <span id="vek-credits" style="color:var(--gold);font-weight:600">0</span>
     </div>
     <button onclick="shareReferral(event)" style="width:100%;padding:10px;background:linear-gradient(135deg,#6c63ff,#ec4899);border:none;border-radius:var(--radius-sm);color:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:var(--font)">Share VEKTRA 🔥</button>
+  </div>
+
+  <!-- Support / Contact -->
+  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
+    <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">Connect With Us</div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <a href="mailto:vektraapp@gmail.com" style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:8px;color:var(--text-muted);text-decoration:none;font-size:13px;transition:all .2s ease">
+        <span style="font-size:16px">✉️</span> Email Support
+      </a>
+      <a href="https://wa.me/254712207744" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:8px;color:var(--text-muted);text-decoration:none;font-size:13px;transition:all .2s ease">
+        <span style="font-size:16px">💬</span> WhatsApp
+      </a>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+        <a href="https://www.linkedin.com/in/vektra-app-00a73131b" target="_blank" rel="noopener" style="flex:1;min-width:80px;display:flex;align-items:center;justify-content:center;gap:6px;padding:8px 10px;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:8px;color:var(--text-muted);text-decoration:none;font-size:11px;transition:all .2s ease">
+          <span>💼</span> LinkedIn
+        </a>
+        <a href="https://www.instagram.com/vektra_app/" target="_blank" rel="noopener" style="flex:1;min-width:80px;display:flex;align-items:center;justify-content:center;gap:6px;padding:8px 10px;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:8px;color:var(--text-muted);text-decoration:none;font-size:11px;transition:all .2s ease">
+          <span>📸</span> Instagram
+        </a>
+        <a href="https://x.com/MeegawSivl17515" target="_blank" rel="noopener" style="flex:1;min-width:80px;display:flex;align-items:center;justify-content:center;gap:6px;padding:8px 10px;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:8px;color:var(--text-muted);text-decoration:none;font-size:11px;transition:all .2s ease">
+          <span>𝕏</span> X
+        </a>
+        <a href="https://www.reddit.com/user/VEKTRA_APP/" target="_blank" rel="noopener" style="flex:1;min-width:80px;display:flex;align-items:center;justify-content:center;gap:6px;padding:8px 10px;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:8px;color:var(--text-muted);text-decoration:none;font-size:11px;transition:all .2s ease">
+          <span>🔴</span> Reddit
+        </a>
+        <a href="https://www.tiktok.com/@meegaw_roophy" target="_blank" rel="noopener" style="flex:1;min-width:80px;display:flex;align-items:center;justify-content:center;gap:6px;padding:8px 10px;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:8px;color:var(--text-muted);text-decoration:none;font-size:11px;transition:all .2s ease">
+          <span>🎵</span> TikTok
+        </a>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- SCREEN: NEWS / UPDATES -->
+<div id="news" style="display:none;flex-direction:column;min-height:100vh;padding:1.5rem;max-width:420px;margin:0 auto">
+
+  <!-- Header -->
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;padding-top:1rem">
+    <div>
+      <div style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.1em">News</div>
+      <div style="font-size:18px;font-weight:700">Updates & Quotes</div>
+    </div>
+    <div onclick="goTo('dashboard')" style="color:var(--text-muted);cursor:pointer;font-size:13px">← Back</div>
+  </div>
+
+  <!-- Loading State -->
+  <div id="news-loading" style="display:flex;justify-content:center;align-items:center;padding:3rem">
+    <div style="font-size:14px;color:var(--text-muted)">Loading updates...</div>
+  </div>
+
+  <!-- News Items Container -->
+  <div id="news-container" style="display:none;flex-direction:column;gap:1rem"></div>
+
+  <!-- Empty State -->
+  <div id="news-empty" style="display:none;text-align:center;padding:3rem">
+    <div style="font-size:48px;margin-bottom:1rem">📰</div>
+    <div style="font-size:14px;color:var(--text-muted)">No updates yet</div>
+    <div style="font-size:12px;color:var(--text-muted);margin-top:0.5rem">Check back later for new quotes and announcements</div>
   </div>
 
 </div>
@@ -1619,6 +1737,27 @@
       <div onclick="goTo('profile')" style="color:var(--text-muted);cursor:pointer;font-size:13px">← Back</div>
     </div>
     <div style="font-size:12px;color:var(--text-muted);margin-bottom:1.5rem;line-height:1.5">The premium upgrade flow is under refinement. This preview helps you visualize pricing and commitment options before launch.</div>
+    <div id="quick-money-offer-banner" style="display:none;background:rgba(250,204,21,.12);border:1px solid #facc15;border-radius:var(--radius);padding:12px;margin-bottom:1rem;color:var(--text-primary);font-size:13px;line-height:1.45">
+      <strong>Quick Money Strategy: 25% off</strong><br>
+      Pay 3 months and receive 4 months of access. Offer closes September 9, 2026 at 23:59. Access ends January 1, 2027 at 23:59.
+    </div>
+
+    <!-- Quick Money Strategy Offer Banner -->
+    <div id="special-offer-banner" style="background:linear-gradient(135deg,rgba(108,99,255,0.15),rgba(236,72,153,0.15));border:1px solid rgba(108,99,255,0.4);border-radius:var(--radius);padding:1rem;margin-bottom:1.5rem">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <span style="font-size:16px">🔥</span>
+        <span style="font-size:12px;color:#aaa5ff;font-weight:800;letter-spacing:0.1em;text-transform:uppercase">QUICK MONEY STRATEGY — LIMITED TIME</span>
+      </div>
+      <div style="font-size:14px;font-weight:700;margin-bottom:4px">Buy 3 Months, Get <span style="color:var(--success)">1 Month FREE (25% OFF)</span></div>
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px">
+        <strong>Special pricing:</strong> Vector $80 → <span style="color:var(--success)">$60</span>, Apex $200 → <span style="color:var(--success)">$150</span>
+      </div>
+      <div style="font-size:11px;color:var(--text-muted)">
+        Offer expires on Sep 9, 2026. Subscription lasts until Jan 1, 2027.
+        <span style="color:var(--accent);cursor:pointer;text-decoration:underline" onclick="activateSpecialOffer()">Claim this offer →</span>
+      </div>
+      <div id="offer-countdown" style="margin-top:8px;padding:4px 10px;border-radius:999px;background:rgba(255,255,255,0.05);border:1px solid var(--border);font-size:11px;color:var(--text-primary);font-weight:700;text-align:center">Loading...</div>
+    </div>
 
     <!-- Tier Selector -->
     <div style="display:flex;gap:8px;margin-bottom:1.5rem">
@@ -2289,6 +2428,13 @@
       <span style="font-size:10px;font-weight:500">Analytics</span>
     </div>
 
+    <!-- News Menu Icon Layout -->
+    <div onclick="navTo('news')" id="nav-news" class="nav-item" style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;color:var(--text-muted);position:relative">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+      <span style="font-size:10px;font-weight:500">News</span>
+      <div id="news-dot" style="display:none;position:absolute;top:-2px;right:4px;width:8px;height:8px;background:var(--accent);border-radius:50%;border:2px solid var(--bg-card)"></div>
+    </div>
+
     <!-- Profile Menu Icon Layout -->
     <div onclick="navTo('profile')" id="nav-profile" class="nav-item" style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;color:var(--text-muted)">
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
@@ -2354,4 +2500,51 @@
     else window.goTo(screenId);
   };
 </script>
+
+<!-- TERMS SCREEN -->
+<div id="terms" style="display:none;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:2rem;">
+  <div style="width:100%;max-width:600px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:2rem;">
+    <h2 style="font-size:24px;font-weight:700;margin-bottom:1rem;color:var(--text-primary)">Terms of Service</h2>
+    <div style="font-size:14px;color:var(--text-secondary);line-height:1.6;margin-bottom:2rem;max-height:400px;overflow-y:auto;">
+      <p style="margin-bottom:1rem"><strong>1. Acceptance of Terms</strong><br>By using VEKTRA, you agree to these terms.</p>
+      <p style="margin-bottom:1rem"><strong>2. User Responsibilities</strong><br>You are responsible for maintaining account security and accurate data.</p>
+      <p style="margin-bottom:1rem"><strong>3. Data Privacy</strong><br>Your data is stored securely and used to provide trajectory insights.</p>
+      <p style="margin-bottom:1rem"><strong>4. Subscription Terms</strong><br>Subscriptions auto-renew unless cancelled. Refunds handled case-by-case.</p>
+      <p style="margin-bottom:1rem"><strong>5. Limitation of Liability</strong><br>VEKTRA is not liable for decisions based on trajectory data.</p>
+      <p style="margin-bottom:1rem"><strong>6. Contact</strong><br>For questions, contact support@vektra.app</p>
+    </div>
+    <button class="btn-primary" onclick="goTo('welcome')">Back</button>
+  </div>
+</div>
+
+<!-- PRIVACY SCREEN -->
+<div id="privacy" style="display:none;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:2rem;">
+  <div style="width:100%;max-width:600px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:2rem;">
+    <h2 style="font-size:24px;font-weight:700;margin-bottom:1rem;color:var(--text-primary)">Privacy Policy</h2>
+    <div style="font-size:14px;color:var(--text-secondary);line-height:1.6;margin-bottom:2rem;max-height:400px;overflow-y:auto;">
+      <p style="margin-bottom:1rem"><strong>1. Data Collection</strong><br>We collect daily logs, goals, and analytics data you provide.</p>
+      <p style="margin-bottom:1rem"><strong>2. Data Usage</strong><br>Data is used to generate trajectory insights and improve services.</p>
+      <p style="margin-bottom:1rem"><strong>3. Data Security</strong><br>All data is encrypted and stored securely. We never sell your data.</p>
+      <p style="margin-bottom:1rem"><strong>4. Third-Party Services</strong><br>We use payment processors (Paystack) for subscriptions only.</p>
+      <p style="margin-bottom:1rem"><strong>5. Your Rights</strong><br>You can export or delete your data at any time from your profile.</p>
+      <p style="margin-bottom:1rem"><strong>6. Contact</strong><br>For privacy inquiries, contact privacy@vektra.app</p>
+    </div>
+    <button class="btn-primary" onclick="goTo('welcome')">Back</button>
+  </div>
+</div>
+
+<!-- ABOUT SCREEN -->
+<div id="about" style="display:none;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:2rem;">
+  <div style="width:100%;max-width:600px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:2rem;">
+    <h2 style="font-size:24px;font-weight:700;margin-bottom:1rem;color:var(--text-primary)">About VEKTRA</h2>
+    <div style="font-size:14px;color:var(--text-secondary);line-height:1.6;margin-bottom:2rem;max-height:400px;overflow-y:auto;">
+      <p style="margin-bottom:1rem"><strong>What is VEKTRA?</strong><br>VEKTRA turns your daily life data into a measurable trajectory. Track, analyze, and understand whether you're actually moving forward.</p>
+      <p style="margin-bottom:1rem"><strong>The Mission</strong><br>To help people see their life trajectory clearly and make data-driven decisions about their future.</p>
+      <p style="margin-bottom:1rem"><strong>How It Works</strong><br>Log daily metrics (mood, energy, focus, habits) and we calculate your VEKTRA score - a composite measure of your life's direction and momentum.</p>
+      <p style="margin-bottom:1rem"><strong>Version</strong><br>VEKTRA v1.0 - Launch 2026</p>
+      <p style="margin-bottom:1rem"><strong>Contact</strong><br>hello@vektra.app</p>
+    </div>
+    <button class="btn-primary" onclick="goTo('welcome')">Back</button>
+  </div>
+</div>
 

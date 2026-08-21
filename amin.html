@@ -1,96 +1,2252 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VEKTRA // SECURE ROOT AUTH</title>
-    <script src="https://tailwindcss.com"></script>
-    <style>
-        body { background-color: #050508; font-family: 'Courier New', Courier, monospace; }
-        .cyber-panel { background: rgba(13, 13, 18, 0.95); border: 1px solid #1f1f2e; box-shadow: 0 0 30px rgba(0, 255, 204, 0.03); }
-        .neon-glow:focus { box-shadow: 0 0 15px rgba(0, 255, 204, 0.3); border-color: #00FFCC; }
-    </style>
-</head>
-<body class="text-white min-h-screen flex items-center justify-center p-4">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <!-- Cryptographic Auth Panel -->
-    <div class="cyber-panel w-full max-w-md rounded-xl p-8 transition duration-300">
-        
-        <!-- Header Indicators -->
-        <div class="text-center mb-8">
-            <div class="inline-block px-3 py-1 bg-emerald-950 border border-emerald-500/30 text-emerald-400 text-3xs font-bold tracking-widest rounded-full mb-3">
-                SYSTEM OPERATIONAL // GHOST CONFIG
-            </div>
-            <h1 class="text-xl font-bold tracking-widest text-white">VEKTRA ROOT CONTROL</h1>
-            <p class="text-xs text-zinc-500 mt-1">ENTER AUTHORIZATION CRITERIA TO UNLOCK CORE MISSON CONTROL</p>
+  <title>VEKTRA — Know Your Trajectory</title>
+  <meta name="description" content="VEKTRA turns your daily life data into a measurable trajectory. Track, analyze, and understand whether you're actually moving forward.">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --bg: #08080d;
+      --bg-soft: #0d0d14;
+      --card: #111118;
+      --card-hover: #15151e;
+      --accent: #6c63ff;
+      --pink: #ec4899;
+      --text: #f3f3f7;
+      --muted: #9292a8;
+      --muted-2: #6e6e82;
+      --border: rgba(255,255,255,0.07);
+      --border-strong: rgba(255,255,255,0.12);
+      --success: #22c55e;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Inter", sans-serif;
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    a {
+      color: inherit;
+    }
+
+    button,
+    input {
+      font-family: inherit;
+    }
+
+    .gradient {
+      background: linear-gradient(135deg, var(--accent), var(--pink));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .gradient-bg {
+      background: linear-gradient(135deg, var(--accent), var(--pink));
+    }
+
+    /* =========================
+       NAVIGATION
+    ========================= */
+
+    nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 2rem;
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      background: rgba(8, 8, 13, 0.88);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      z-index: 1000;
+    }
+
+    .nav-logo {
+      font-size: 21px;
+      font-weight: 900;
+      letter-spacing: .1em;
+    }
+
+    .nav-logo span {
+      background: linear-gradient(135deg, var(--accent), var(--pink));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+    }
+
+    .nav-link {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 500;
+      transition: color .2s ease;
+    }
+
+    .nav-link:hover {
+      color: var(--text);
+    }
+
+    .nav-cta {
+      padding: 9px 18px;
+      background: linear-gradient(135deg, var(--accent), var(--pink));
+      border: none;
+      border-radius: 9px;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: none;
+      transition: transform .2s ease, opacity .2s ease;
+    }
+
+    .nav-cta:hover {
+      transform: translateY(-1px);
+      opacity: .92;
+    }
+
+    /* =========================
+       HERO
+    ========================= */
+
+    .hero {
+      text-align: center;
+      padding: 5.5rem 1.5rem 4rem;
+      max-width: 950px;
+      margin: 0 auto;
+      position: relative;
+    }
+
+    .hero::before {
+      content: "";
+      position: absolute;
+      width: 500px;
+      height: 500px;
+      background: radial-gradient(
+        circle,
+        rgba(108,99,255,.12) 0%,
+        rgba(108,99,255,0) 70%
+      );
+      top: -150px;
+      left: 50%;
+      transform: translateX(-50%);
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 7px 15px;
+      background: rgba(108,99,255,.11);
+      border: 1px solid rgba(108,99,255,.3);
+      border-radius: 999px;
+      font-size: 11px;
+      color: #aaa5ff;
+      letter-spacing: .09em;
+      text-transform: uppercase;
+      margin-bottom: 1.4rem;
+      font-weight: 700;
+    }
+
+    .hero-title {
+      font-size: clamp(2.7rem, 7vw, 5.5rem);
+      font-weight: 900;
+      line-height: 1.02;
+      letter-spacing: -.045em;
+      margin-bottom: 1.5rem;
+    }
+
+    .hero-desc {
+      font-size: 1.08rem;
+      color: var(--muted);
+      max-width: 670px;
+      margin: 0 auto 2rem;
+      line-height: 1.75;
+    }
+
+    .hero-desc strong {
+      color: var(--text);
+    }
+
+    .hero-actions {
+      display: flex;
+      justify-content: center;
+      gap: .75rem;
+      flex-wrap: wrap;
+      margin-bottom: 1rem;
+    }
+
+    .primary-btn,
+    .secondary-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 14px 25px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 700;
+      text-decoration: none;
+      transition: all .2s ease;
+    }
+
+    .primary-btn {
+      color: #fff;
+      background: linear-gradient(135deg, var(--accent), var(--pink));
+      border: 1px solid transparent;
+      box-shadow: 0 8px 30px rgba(108,99,255,.18);
+    }
+
+    .primary-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 35px rgba(108,99,255,.25);
+    }
+
+    .secondary-btn {
+      color: var(--text);
+      background: rgba(255,255,255,.03);
+      border: 1px solid var(--border-strong);
+    }
+
+    .secondary-btn:hover {
+      background: rgba(255,255,255,.06);
+      border-color: rgba(255,255,255,.2);
+    }
+
+    .hero-note {
+      font-size: 12px;
+      color: var(--muted-2);
+      margin-bottom: 2.25rem;
+    }
+
+    /* =========================
+       LAUNCH OFFER
+    ========================= */
+
+    .launch-offer {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 1px;
+      border-radius: 17px;
+      background: linear-gradient(
+        135deg,
+        rgba(108,99,255,.8),
+        rgba(236,72,153,.8)
+      );
+    }
+
+    .launch-offer-inner {
+      background: #0d0d14;
+      border-radius: 16px;
+      padding: 1.25rem 1.5rem;
+    }
+
+    .offer-label {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: #aaa5ff;
+      margin-bottom: .35rem;
+    }
+
+    .offer-title {
+      font-size: 1.2rem;
+      font-weight: 800;
+      margin-bottom: .25rem;
+    }
+
+    .offer-title span {
+      color: var(--success);
+    }
+
+    .offer-desc {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .offer-countdown {
+      display: inline-block;
+      margin-top: .75rem;
+      padding: 5px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.05);
+      border: 1px solid var(--border);
+      font-size: 12px;
+      color: var(--text);
+      font-weight: 700;
+    }
+
+    /* =========================
+       WAITLIST
+    ========================= */
+
+    .waitlist-block {
+      max-width: 510px;
+      margin: 2rem auto 0;
+    }
+
+    .waitlist-form {
+      display: flex;
+      gap: 9px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .waitlist-input {
+      flex: 1;
+      min-width: 220px;
+      padding: 13px 16px;
+      background: rgba(255,255,255,.045);
+      border: 1px solid var(--border-strong);
+      border-radius: 10px;
+      color: var(--text);
+      font-size: 14px;
+      outline: none;
+    }
+
+    .waitlist-input::placeholder {
+      color: #606071;
+    }
+
+    .waitlist-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(108,99,255,.08);
+    }
+
+    .waitlist-btn {
+      padding: 13px 21px;
+      background: linear-gradient(135deg, var(--accent), var(--pink));
+      border: none;
+      border-radius: 10px;
+      color: #fff;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .waitlist-btn:disabled {
+      opacity: .6;
+      cursor: wait;
+    }
+
+    .waitlist-note {
+      font-size: 11px;
+      color: var(--muted-2);
+      text-align: center;
+      margin-top: .6rem;
+    }
+
+    .waitlist-success {
+      display: none;
+      color: var(--success);
+      font-size: 13px;
+      text-align: center;
+      margin-top: .65rem;
+    }
+
+    /* =========================
+       STATS
+    ========================= */
+
+    .stats {
+      display: flex;
+      justify-content: center;
+      gap: 3.5rem;
+      padding: 2.5rem 1.5rem;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      flex-wrap: wrap;
+      background: rgba(255,255,255,.008);
+    }
+
+    .stat-item {
+      text-align: center;
+      min-width: 120px;
+    }
+
+    .stat-num {
+      font-size: 2rem;
+      font-weight: 900;
+      background: linear-gradient(135deg, var(--accent), var(--pink));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .stat-label {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 3px;
+    }
+
+    /* =========================
+       GENERAL SECTIONS
+    ========================= */
+
+    .section {
+      padding: 5.5rem 1.5rem;
+      max-width: 1050px;
+      margin: 0 auto;
+    }
+
+    .section-label {
+      font-size: 11px;
+      color: #aaa5ff;
+      text-transform: uppercase;
+      letter-spacing: .16em;
+      margin-bottom: .7rem;
+      font-weight: 700;
+    }
+
+    .section-title {
+      font-size: clamp(1.9rem, 4vw, 3rem);
+      font-weight: 900;
+      letter-spacing: -.035em;
+      line-height: 1.1;
+      margin-bottom: 1.2rem;
+    }
+
+    .section-desc {
+      font-size: 15px;
+      color: var(--muted);
+      max-width: 650px;
+      line-height: 1.75;
+      margin-bottom: 2.5rem;
+    }
+
+    /* =========================
+       FEATURES
+    ========================= */
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+      gap: 1rem;
+    }
+
+    .feature-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.5rem;
+      transition: transform .2s ease, border-color .2s ease, background .2s ease;
+    }
+
+    .feature-card:hover {
+      transform: translateY(-3px);
+      border-color: var(--border-strong);
+      background: var(--card-hover);
+    }
+
+    .feature-icon {
+      font-size: 1.8rem;
+      margin-bottom: .9rem;
+    }
+
+    .feature-title {
+      font-size: 1rem;
+      font-weight: 800;
+      margin-bottom: .45rem;
+    }
+
+    .feature-desc {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.65;
+    }
+
+    /* =========================
+       SCORE
+    ========================= */
+
+    .score-section {
+      text-align: center;
+    }
+
+    .score-section .section-desc {
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .score-preview {
+      background:
+        linear-gradient(var(--card), var(--card)) padding-box,
+        linear-gradient(135deg, rgba(108,99,255,.45), rgba(236,72,153,.45)) border-box;
+      border: 1px solid transparent;
+      border-radius: 22px;
+      padding: 2rem;
+      max-width: 410px;
+      margin: 2rem auto;
+      text-align: left;
+      box-shadow: 0 20px 60px rgba(0,0,0,.2);
+    }
+
+    .score-label {
+      font-size: 10px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .12em;
+      text-align: center;
+      margin-bottom: .35rem;
+    }
+
+    .score-number {
+      font-size: 82px;
+      font-weight: 900;
+      letter-spacing: -.07em;
+      text-align: center;
+      line-height: 1;
+      background: linear-gradient(135deg, var(--accent), var(--pink));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .score-sub {
+      font-size: 13px;
+      color: var(--success);
+      text-align: center;
+      margin-top: .4rem;
+      font-weight: 700;
+    }
+
+    .score-bars {
+      margin-top: 1.6rem;
+      display: flex;
+      flex-direction: column;
+      gap: .8rem;
+    }
+
+    .bar-row {
+      display: flex;
+      align-items: center;
+      gap: .7rem;
+      font-size: 12px;
+    }
+
+    .bar-label {
+      width: 78px;
+      color: var(--muted);
+    }
+
+    .bar-track {
+      flex: 1;
+      height: 6px;
+      background: rgba(255,255,255,.06);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .bar-fill {
+      height: 100%;
+      border-radius: 999px;
+    }
+
+    .bar-val {
+      width: 28px;
+      text-align: right;
+      font-weight: 700;
+      font-size: 11px;
+    }
+
+    .score-insight {
+      margin-top: 1.5rem;
+      padding: 1rem;
+      border-radius: 12px;
+      background: rgba(255,255,255,.035);
+      border: 1px solid var(--border);
+    }
+
+    .score-insight-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      color: var(--muted-2);
+      margin-bottom: .3rem;
+    }
+
+    .score-insight-text {
+      font-size: 13px;
+      color: var(--text);
+      line-height: 1.6;
+    }
+
+    /* =========================
+       REPORTS
+    ========================= */
+
+    .reports-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+      margin-top: 2rem;
+    }
+
+    .report-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.5rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .report-card::after {
+      content: "";
+      position: absolute;
+      width: 130px;
+      height: 130px;
+      right: -60px;
+      top: -60px;
+      background: radial-gradient(circle, rgba(108,99,255,.12), transparent 70%);
+    }
+
+    .report-frequency {
+      font-size: 10px;
+      color: #aaa5ff;
+      text-transform: uppercase;
+      letter-spacing: .12em;
+      font-weight: 800;
+      margin-bottom: .45rem;
+    }
+
+    .report-title {
+      font-size: 1.15rem;
+      font-weight: 800;
+      margin-bottom: .45rem;
+    }
+
+    .report-desc {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.65;
+    }
+
+    .report-tag {
+      display: inline-block;
+      margin-top: .9rem;
+      padding: 4px 9px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.05);
+      color: var(--muted);
+      font-size: 10px;
+      border: 1px solid var(--border);
+    }
+
+    /* =========================
+       HOW IT WORKS
+    ========================= */
+
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+      margin-top: 2rem;
+    }
+
+    .step {
+      padding: 1.4rem;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      background: var(--card);
+    }
+
+    .step-num {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, var(--accent), var(--pink));
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      font-size: .9rem;
+      margin-bottom: 1rem;
+    }
+
+    .step-title {
+      font-weight: 800;
+      margin-bottom: .45rem;
+      font-size: 14px;
+    }
+
+    .step-desc {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.65;
+    }
+
+    /* =========================
+       PRICING
+    ========================= */
+
+    .pricing-header {
+      margin-bottom: 2rem;
+    }
+
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+    }
+
+    .pricing-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 1.6rem;
+      position: relative;
+    }
+
+    .pricing-card.featured {
+      border-color: rgba(108,99,255,.65);
+      background:
+        linear-gradient(
+          180deg,
+          rgba(108,99,255,.09),
+          var(--card) 45%
+        );
+      box-shadow: 0 15px 50px rgba(108,99,255,.08);
+    }
+
+    .pricing-card.apex {
+      border-color: rgba(236,72,153,.28);
+    }
+
+    .pricing-name {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .12em;
+      color: var(--muted);
+      font-weight: 800;
+      margin-bottom: .55rem;
+    }
+
+    .pricing-price {
+      font-size: 2.2rem;
+      font-weight: 900;
+      letter-spacing: -.04em;
+      margin-bottom: .15rem;
+    }
+
+    .pricing-period {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 1.3rem;
+    }
+
+    .pricing-features {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: .55rem;
+    }
+
+    .pricing-features li {
+      font-size: 12px;
+      color: var(--muted);
+      display: flex;
+      align-items: flex-start;
+      gap: .55rem;
+      line-height: 1.45;
+    }
+
+    .pricing-features li::before {
+      content: "✓";
+      color: var(--success);
+      font-weight: 800;
+      flex-shrink: 0;
+    }
+
+    .pricing-badge {
+      display: inline-block;
+      padding: 3px 8px;
+      background: linear-gradient(135deg, var(--accent), var(--pink));
+      border-radius: 999px;
+      color: #fff;
+      font-size: 9px;
+      font-weight: 800;
+      margin-left: .35rem;
+      vertical-align: middle;
+    }
+
+    .launch-price {
+      margin-top: 1.25rem;
+      padding: .9rem;
+      border-radius: 11px;
+      background: rgba(34,197,94,.06);
+      border: 1px solid rgba(34,197,94,.14);
+    }
+
+    .launch-price-label {
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      color: var(--success);
+      font-weight: 800;
+      margin-bottom: .2rem;
+    }
+
+    .launch-price-text {
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .launch-price-sub {
+      color: var(--muted);
+      font-size: 10px;
+      margin-top: .15rem;
+    }
+
+    .pricing-footnote {
+      text-align: center;
+      margin-top: 1.3rem;
+      font-size: 11px;
+      color: var(--muted-2);
+    }
+
+    /* =========================
+       FOUNDER
+    ========================= */
+
+    .founder-section {
+      max-width: 800px;
+      text-align: center;
+    }
+
+    .founder {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 2.3rem;
+    }
+
+    .founder-quote {
+      font-size: 1.08rem;
+      font-style: italic;
+      line-height: 1.8;
+      margin-bottom: 1.4rem;
+      color: var(--text);
+    }
+
+    .founder-name {
+      font-weight: 800;
+    }
+
+    .founder-title {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: .2rem;
+    }
+
+    /* =========================
+       ORIGIN STORY
+    ========================= */
+
+    .origin {
+      max-width: 700px;
+      text-align: center;
+    }
+
+    .origin-copy {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.9;
+    }
+
+    .origin-copy p {
+      margin-bottom: 1.25rem;
+    }
+
+    .origin-highlight {
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    /* =========================
+       FINAL CTA
+    ========================= */
+
+    .final-cta {
+      text-align: center;
+      padding: 6rem 1.5rem;
+      border-top: 1px solid var(--border);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .final-cta::before {
+      content: "";
+      position: absolute;
+      width: 600px;
+      height: 300px;
+      left: 50%;
+      bottom: -220px;
+      transform: translateX(-50%);
+      background: radial-gradient(
+        ellipse,
+        rgba(108,99,255,.12),
+        transparent 70%
+      );
+      pointer-events: none;
+    }
+
+    .final-cta h2 {
+      font-size: clamp(2.2rem, 6vw, 4rem);
+      font-weight: 900;
+      line-height: 1.05;
+      letter-spacing: -.045em;
+      margin-bottom: 1rem;
+    }
+
+    .final-cta p {
+      color: var(--muted);
+      margin-bottom: 2rem;
+      font-size: 14px;
+    }
+
+    /* =========================
+       FOOTER
+    ========================= */
+
+    footer {
+      text-align: center;
+      padding: 2.2rem 1.5rem;
+      border-top: 1px solid var(--border);
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .footer-logo {
+      font-weight: 900;
+      letter-spacing: .1em;
+      font-size: 16px;
+      margin-bottom: .55rem;
+    }
+
+    .footer-links {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-top: .9rem;
+    }
+
+    .footer-links a {
+      color: var(--muted);
+      text-decoration: none;
+      transition: color .2s ease;
+    }
+
+    .footer-links a:hover {
+      color: var(--text);
+    }
+
+    .footer-copy {
+      margin-top: 1rem;
+      color: var(--muted-2);
+    }
+
+    /* =========================
+       RESPONSIVE
+    ========================= */
+
+    @media (max-width: 850px) {
+      .steps {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .pricing-grid {
+        grid-template-columns: 1fr;
+        max-width: 520px;
+        margin-left: auto;
+        margin-right: auto;
+      }
+
+      .reports-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 600px) {
+      nav {
+        padding: .85rem 1rem;
+      }
+
+      .nav-link {
+        display: none;
+      }
+
+      .hero {
+        padding: 4rem 1rem 3rem;
+      }
+
+      .hero-title {
+        font-size: clamp(2.5rem, 13vw, 4rem);
+      }
+
+      .hero-desc {
+        font-size: .98rem;
+      }
+
+      .hero-actions {
+        flex-direction: column;
+        align-items: stretch;
+        max-width: 330px;
+        margin-left: auto;
+        margin-right: auto;
+      }
+
+      .primary-btn,
+      .secondary-btn {
+        width: 100%;
+      }
+
+      .stats {
+        gap: 1.8rem;
+        padding: 2rem 1rem;
+      }
+
+      .stat-item {
+        min-width: 90px;
+      }
+
+      .stat-num {
+        font-size: 1.65rem;
+      }
+
+      .section {
+        padding: 4rem 1rem;
+      }
+
+      .features-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .steps {
+        grid-template-columns: 1fr;
+      }
+
+      .waitlist-form {
+        flex-direction: column;
+      }
+
+      .waitlist-input,
+      .waitlist-btn {
+        width: 100%;
+      }
+
+      .score-preview {
+        padding: 1.5rem;
+      }
+
+      .score-number {
+        font-size: 70px;
+      }
+
+      .founder {
+        padding: 1.6rem;
+      }
+
+      .founder-quote {
+        font-size: 1rem;
+      }
+
+      .launch-offer-inner {
+        padding: 1rem;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- =========================
+       NAVIGATION
+  ========================== -->
+
+  <nav>
+    <a href="#" class="nav-logo">
+      <span>VEKTRA</span>
+    </a>
+
+    <div class="nav-actions">
+      <a href="#pricing" class="nav-link">Pricing</a>
+      <a href="#how-it-works" class="nav-link">How it works</a>
+      <a href="https://meegaw-roophy.github.io/85NAWFBOUND/app/" class="nav-cta">
+        Try VEKTRA
+      </a>
+    </div>
+  </nav>
+
+
+  <!-- =========================
+       HERO
+  ========================== -->
+
+  <section class="hero">
+
+    <div class="hero-badge">
+      🚀 Launching August 2026!
+    </div>
+
+    <h1 class="hero-title">
+      Stop Guessing.<br>
+      <span class="gradient">Know Your Trajectory.</span>
+    </h1>
+
+    <p class="hero-desc">
+      VEKTRA turns your daily life data into a measurable picture of where
+      you're actually going. Track your <strong>mind, body, money,
+      execution and growth</strong> — then see the patterns you normally miss.
+    </p>
+
+    <div class="hero-actions">
+      <a
+        href="https://meegaw-roophy.github.io/85NAWFBOUND/app/"
+        class="primary-btn"
+      >
+        Try VEKTRA Free →
+      </a>
+
+      <a href="#pricing" class="secondary-btn">
+        See Launch Pricing
+      </a>
+    </div>
+
+    <div class="hero-note">
+      Start free. Build your data. Upgrade when you want deeper analysis.
+    </div>
+
+
+    <!-- Launch Offer -->
+
+    <div class="launch-offer">
+      <div class="launch-offer-inner">
+
+        <div class="offer-label">
+          🔥 Founding Launch Offer....25% OFF!!
         </div>
 
-        <!-- Interactive Form Layer -->
-        <form id="auth-gate-form" class="space-y-6">
-            <div>
-                <label class="block text-3xs font-bold tracking-wider text-zinc-400 uppercase mb-2">FOUNDER IDENTIFIER</label>
-                <input type="text" id="root-id" autocomplete="off" required 
-                       class="w-full bg-zinc-950 border border-zinc-800 rounded px-4 py-3 text-sm text-white font-mono outline-none neon-glow transition duration-200" 
-                       placeholder="elvis_root">
-            </div>
+        <div class="offer-title">
+          Get <span>4 months for the price of 3.</span>
+        </div>
 
-            <div>
-                <label class="block text-3xs font-bold tracking-wider text-zinc-400 uppercase mb-2">CRYPTOGRAPHIC PASSPHRASE</label>
-                <input type="password" id="secret-key" required 
-                       class="w-full bg-zinc-950 border border-zinc-800 rounded px-4 py-3 text-sm text-white font-mono outline-none neon-glow transition duration-200" 
-                       placeholder="••••••••••••">
-            </div>
+        <div class="offer-desc">
+          Available for first early subscribers until September 9, 2026<i>(Offer may end before deadline arrives, so purchase early)</i>.
+          Regional pricing may apply.
+        </div>
 
-            <!-- Error Notification Banner -->
-            <div id="auth-error-banner" class="hidden bg-red-950/40 border border-red-500/30 text-red-400 text-xs rounded p-3 font-mono text-center animate-pulse">
-                ACCESS DENIED: SEGMENTATION FAULT SEED INVALID.
-            </div>
+        <div class="offer-countdown" id="offer-countdown">
+          Loading...
+        </div>
 
-            <button type="submit" 
-                    class="w-full bg-emerald-500/10 hover:bg-emerald-500 text-emerald-400 hover:text-white border border-emerald-500/30 py-3 rounded text-xs font-bold tracking-widest uppercase font-mono transition duration-300">
-                EXECUTE HANDSHAKE
-            </button>
-        </form>
+      </div>
+    </div>
+
+
+    <!-- Waitlist -->
+
+    <div class="waitlist-block">
+
+      <form class="waitlist-form" id="waitlist-form">
+
+        <input
+          type="email"
+          class="waitlist-input"
+          id="email-input"
+          placeholder="your@email.com"
+          autocomplete="email"
+          required
+        >
+
+        <button type="submit" class="waitlist-btn" id="waitlist-btn">
+          Get Launch Updates
+        </button>
+
+      </form>
+
+      <div class="waitlist-note">
+        No spam. Just launch updates and early-access information.
+      </div>
+
+      <div class="waitlist-success" id="waitlist-success">
+        ✓ You're on the list. We'll keep you posted. 🔥
+      </div>
 
     </div>
 
-    <!-- Interface Linkage Logic -->
-    <script>
-        document.getElementById('auth-gate-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const rootId = document.getElementById('root-id').value;
-            const secretKey = document.getElementById('secret-key').value;
-            const errorBanner = document.getElementById('auth-error-banner');
-            
-            errorBanner.classList.add('hidden');
+  </section>
 
-            try {
-                // Fetch direct handshake validation from your asynchronous FastAPI endpoint
-                const response = await fetch('/v1/secure-dashboard/authorize', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ root_id: rootId, secret_key: secretKey })
-                });
 
-                if (!response.ok) {
-                    throw new Error("UNAUTHORIZED_NODE");
-                }
+  <!-- =========================
+       STATS
+  ========================== -->
 
-                const data = await response.json();
-                
-                if (data.status === "AUTHORIZED") {
-                    // Cache the administrative hex token securely in session memory
-                    localStorage.setItem('vektra_admin_auth_token', data.admin_hex_token);
-                    // Clear the entry path directly to your penthouse metrics control panel
-                    window.location.href = '/admin-mission-control.html';
-                }
+  <div class="stats">
 
-            } catch (err) {
-                errorBanner.classList.remove('hidden');
-                document.getElementById('secret-key').value = '';
-            }
-        });
-    </script>
+    <div class="stat-item">
+      <div class="stat-num">65+</div>
+      <div class="stat-label">Potential daily data points</div>
+    </div>
+
+    <div class="stat-item">
+      <div class="stat-num">5</div>
+      <div class="stat-label">Core life engines</div>
+    </div>
+
+    <div class="stat-item">
+      <div class="stat-num">0–100</div>
+      <div class="stat-label">VEKTRA trajectory score</div>
+    </div>
+
+    <div class="stat-item">
+      <div class="stat-num">AI</div>
+      <div class="stat-label">Pattern & report analysis</div>
+    </div>
+
+  </div>
+
+
+  <!-- =========================
+       PROBLEM / FEATURES
+  ========================== -->
+
+  <section class="section">
+
+    <div class="section-label">
+      The Problem
+    </div>
+
+    <h2 class="section-title">
+      You can be busy every day<br>
+      and still be going <span class="gradient">nowhere.</span>
+    </h2>
+
+    <p class="section-desc">
+      You work. You plan. You make decisions. You chase goals.
+      But without looking at the patterns behind your days, it is easy
+      to confuse movement with progress.
+      You be moving in a path that really don't define you.
+      Maybe you in stagnant burnout or tight donut, just burning rubber and your fuel
+      when you could use to launch on a drag race which is finding your Vector!
+    </p>
+
+
+    <div class="features-grid">
+
+      <div class="feature-card">
+        <div class="feature-icon">🎯</div>
+
+        <div class="feature-title">
+          Your VEKTRA Score
+        </div>
+
+        <div class="feature-desc">
+          A 0–100 score designed to give you a simple picture of your
+          current trajectory across the areas that matter.
+        </div>
+      </div>
+
+
+      <div class="feature-card">
+        <div class="feature-icon">🧠</div>
+
+        <div class="feature-title">
+          Five Life Engines
+        </div>
+
+        <div class="feature-desc">
+          Financial, mental, execution, body and growth signals combine
+          to create a broader picture instead of another isolated habit streak.
+        </div>
+      </div>
+
+
+      <div class="feature-card">
+        <div class="feature-icon">📊</div>
+
+        <div class="feature-title">
+          Reports That Interpret Your Data
+        </div>
+
+        <div class="feature-desc">
+          VEKTRA turns accumulated logs into summaries, trends,
+          strengths, weaknesses, patterns and practical next steps.
+        </div>
+      </div>
+
+
+      <div class="feature-card">
+        <div class="feature-icon">💰</div>
+
+        <div class="feature-title">
+          Financial Awareness
+        </div>
+
+        <div class="feature-desc">
+          Track income, expenses, savings, burn rate, net worth and
+          survival runway alongside the rest of your life.
+        </div>
+      </div>
+
+
+      <div class="feature-card">
+        <div class="feature-icon">🔥</div>
+
+        <div class="feature-title">
+          Consistency Matters
+        </div>
+
+        <div class="feature-desc">
+          Your history becomes more useful as you keep logging.
+          VEKTRA is built around observing your trajectory over time,
+          not judging one isolated day(but a pattern).
+        </div>
+      </div>
+
+
+      <div class="feature-card">
+        <div class="feature-icon">🔒</div>
+
+        <div class="feature-title">
+          Your Data. Your Truth.
+        </div>
+
+        <div class="feature-desc">
+          Honest inputs create better analysis. VEKTRA is designed to
+          show patterns without pretending every day was perfect.
+        </div>
+      </div>
+
+    </div>
+
+  </section>
+
+
+  <!-- =========================
+       SCORE PREVIEW
+  ========================== -->
+
+  <section class="section score-section">
+
+    <div class="section-label">
+      The Score
+    </div>
+
+    <h2 class="section-title">
+      One number.<br>
+      <span class="gradient">A bigger picture.</span>
+    </h2>
+
+    <p class="section-desc">
+      The score is not meant to define you. It is a signal.
+      VEKTRA uses the underlying data to help you understand
+      what is strengthening your trajectory — and what is pulling it back.
+      So we both work on them effectively.
+    </p>
+
+
+    <div class="score-preview">
+
+      <div class="score-label">
+        VEKTRA Score
+      </div>
+
+      <div class="score-number">
+        74
+      </div>
+
+      <div class="score-sub">
+        ↑ Rising trajectory
+      </div>
+
+
+      <div class="score-bars">
+
+        <div class="bar-row">
+          <span class="bar-label">Financial</span>
+
+          <div class="bar-track">
+            <div
+              class="bar-fill"
+              style="width:65%;background:#22c55e"
+            ></div>
+          </div>
+
+          <span class="bar-val" style="color:#22c55e">
+            65
+          </span>
+        </div>
+
+
+        <div class="bar-row">
+          <span class="bar-label">Mental</span>
+
+          <div class="bar-track">
+            <div
+              class="bar-fill"
+              style="width:82%;background:#6c63ff"
+            ></div>
+          </div>
+
+          <span class="bar-val" style="color:#6c63ff">
+            82
+          </span>
+        </div>
+
+
+        <div class="bar-row">
+          <span class="bar-label">Execution</span>
+
+          <div class="bar-track">
+            <div
+              class="bar-fill"
+              style="width:78%;background:#ec4899"
+            ></div>
+          </div>
+
+          <span class="bar-val" style="color:#ec4899">
+            78
+          </span>
+        </div>
+
+
+        <div class="bar-row">
+          <span class="bar-label">Body</span>
+
+          <div class="bar-track">
+            <div
+              class="bar-fill"
+              style="width:90%;background:#f59e0b"
+            ></div>
+          </div>
+
+          <span class="bar-val" style="color:#f59e0b">
+            90
+          </span>
+        </div>
+
+
+        <div class="bar-row">
+          <span class="bar-label">Growth</span>
+
+          <div class="bar-track">
+            <div
+              class="bar-fill"
+              style="width:71%;background:#06b6d4"
+            ></div>
+          </div>
+
+          <span class="bar-val" style="color:#06b6d4">
+            71
+          </span>
+        </div>
+
+      </div>
+
+
+      <div class="score-insight">
+
+        <div class="score-insight-label">
+          Example insight
+        </div>
+
+        <div class="score-insight-text">
+          Strong execution is being supported by high energy,
+          but recovery may become a constraint if sleep continues declining.
+        </div>
+
+      </div>
+
+    </div>
+
+  </section>
+
+
+  <!-- =========================
+       REPORTS
+  ========================== -->
+
+  <section class="section">
+
+    <div class="section-label">
+      The Reports
+    </div>
+
+    <h2 class="section-title">
+      Your data becomes<br>
+      <span class="gradient">something useful.</span>
+    </h2>
+
+    <p class="section-desc">
+      VEKTRA isn't built just to collect numbers.
+      The accumulated data becomes the foundation for increasingly
+      useful summaries, comparisons, pattern detection and reports.
+    </p>
+
+
+    <div class="reports-grid">
+
+      <div class="report-card">
+
+        <div class="report-frequency">
+          Daily
+        </div>
+
+        <div class="report-title">
+          Daily Summary
+        </div>
+
+        <div class="report-desc">
+          A quick view of the day: your score, key signals,
+          notable strengths and areas that deserve attention.
+        </div>
+
+        <div class="report-tag">
+          Fast feedback
+        </div>
+
+      </div>
+
+
+      <div class="report-card">
+
+        <div class="report-frequency">
+          Weekly
+        </div>
+
+        <div class="report-title">
+          Weekly AI Report
+        </div>
+
+        <div class="report-desc">
+          Your week interpreted: wins, recurring patterns,
+          weaknesses, silent killers, trajectory changes and
+          a focused directive for what comes next.
+        </div>
+
+        <div class="report-tag">
+          Deeper analysis
+        </div>
+
+      </div>
+
+
+      <div class="report-card">
+
+        <div class="report-frequency">
+          Monthly
+        </div>
+
+        <div class="report-title">
+          Monthly Review
+        </div>
+
+        <div class="report-desc">
+          Step back from individual days and examine the larger
+          direction: trends, consistency, financial movement,
+          recurring behaviour and long-term trajectory.
+        </div>
+
+        <div class="report-tag">
+          Long-term view
+        </div>
+
+      </div>
+
+
+      <div class="report-card">
+
+        <div class="report-frequency">
+          Special
+        </div>
+
+        <div class="report-title">
+          Birthday Review
+        </div>
+
+        <div class="report-desc">
+          A personalized visual reflection of your journey —
+          designed to turn your accumulated data into something
+          memorable.
+        </div>
+
+        <div class="report-tag">
+          Your journey
+        </div>
+
+      </div>
+
+    </div>
+
+  </section>
+
+
+  <!-- =========================
+       HOW IT WORKS
+  ========================== -->
+
+  <section class="section" id="how-it-works">
+
+    <div class="section-label">
+      How It Works
+    </div>
+
+    <h2 class="section-title">
+      Simple daily habit.<br>
+      <span class="gradient">Increasingly useful data.</span>
+    </h2>
+
+    <div class="steps">
+
+      <div class="step">
+
+        <div class="step-num">
+          1
+        </div>
+
+        <div class="step-title">
+          Set your North Star
+        </div>
+
+        <div class="step-desc">
+          Tell VEKTRA what you're trying to achieve and,
+          where relevant, when you want to achieve it.
+        </div>
+
+      </div>
+
+
+      <div class="step">
+
+        <div class="step-num">
+          2
+        </div>
+
+        <div class="step-title">
+          Log your day
+        </div>
+
+        <div class="step-desc">
+          Record the information that describes your day —
+          from mood and energy to money, focus, decisions and more.
+        </div>
+
+      </div>
+
+
+      <div class="step">
+
+        <div class="step-num">
+          3
+        </div>
+
+        <div class="step-title">
+          See your signals
+        </div>
+
+        <div class="step-desc">
+          Your score and engine breakdown help you see
+          where you're strong and where you're leaking momentum.
+        </div>
+
+      </div>
+
+
+      <div class="step">
+
+        <div class="step-num">
+          4
+        </div>
+
+        <div class="step-title">
+          Act on the pattern
+        </div>
+
+        <div class="step-desc">
+          Reports turn accumulated information into observations,
+          priorities and decisions you can actually use.
+        </div>
+
+      </div>
+
+    </div>
+
+  </section>
+
+
+  <!-- =========================
+       PRICING
+  ========================== -->
+
+  <section class="section" id="pricing">
+
+    <div class="pricing-header">
+
+      <div class="section-label">
+        Pricing
+      </div>
+
+      <h2 class="section-title">
+        Start free.<br>
+        <span class="gradient">Go deeper when you're ready.</span>
+      </h2>
+
+      <p class="section-desc">
+        VEKTRA uses regional pricing where applicable, so the final
+        amount can vary by market and payment location.
+      </p>
+
+    </div>
+
+
+    <div class="pricing-grid">
+
+
+      <!-- FREE -->
+
+      <div class="pricing-card">
+
+        <div class="pricing-name">
+          Free
+        </div>
+
+        <div class="pricing-price">
+          $0
+        </div>
+
+        <div class="pricing-period">
+          forever
+        </div>
+
+        <ul class="pricing-features">
+
+          <li>
+            Basic daily tracking
+          </li>
+
+          <li>
+            VEKTRA score
+          </li>
+
+          <li>
+            Basic non-AI daily summary
+          </li>
+
+          <li>
+            Limited history
+          </li>
+
+          <li>
+            One AI taste report
+          </li>
+
+          <li>
+            Ads supported
+          </li>
+
+        </ul>
+
+      </div>
+
+
+      <!-- VECTOR -->
+
+      <div class="pricing-card featured">
+
+        <div class="pricing-name">
+          Vector
+          <span class="pricing-badge">
+            MOST POPULAR
+          </span>
+        </div>
+
+        <div class="pricing-price">
+          $20
+        </div>
+
+        <div class="pricing-period">
+          per month · base price
+        </div>
+
+        <ul class="pricing-features">
+
+          <li>
+            Ad-free experience
+          </li>
+
+          <li>
+            Unlimited logging
+          </li>
+
+          <li>
+            AI-powered daily summaries
+          </li>
+
+          <li>
+            Weekly AI reports
+          </li>
+
+          <li>
+            Monthly reviews
+          </li>
+
+          <li>
+            Full score breakdown
+          </li>
+
+          <li>
+            Financial engine
+          </li>
+
+          <li>
+            Smart AI insights
+          </li>
+
+          <li>
+            Streak tracking
+          </li>
+
+        </ul>
+
+
+        <div class="launch-price">
+
+          <div class="launch-price-label">
+            Founding launch offer
+          </div>
+
+          <div class="launch-price-text">
+            4 months for the price of 3
+          </div>
+
+          <div class="launch-price-sub">
+            Available until September 9, 2026.
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <!-- APEX -->
+
+      <div class="pricing-card apex">
+
+        <div class="pricing-name">
+          Apex
+        </div>
+
+        <div class="pricing-price">
+          $50
+        </div>
+
+        <div class="pricing-period">
+          per month · base price
+        </div>
+
+        <ul class="pricing-features">
+
+          <li>
+            Everything in Vector
+          </li>
+
+          <li>
+            Higher AI usage allowance
+          </li>
+
+          <li>
+            Deeper internalized reports
+          </li>
+
+          <li>
+            Advanced trajectory analysis
+          </li>
+
+          <li>
+            Quarterly strategy review
+          </li>
+
+          <li>
+            Priority support
+          </li>
+
+          <li>
+            More advanced AI insights
+          </li>
+
+        </ul>
+
+
+        <div class="launch-price">
+
+          <div class="launch-price-label">
+            Founding launch offer
+          </div>
+
+          <div class="launch-price-text">
+            4 months for the price of 3
+          </div>
+
+          <div class="launch-price-sub">
+            Available until September 9, 2026.
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <div class="pricing-footnote">
+      Final subscription price is shown at checkout and may reflect
+      regional pricing, taxes, payment-provider charges or applicable offers.
+    </div>
+
+  </section>
+
+
+  <!-- =========================
+       FOUNDER
+  ========================== -->
+
+  <section class="section founder-section">
+
+    <div class="section-label">
+      From the Founder
+    </div>
+
+    <div class="founder">
+
+      <div class="founder-quote">
+         “I engineered VEKTRA because human brains are hardwired to mistake comfort for stability, and pretending everything is fine doesn't scale systems. The point isn't to discourage you with cold data—it's to force the invisible trajectories of your life into plain sight. Vector = Magnitude *Direction. If you aren't mathematically tracking your patterns, gravity wins.”
+      </div>
+
+      <div class="founder-name">
+        Roophy
+      </div>
+
+      <div class="founder-title">
+        Founder, VEKTRA
+      </div>
+
+    </div>
+
+  </section>
+
+
+  <!-- =========================
+       ORIGIN STORY
+  ========================== -->
+
+  <section class="section origin">
+
+    <div class="section-label">
+        Why VEKTRA Exists
+    </div>
+
+    <h2 class="section-title" style="line-height: 1.2;">
+        Built from the<br>
+        <span class="gradient"> sticky muddy trenches!</span><br>
+        <i style="font-size: 1.5rem; font-weight: 300; color: #888; display: block; margin-top: 5px;">Calculated out of necessity.</i>
+    </h2>
+
+    <div class="origin-copy" style="font-family: sans-serif; color: #d4d4d8; line-height: 1.7; max-width: 680px;">
+
+        <p style="margin-bottom: 20px;">
+        VEKTRA started as a personal self-auditing idea:
+        <span class="origin-highlight" style="color: #3b82f6; font-weight: 600;">
+            what if the patterns in everyday life could be mathematically measured,
+            compared, and understood instead of simply felt?
+        </span>
+        </p>
+
+        <p style="margin-bottom: 20px;">
+        It was built right here from the 254 with no team behind it —
+        starting with the baseline belief that useful self-analysis shouldn't
+        require a giant corporation to create.
+        </p>
+
+        <p style="margin-bottom: 20px;">
+        Its foundational engine is heavily influenced by a background in
+        competitive, Olympiad-level mathematics (IMO & KMO) and advanced problem solving: 
+        breaking a complicated problem down into raw signals, mapping the relationships between them,
+        and utilizing the results to execute better decisions.
+        </p>
+
+        <p style="margin-bottom: 20px;">
+        VEKTRA isn't here to tell you that every day is amazing, check if you drank water, woke up at 5am or force you to copy other people's scripts.
+        Nah! 
+        We believe every individual has their own unique trajectory—which is exactly why we expose it by calculating your true vector. 
+        It is simply here to help you understand what your days are actually building.
+        </p>
+
+        <p style="margin-bottom: 20px; border-left: 2px solid #ef4444; padding-left: 15px; color: #a1a1aa;">
+        An easy example for the performance-car lovers like me: a high-horsepower Rear-Wheel Drive (RWD) car e.g Demon 170 can waste rubber, time, and fuel trying to find grip on an unprepared street. By the time it hooks up, the All-Wheel Drive (AWD) opponents cars may already be gone. Over a quarter-mile, the RWD car can look like it's losing badly. Extend that same race to a half-mile, however, and the outcome can change completely.
+        Now change one variable: put that exact same RWD car on a properly prepared drag strip. Suddenly, the wasted motion disappears, the car hooks, and the same machine can produce an entirely different launch (1.66s). This isn't really about Demon 170, RWD vs. AWD, or drag racing. It's about trajectory. If you judge yourself using someone else's quarter-mile, while your own path is built for the half-mile, you may spend your life thinking you're behind. VEKTRA is built to help you understand the surface you're running on, the direction you're moving, and whether your effort is actually taking you where you wanna go.
+        </p>
+    </div>
+
+  </section>
+
+
+  <!-- =========================
+       FINAL CTA
+  ========================== -->
+
+  <section class="final-cta">
+
+    <h2>
+      Your vector is<br>
+      <span class="gradient">waiting..!</span>
+    </h2>
+
+    <p>
+      Start collecting the data. See the patterns. Know your trajectory!
+    </p>
+
+    <div class="hero-actions">
+
+      <a
+        href="https://meegaw-roophy.github.io/85NAWFBOUND/app/"
+        class="primary-btn"
+      >
+        Try VEKTRA Free →
+      </a>
+
+      <a
+        href="#waitlist-form"
+        class="secondary-btn"
+      >
+        Get Launch Updates
+      </a>
+
+    </div>
+
+  </section>
+
+
+  <!-- =========================
+       FOOTER
+  ========================== -->
+
+  <footer>
+
+    <div class="footer-logo">
+      <span class="gradient">
+        VEKTRA
+      </span>
+    </div>
+
+    <div>
+      Vector = Magnitude × Direction
+    </div>
+
+    <div class="footer-links">
+
+      <a
+        href="https://meegaw-roophy.github.io/85NAWFBOUND/app/"
+      >
+        VEKTRA App
+      </a>
+
+      <a href="#pricing">
+        Pricing
+      </a>
+
+      <a href="#how-it-works">
+        How It Works
+      </a>
+
+    </div>
+
+    <div class="footer-copy">
+      © 2026 VEKTRA. Built with purpose.
+    </div>
+
+  </footer>
+
+
+  <!-- =========================
+       JAVASCRIPT
+  ========================== -->
+
+  <script>
+
+    /* =========================
+       WAITLIST
+    ========================== */
+
+    const waitlistForm = document.getElementById("waitlist-form");
+    const waitlistBtn = document.getElementById("waitlist-btn");
+    const waitlistSuccess = document.getElementById("waitlist-success");
+
+    waitlistForm.addEventListener("submit", async function(event) {
+
+      event.preventDefault();
+
+      const emailInput = document.getElementById("email-input");
+      const email = emailInput.value.trim();
+
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+
+        emailInput.style.borderColor = "#ef4444";
+
+        setTimeout(() => {
+          emailInput.style.borderColor = "";
+        }, 2000);
+
+        return;
+      }
+
+      waitlistBtn.textContent = "Joining...";
+      waitlistBtn.disabled = true;
+
+      try {
+
+        const response = await fetch(
+          "https://formspree.io/f/xeebwojj",
+          {
+            method: "POST",
+
+            headers: {
+              "Content-Type": "application/json",
+              "Accept": "application/json"
+            },
+
+            body: JSON.stringify({
+              email: email,
+              source: "vektra_landing_page",
+              date: new Date().toISOString()
+            })
+          }
+        );
+
+        if (response.ok) {
+
+          emailInput.value = "";
+
+          waitlistSuccess.style.display = "block";
+
+          waitlistBtn.textContent = "✓ You're In!";
+
+        } else {
+
+          waitlistBtn.textContent = "Try Again";
+          waitlistBtn.disabled = false;
+
+        }
+
+      } catch (error) {
+
+        console.error("Waitlist error:", error);
+
+        waitlistBtn.textContent = "Try Again";
+        waitlistBtn.disabled = false;
+
+      }
+
+    });
+
+
+    /* =========================
+       COUNTDOWN
+    ========================== */
+
+    function updateCountdown() {
+
+      const countdownElement =
+        document.getElementById("offer-countdown");
+
+      /*
+        Launch offer ends:
+        September 9, 2026 at 23:59:59.
+      */
+
+      const deadline =
+        new Date("2026-09-09T23:59:59+03:00").getTime();
+
+      const now =
+        new Date().getTime();
+
+      const difference =
+        deadline - now;
+
+
+      if (difference <= 0) {
+
+        countdownElement.textContent =
+          "Launch offer ended";
+
+        return;
+
+      }
+
+
+      const days =
+        Math.floor(
+          difference / (1000 * 60 * 60 * 24)
+        );
+
+      const hours =
+        Math.floor(
+          (difference % (1000 * 60 * 60 * 24))
+          / (1000 * 60 * 60)
+        );
+
+      const minutes =
+        Math.floor(
+          (difference % (1000 * 60 * 60))
+          / (1000 * 60)
+        );
+
+
+      countdownElement.textContent =
+        `${days}d ${hours}h ${minutes}m remaining`;
+
+    }
+
+
+    updateCountdown();
+
+    setInterval(updateCountdown, 60000);
+
+
+  </script>
+
 </body>
 </html>

@@ -221,6 +221,7 @@ class PaystackPaymentRequest(BaseModel):
     currency: Optional[str] = 'KES'
     callback_url: Optional[str] = None
     tier: Optional[str] = 'tier1'
+    special_offer: Optional[bool] = False
 
 
 class Token(BaseModel):

@@ -7,7 +7,7 @@ from fastapi.testclient import TestClient
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "backend")))
 
 from app.main import app
-from app.api.v1.pricing import calculate_discount, days_to_local_price
+from app.api.v1.pricing import calculate_discount, days_to_local_price, local_price_to_days
 from app.schemas import StripePaymentRequest, PaystackPaymentRequest
 from app.services.paystack_service import verify_webhook_signature
 
@@ -38,12 +38,25 @@ def test_pricing_uses_simple_total_and_savings():
     assert result["total"] == pytest.approx(result["full_price"])
 
 
+def test_amount_pricing_round_trips_forward_curve():
+    for days in (30, 61, 183, 366):
+        amount = days_to_local_price(days, "tier1", "US", "USD")["total"]
+        assert local_price_to_days(amount, "tier1", "US", "USD") == days
+
+
 def test_payment_requests_accept_tier_metadata():
     stripe_req = StripePaymentRequest(customer_id="cus_123", price_id="price_123", tier="tier2")
     paystack_req = PaystackPaymentRequest(email="user@example.com", amount=1500, currency="KES", tier="tier1")
 
     assert stripe_req.tier == "tier2"
     assert paystack_req.tier == "tier1"
+
+
+def test_paystack_request_accepts_quick_money_offer():
+    request = PaystackPaymentRequest(
+        email="user@example.com", amount=60, currency="USD", special_offer=True
+    )
+    assert request.special_offer is True
 
 
 def test_paystack_signature_verification():

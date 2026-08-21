@@ -239,6 +239,33 @@ def days_to_local_price(days: int, tier: str, country_code: str, currency: str) 
         "currency": currency,
     }
 
+
+def local_price_to_days(amount: float, tier: str, country_code: str, currency: str) -> int:
+    """Find the integer duration whose forward price is closest to an amount.
+
+    The discount term contains ``days`` both linearly and as a power, so there
+    is no useful elementary closed-form solution. Binary search is exact for
+    the monotonic forward pricing curve and keeps both directions consistent.
+    """
+    low, high = 30, 366
+    while low <= high:
+        middle = (low + high) // 2
+        total = days_to_local_price(middle, tier, country_code, currency)["total"]
+        if total < amount:
+            low = middle + 1
+        elif total > amount:
+            high = middle - 1
+        else:
+            return middle
+
+    candidates = [max(30, min(366, low)), max(30, min(366, high))]
+    return min(
+        candidates,
+        key=lambda days: abs(
+            days_to_local_price(days, tier, country_code, currency)["total"] - amount
+        ),
+    )
+
 # ─────────────────────────────────────────────
 #  API MODELS
 # ─────────────────────────────────────────────
@@ -248,6 +275,7 @@ class PriceRequest(BaseModel):
     amount: Optional[float] = None
     currency: Optional[str] = "USD"
     country_code: Optional[str] = "DEFAULT"
+    special_offer: Optional[bool] = False  # Quick Money Strategy offer
 
 
 class PriceResponse(BaseModel):
@@ -274,48 +302,47 @@ async def calculate_price(
 ):
     """Calculate final price — single source of truth."""
     
-    # If amount is provided, calculate days from amount (reverse calculation)
-    if req.amount is not None:
-        fx = get_fx_rates()
-        ppp = PPP_FACTORS.get(req.country_code, PPP_FACTORS["DEFAULT"])
-        base_usd = BASE_USD_MONTHLY.get(req.tier, BASE_USD_MONTHLY["tier1"])
-        monthly_usd = base_usd * ppp
-        rate = fx.get(req.currency, 1.0)
-        monthly_local = monthly_usd * rate  # This is X (monthly price)
-        
-        # Reverse calculation using the formula: amount = (X*d*2/61) * (1 - ((d-30)/336)^k / m)
-        # Rearranged to solve for d using binary search
-        k = 1.9
-        m = 6 if req.tier == "tier1" else 5 if req.tier == "tier2" else 4
-        
-        def calculate_total_for_days(d):
-            """Calculate total price for given days using forward formula"""
-            discount_rate = ((d - 30) / 336) ** k / m
-            discount_rate = min(discount_rate, 0.25)  # Cap at 25%
-            total = (monthly_local * d * 2 / 61) * (1 - discount_rate)
-            return total
-        
-        # Binary search to find days that match the amount
-        low, high = 30, 366
-        days = 30
-        tolerance = 0.01
-        
-        for _ in range(50):  # Max iterations
-            mid = (low + high) / 2
-            total_at_mid = calculate_total_for_days(mid)
-            
-            if abs(total_at_mid - req.amount) < tolerance:
-                days = int(mid)
-                break
-            
-            if total_at_mid < req.amount:
-                low = mid
-            else:
-                high = mid
-        
-        days = max(30, min(366, int(days)))
-        
-        # Calculate with the found days
+    # Check if special offer is active
+    campaign_timezone = datetime.timezone(datetime.timedelta(hours=3))
+    SPECIAL_OFFER_DEADLINE = datetime.datetime(2026, 9, 9, 23, 59, 59, tzinfo=campaign_timezone)
+    now = datetime.datetime.now(campaign_timezone)
+    is_special_offer_active = req.special_offer and now < SPECIAL_OFFER_DEADLINE
+    
+    # If special offer is active, force 120 days (4 months) and apply 25% discount
+    if is_special_offer_active:
+        req.days = 120  # 4 months (3 paid + 1 free)
+    
+    # Quick Money is a fixed campaign product: charge three months and grant
+    # four months of access. It must not use the normal day/amount calculator.
+    if is_special_offer_active:
+        monthly_price = days_to_local_price(
+            30, req.tier, req.country_code or "DEFAULT", req.currency or "USD"
+        )
+        result = {**monthly_price}
+        result["days"] = 120
+        result["full_price"] = round(monthly_price["monthly_local"] * 4, 2)
+        result["total"] = round(monthly_price["monthly_local"] * 3, 2)
+        result["discount_amount"] = round(result["full_price"] - result["total"], 2)
+        result["you_save"] = result["discount_amount"]
+        result["discount_rate_pct"] = 25.0
+        result["monthly_equivalent"] = round(result["total"] / 4, 2)
+        result["bonus_days"] = 30
+
+    # If amount is provided, calculate days from the same forward curve.
+    elif req.amount is not None:
+        minimum_amount = days_to_local_price(
+            30, req.tier, req.country_code or "DEFAULT", req.currency or "USD"
+        )["total"]
+        maximum_amount = days_to_local_price(
+            366, req.tier, req.country_code or "DEFAULT", req.currency or "USD"
+        )["total"]
+        requested_amount = max(minimum_amount, min(maximum_amount, req.amount))
+        days = local_price_to_days(
+            amount=requested_amount,
+            tier=req.tier,
+            country_code=req.country_code or "DEFAULT",
+            currency=req.currency or "USD",
+        )
         result = days_to_local_price(
             days=days,
             tier=req.tier,
@@ -323,8 +350,17 @@ async def calculate_price(
             currency=req.currency or "USD",
         )
         
-        # Override total with user's entered amount (this is what they pay)
-        result["total"] = req.amount
+        # The entered amount is the checkout amount; derive the displayed
+        # savings from that amount and the resolved duration.
+        result["total"] = round(requested_amount, 2)
+        result["discount_amount"] = round(result["full_price"] - result["total"], 2)
+        result["you_save"] = result["discount_amount"]
+        result["discount_rate_pct"] = round(
+            (result["discount_amount"] / result["full_price"]) * 100
+            if result["full_price"] else 0,
+            2,
+        )
+        result["monthly_equivalent"] = round(result["total"] / (days / 30.5), 2)
         
     else:
         # Original days-based calculation
@@ -334,8 +370,13 @@ async def calculate_price(
             country_code=req.country_code or "DEFAULT",
             currency=req.currency or "USD",
         )
-
-    now = datetime.datetime.now(datetime.timezone.utc)
+        
+    # Set expiry date to Jan 1, 2027 for special offer, otherwise normal calculation
+    if is_special_offer_active:
+        expires_at = datetime.datetime(2027, 1, 1, 23, 59, 59, tzinfo=campaign_timezone).isoformat()
+    else:
+        expires_at = result["expires_at"]
+    
     price_locked_until = (now + datetime.timedelta(minutes=15)).isoformat()
 
     return PriceResponse(
@@ -347,7 +388,7 @@ async def calculate_price(
         you_save=result["you_save"],
         discount_rate_pct=result["discount_rate_pct"],
         monthly_equivalent=result["monthly_equivalent"],
-        expires_at=result["expires_at"],
+        expires_at=expires_at,
         price_locked_until=price_locked_until,
         bonus_days=result["bonus_days"],
     )

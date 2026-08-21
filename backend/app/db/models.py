@@ -353,6 +353,11 @@ class Subscription(Base):
     webhook_url             = Column(String(500), nullable=True)  # webhook endpoint
     webhook_secret          = Column(String(255), nullable=True)  # webhook signature secret
     last_webhook_at         = Column(DateTime,    nullable=True)  # last webhook received
+    
+    # ── auto-renewal ─────────────────────────
+    renewal_payment_url     = Column(String(500), nullable=True)  # payment URL for manual renewal completion
+    renewal_payment_id      = Column(String(255), nullable=True)  # payment ID for renewal
+    renewal_expires_at      = Column(DateTime,    nullable=True)  # deadline to complete renewal payment
 
     user = relationship('User', back_populates='subscriptions')
 

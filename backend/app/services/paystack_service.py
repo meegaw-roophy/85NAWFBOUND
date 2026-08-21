@@ -17,13 +17,13 @@ PAYSTACK_BASE = "https://api.paystack.co"
 
 def verify_webhook_signature(payload: bytes, signature: Optional[str], secret: Optional[str] = None) -> bool:
     """Verify Paystack webhook signature using HMAC-SHA512."""
-    secret_value = (secret or settings.PAYSTACK_WEBHOOK_SECRET or "").strip()
+    # Paystack signs with secret key, not a separate webhook secret
+    secret_value = (secret or settings.PAYSTACK_WEBHOOK_SECRET or settings.PAYSTACK_SECRET_KEY or "").strip()
     if not secret_value or not signature:
         return False
 
     expected = hmac.new(secret_value.encode("utf-8"), payload, hashlib.sha512).hexdigest()
     return hmac.compare_digest(expected, signature)
-
 
 def get_headers():
     if not settings.PAYSTACK_SECRET_KEY:

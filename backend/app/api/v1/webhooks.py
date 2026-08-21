@@ -92,6 +92,10 @@ async def paystack_webhook(
         metadata = data.get("metadata", {}) if isinstance(data.get("metadata"), dict) else {}
         user_id = metadata.get("user_id")
         tier = metadata.get("tier", "tier1")
+        special_offer = str(metadata.get("special_offer", "false")).lower() == "true"
+        offer_expires_at = datetime.fromisoformat(
+            metadata["access_expires_at"].replace("Z", "+00:00")
+        ) if special_offer and metadata.get("access_expires_at") else None
 
         if reference:
             payment_result = await db.execute(
@@ -109,6 +113,7 @@ async def paystack_webhook(
             user = user_result.scalar_one_or_none()
             if user:
                 user.tier = tier
+                user.tier_expires_at = offer_expires_at or user.tier_expires_at
                 db.add(user)
                 await db.commit()
 
@@ -120,7 +125,9 @@ async def paystack_webhook(
                 subscription.active = True
                 subscription.provider_subscription_id = reference
                 subscription.last_webhook_at = datetime.utcnow()
-                subscription.expires_at = (subscription.expires_at or datetime.utcnow()) + timedelta(days=subscription.duration_days or 30)
+                subscription.expires_at = offer_expires_at or (
+                    subscription.expires_at or datetime.utcnow()
+                ) + timedelta(days=subscription.duration_days or 30)
                 db.add(subscription)
                 await db.commit()
 
@@ -159,6 +166,9 @@ async def paystack_webhook(
 
 async def check_and_renew_subscriptions(db: AsyncSession):
     """Check for expired subscriptions with auto-renew enabled and renew them"""
+    from app.services.paystack_service import initialize_payment
+    from app import crud
+    
     now = datetime.utcnow()
     
     # Find subscriptions that are expiring within 24 hours and have auto_renew enabled
@@ -172,13 +182,72 @@ async def check_and_renew_subscriptions(db: AsyncSession):
     )
     subscriptions = result.scalars().all()
     
+    renewed_count = 0
     for sub in subscriptions:
-        # TODO: Implement actual renewal logic with Paystack API
-        # For now, just extend the subscription by the original duration
-        if sub.duration_days:
-            sub.expires_at = sub.expires_at + timedelta(days=sub.duration_days)
-            sub.last_webhook_at = now
+        try:
+            # Get user for this subscription
+            user_result = await db.execute(select(User).where(User.id == sub.user_id))
+            user = user_result.scalar_one_or_none()
+            
+            if not user:
+                continue
+            
+            # Calculate renewal amount (use original amount or default)
+            renewal_amount = sub.amount_paid or 1000  # Default to 1000 if no amount stored
+            amount_kobo = int(renewal_amount * 100)
+            
+            # Create a new payment record for renewal
+            payment = await crud.create_payment(db, sub.user_id, {
+                "provider": "paystack",
+                "provider_customer_id": user.email,
+                "amount": renewal_amount,
+                "currency": sub.currency or "KES",
+                "status": "pending",
+                "external_response": None,
+            })
+            
+            # Initialize Paystack payment for renewal
+            reference = f"renew_{payment.id}_{sub.id}"
+            paystack_result = await initialize_payment(
+                email=user.email,
+                amount_kobo=amount_kobo,
+                reference=reference,
+                metadata={
+                    "local_payment_id": str(payment.id),
+                    "user_id": str(sub.user_id),
+                    "tier": sub.plan or "tier1",
+                    "subscription_id": str(sub.id),
+                    "renewal": "true"
+                },
+                currency=sub.currency or "KES",
+                callback_url=None  # No callback for auto-renewal
+            )
+            
+            # Update payment with Paystack response
+            if paystack_result.get("status") is False:
+                payment.status = "failed"
+                payment.external_response = paystack_result
+            else:
+                provider_payment_id = paystack_result.get('data', {}).get('reference')
+                payment.provider_payment_id = provider_payment_id
+                payment.external_response = paystack_result
+                
+                # Store payment URL for user to complete
+                auth_url = paystack_result.get('data', {}).get('authorization_url')
+                if auth_url:
+                    # Store in subscription metadata for user access
+                    sub.renewal_payment_url = auth_url
+                    sub.renewal_payment_id = str(payment.id)
+                    sub.renewal_expires_at = sub.expires_at + timedelta(days=7)  # Give 7 days to pay
+            
+            db.add(payment)
             db.add(sub)
+            renewed_count += 1
+            
+        except Exception as e:
+            # Log error but continue with other subscriptions
+            print(f"Auto-renewal failed for subscription {sub.id}: {str(e)}")
+            continue
     
     await db.commit()
-    return len(subscriptions)
+    return renewed_count
