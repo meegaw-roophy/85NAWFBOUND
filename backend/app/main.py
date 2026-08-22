@@ -7,6 +7,7 @@ app = FastAPI(title="VEKTRA API")
 
 # Explicitly list allowed origins to safely use credentials
 origins = [
+    # Local Development
     "http://localhost:5500",
     "http://127.0.0.1:5500",
     "http://localhost:5501",
@@ -21,8 +22,11 @@ origins = [
     "http://127.0.0.1:5505",
     "http://localhost:3000",
     "http://127.0.0.1:3000",
-    "https://meegaw-roophy.github.io",
-    "https://meegaw-roophy.github.io/85NAWFBOUND",
+
+    # Production Domains (No paths allowed!)
+    "https://vektraapp.online",
+    "https://www.vektraapp.online",
+    "https://github.io",
 ]
 
 app.add_middleware(

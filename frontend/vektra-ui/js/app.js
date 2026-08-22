@@ -3853,7 +3853,7 @@ function showScoreReveal(snap) {
     shareBtn.style.cssText = 'margin-top:12px;max-width:280px';
     shareBtn.textContent = `Share my score 🔥`;
     shareBtn.onclick = () => {
-      const message = `Just logged my day on VEKTRA and scored ${score}/100! 🔥\n\nKnow your trajectory:\nhttps://meegaw-roophy.github.io/85NAWFBOUND/app/\n\nVector = Magnitude × Direction`;
+      const message = `Just logged my day on VEKTRA and scored ${score}/100! 🔥\n\nKnow your trajectory:\nhttps://vektraapp.online/app/\n\nVector = Magnitude × Direction`;
       if (navigator.share) {
         navigator.share({ title: 'My VEKTRA Score', text: message });
       } else {

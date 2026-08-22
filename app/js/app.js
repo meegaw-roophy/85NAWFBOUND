@@ -188,8 +188,18 @@ function goTo(screen) {
   
   currentScreen = screen;
   
+  // Initialize offer countdown if navigating to upgrade screen
+  if (screen === 'upgrade') {
+    initOfferCountdown();
+  }
+  
+  // Load news if navigating to news screen
+  if (screen === 'news') {
+    loadNews();
+  }
+  
   // Strip splash out of auth controller array and toggle bottom navigation bar
-  const authScreens = ['welcome', 'login', 'register']; 
+  const authScreens = ['welcome', 'login', 'register', 'email-verification', 'password-reset-request', 'password-reset']; 
   if (authScreens.includes(screen)) {
     hideBottomNav();
   } else {
@@ -505,9 +515,11 @@ async function register() {
       errEl.style.display = 'block';
       return;
     }
-    await loginWithCredentials(username, password);
+    // Store credentials for login after verification
+    localStorage.setItem('pendingLogin', JSON.stringify({ username, password }));
     localStorage.removeItem('pendingReferralCode');
     pendingReferralCode = null;
+    goTo('email-verification');
   } catch (err) {
     errEl.textContent = 'Connecting to server... please try again in 30 seconds.';
     errEl.style.display = 'block';
@@ -1384,6 +1396,8 @@ async function onboardStep3() {
 
   goTo('dashboard');
   loadDashboard();
+  // In onboardStep3() after goTo('dashboard')
+  showToast('Welcome to VEKTRA, ' + (currentUser?.username || '') + '! Log your first day to activate your score 🔥', 'success', 6000);
 }
 
 // ── Load and display report ──
@@ -1921,7 +1935,19 @@ async function openProfile() {
   // Initialize monthly replay with current month
   const today = new Date();
   document.getElementById('replay-month').value = today.getMonth() + 1;
-  document.getElementById('replay-year').value = today.getFullYear();
+  
+  // Populate year dropdown dynamically
+  const yearSelect = document.getElementById('replay-year');
+  const currentYear = today.getFullYear();
+  yearSelect.innerHTML = '';
+  for (let y = currentYear - 2; y <= currentYear + 1; y++) {
+    const option = document.createElement('option');
+    option.value = y;
+    option.textContent = y;
+    if (y === currentYear) option.selected = true;
+    yearSelect.appendChild(option);
+  }
+  
   loadMonthlyReplay();
 }
 
@@ -3827,7 +3853,7 @@ function showScoreReveal(snap) {
     shareBtn.style.cssText = 'margin-top:12px;max-width:280px';
     shareBtn.textContent = `Share my score 🔥`;
     shareBtn.onclick = () => {
-      const message = `Just logged my day on VEKTRA and scored ${score}/100! 🔥\n\nKnow your trajectory:\nhttps://meegaw-roophy.github.io/85NAWFBOUND/app/\n\nVector = Magnitude × Direction`;
+      const message = `Just logged my day on VEKTRA and scored ${score}/100! 🔥\n\nKnow your trajectory:\nhttps://vektraapp.online/app/\n\nVector = Magnitude × Direction`;
       if (navigator.share) {
         navigator.share({ title: 'My VEKTRA Score', text: message });
       } else {
@@ -4463,6 +4489,7 @@ let priceLockSeconds = 900; // 15 minutes
 
 async function openUpgrade() {
   goTo('upgrade');
+  initOfferCountdown();
   selectedTierUpgrade = 'tier1';
   document.getElementById('days-slider').value = 30;
   const currency = currentUser?.currency || 'USD';
@@ -4627,7 +4654,8 @@ async function calculatePrice(days) {
     const body = {
       tier: selectedTierUpgrade,
       currency: currentUser.currency || 'USD',
-      country_code: currentUser.current_location ? getCountryCode() : 'DEFAULT'
+      country_code: currentUser.current_location ? getCountryCode() : 'DEFAULT',
+      special_offer: specialOfferActive
     };
     
     // Send amount if user is using amount input, otherwise send days
@@ -4636,7 +4664,7 @@ async function calculatePrice(days) {
     } else {
       body.days = days;
     }
-    body.special_offer = quickMoneyOfferRequested;
+    body.special_offer = quickMoneyOfferRequested || specialOfferActive;
 
     const res = await fetch(`${API}/api/v1/pricing/calculate`, {
       method: 'POST',
@@ -4787,7 +4815,7 @@ async function proceedToCheckout() {
       amount: currentPriceData.total,
       currency: currentPriceData.currency || 'KES',
       tier: selectedTierUpgrade,
-      special_offer: quickMoneyOfferRequested,
+      special_offer: quickMoneyOfferRequested || specialOfferActive,
       callback_url: window.location.origin + window.location.pathname + '?payment_success=true&tier=' + selectedTierUpgrade
     };
     
@@ -5418,3 +5446,206 @@ async function verifyAndActivate(reference, tier) {
 }
 window.checkPaymentReturn = checkPaymentReturn;
 window.verifyAndActivate = verifyAndActivate;
+
+// ── Special Offer Functions ──
+let specialOfferActive = false;
+const SPECIAL_OFFER_DEADLINE = new Date("2026-09-09T23:59:59+03:00").getTime();
+const SPECIAL_OFFER_DAYS = 120; // 4 months (3 paid + 1 free)
+
+function updateOfferCountdown() {
+  const countdownEl = document.getElementById('offer-countdown');
+  if (!countdownEl) return;
+  
+  const now = new Date().getTime();
+  const difference = SPECIAL_OFFER_DEADLINE - now;
+  
+  if (difference <= 0) {
+    countdownEl.textContent = "Offer ended";
+    const banner = document.getElementById('special-offer-banner');
+    if (banner) banner.style.display = 'none';
+    return;
+  }
+  
+  const days = Math.floor(difference / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+  const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
+  
+  countdownEl.textContent = `${days}d ${hours}h ${minutes}m remaining`;
+}
+
+function activateSpecialOffer() {
+  if (!currentUser || !authToken) return;
+  
+  // Calculate offer price: 3 months × PPP factor
+  // We'll call pricing API with days=90 but override display
+  specialOfferActive = true;
+  
+  // Show special offer price card
+  document.getElementById('price-loading').style.display = 'none';
+  document.getElementById('price-content').style.display = 'block';
+  
+  // Set expiry to Jan 1st 2027
+  const expires = new Date('2027-01-01T23:59:59');
+  
+  // Calculate 3-month price based on tier and currency
+  const currency = currentUser.currency || 'USD';
+  const sym = getCurrencySymbol(currency);
+  
+  // Base monthly prices after PPP (approximated from pricing engine)
+  const monthlyPrices = {
+    'tier1': { 'KES': 1424.50, 'USD': 26.67, 'NGN': 12000, 'GHS': 160, 'ZAR': 490 },
+    'tier2': { 'tier2_KES': 3561.25, 'tier2_USD': 66.67, 'tier2_NGN': 30000, 'tier2_GHS': 400, 'tier2_ZAR': 1225 }
+  };
+  
+  const tierPrices = selectedTierUpgrade === 'tier2' ? 
+    { 'KES': 3561.25, 'USD': 66.67, 'NGN': 30000, 'GHS': 400, 'ZAR': 1225, 'DEFAULT': 66.67 } :
+    { 'KES': 1424.50, 'USD': 26.67, 'NGN': 12000, 'GHS': 160, 'ZAR': 490, 'DEFAULT': 26.67 };
+  
+  const monthly = tierPrices[currency] || tierPrices['DEFAULT'];
+  const offerTotal = monthly * 3;
+  const fullPrice = monthly * 4; // What 4 months would normally cost
+  const saved = fullPrice - offerTotal;
+  
+  // Update price card
+  document.getElementById('price-total').textContent = `${sym} ${offerTotal.toLocaleString()}`;
+  document.getElementById('price-monthly-eq').textContent = `Access until Jan 1st, 2027`;
+  
+  document.getElementById('savings-card').style.display = 'block';
+  document.getElementById('price-saved').textContent = `${sym} ${saved.toLocaleString()}`;
+  document.getElementById('price-bonus-days').textContent = '1 month FREE — Launch offer';
+  
+  document.getElementById('total-days-display').textContent = '~120 days';
+  document.getElementById('price-final').textContent = `${sym} ${offerTotal.toLocaleString()}`;
+  document.getElementById('price-expires').textContent = 'January 1st, 2027';
+  
+  // Store offer price for checkout
+  currentPriceData = {
+    total: offerTotal,
+    currency: currency,
+    symbol: sym,
+    days: 120,
+    is_special_offer: true,
+    expires_at: expires.toISOString()
+  };
+  
+  // Update checkout button
+  const btn = document.getElementById('checkout-btn');
+  btn.disabled = false;
+  btn.textContent = `🔥 Claim Offer — ${sym} ${offerTotal.toLocaleString()} →`;
+  
+  showToast('Launch offer activated! 25% off applied. 🔥', 'success', 3000);
+}
+
+function getCurrencySymbol(currency) {
+  const symbols = {
+    'KES': 'KES', 'USD': '$', 'NGN': '₦', 'GHS': '₵',
+    'ZAR': 'R', 'GBP': '£', 'EUR': '€', 'INR': '₹'
+  };
+  return symbols[currency] || '$';
+}
+
+// Initialize countdown when upgrade screen loads
+function initOfferCountdown() {
+  const deadline = new Date('2026-09-09T23:59:59+03:00');
+  const now = new Date();
+  
+  if (now > deadline) {
+    const banner = document.getElementById('special-offer-banner');
+    if (banner) banner.style.display = 'none';
+    return;
+  }
+  
+  updateOfferCountdown();
+  setInterval(updateOfferCountdown, 60000);
+}
+
+window.activateSpecialOffer = activateSpecialOffer;
+window.initOfferCountdown = initOfferCountdown;
+
+// ── News / Updates Functions ──
+async function loadNews() {
+  const loadingEl = document.getElementById('news-loading');
+  const containerEl = document.getElementById('news-container');
+  const emptyEl = document.getElementById('news-empty');
+  
+  if (!loadingEl || !containerEl || !emptyEl) return;
+  
+  loadingEl.style.display = 'flex';
+  containerEl.style.display = 'none';
+  emptyEl.style.display = 'none';
+  
+  try {
+    const res = await fetch(`${API}/api/v1/news/all`, {
+      headers: { 'Authorization': `Bearer ${authToken}` }
+    });
+    
+    if (res.ok) {
+      const data = await res.json();
+      
+      if (data.items && data.items.length > 0) {
+        containerEl.innerHTML = data.items.map(item => createNewsCard(item)).join('');
+        containerEl.style.display = 'flex';
+        loadingEl.style.display = 'none';
+      } else {
+        emptyEl.style.display = 'block';
+        loadingEl.style.display = 'none';
+      }
+    } else {
+      emptyEl.style.display = 'block';
+      loadingEl.style.display = 'none';
+    }
+  } catch (e) {
+    console.error('Failed to load news:', e);
+    emptyEl.style.display = 'block';
+    loadingEl.style.display = 'none';
+  }
+}
+
+function createNewsCard(item) {
+  const typeIcons = {
+    'quote': '💭',
+    'countdown': '⏰',
+    'tip': '💡',
+    'announcement': '📢'
+  };
+  
+  const typeColors = {
+    'quote': 'rgba(108,99,255,0.15)',
+    'countdown': 'rgba(236,72,153,0.15)',
+    'tip': 'rgba(34,197,94,0.15)',
+    'announcement': 'rgba(250,204,21,0.15)'
+  };
+  
+  const typeBorders = {
+    'quote': 'rgba(108,99,255,0.4)',
+    'countdown': 'rgba(236,72,153,0.4)',
+    'tip': 'rgba(34,197,94,0.4)',
+    'announcement': 'rgba(250,204,21,0.4)'
+  };
+  
+  const icon = typeIcons[item.type] || '📰';
+  const bgColor = typeColors[item.type] || 'rgba(255,255,255,0.05)';
+  const borderColor = typeBorders[item.type] || 'var(--border)';
+  
+  const date = new Date(item.created_at).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  });
+  
+  return `
+    <div style="background:${bgColor};border:1px solid ${borderColor};border-radius:var(--radius);padding:1.25rem">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <span style="font-size:18px">${icon}</span>
+        <span style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.05em;font-weight:600">${item.type}</span>
+        ${item.priority === 'high' ? '<span style="font-size:10px;background:var(--accent);color:#fff;padding:2px 6px;border-radius:4px;font-weight:600">Important</span>' : ''}
+      </div>
+      <div style="font-size:15px;font-weight:600;margin-bottom:6px;color:var(--text-primary)">${item.title}</div>
+      <div style="font-size:14px;color:var(--text-secondary);line-height:1.5;margin-bottom:8px">${item.content}</div>
+      ${item.author ? `<div style="font-size:12px;color:var(--text-muted)">— ${item.author}</div>` : ''}
+      <div style="font-size:11px;color:var(--text-muted);margin-top:8px">${date}</div>
+    </div>
+  `;
+}
+
+window.loadNews = loadNews;
