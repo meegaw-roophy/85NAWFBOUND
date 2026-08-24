@@ -198,6 +198,18 @@ function goTo(screen) {
     loadNews();
   }
   
+  // Load goals if navigating to goals screen
+  if (screen === 'goals') {
+    loadGoals();
+    loadGoalProgress();
+  }
+  
+  // Load achievements if navigating to achievements screen
+  if (screen === 'achievements') {
+    loadAchievements();
+    loadStreakCalendar();
+  }
+  
   // Strip splash out of auth controller array and toggle bottom navigation bar
   const authScreens = ['welcome', 'login', 'register', 'email-verification', 'password-reset-request', 'password-reset']; 
   if (authScreens.includes(screen)) {
@@ -794,6 +806,23 @@ async function loadDashboard() {
             : score >= 50
             ? '→ Steady — push harder'
             : '⚠ Trajectory dropping';
+
+        // Calculate direction angle based on score trend
+        const angleEl = document.getElementById('dash-vector-angle');
+        if (angleEl && snapshots.length >= 2) {
+          const prevScore = snapshots[1].vektra_score || 50;
+          const scoreDiff = score - prevScore;
+          // Map score difference to angle (-45 to +45 degrees)
+          const angle = Math.max(-45, Math.min(45, scoreDiff * 2));
+          angleEl.textContent = `${angle.toFixed(1)}° (θ)`;
+        }
+
+        // AI verification based on data quality
+        const accuracyEl = document.getElementById('dash-vector-accuracy');
+        if (accuracyEl) {
+          const dataQuality = Math.min(100, (snapshots.length / 7) * 100);
+          accuracyEl.textContent = `${Math.round(dataQuality)}% Match`;
+        }
 
         // Generate smart insight
         const smartInsight = generateSmartInsight(snapshots, latest);
@@ -1632,7 +1661,7 @@ async function saveShareSettings() {
   };
   
   try {
-    const res = await fetch(`${API}/api/v1/users/${currentUser.id}/reports/${currentReportId}/share`, {
+    const res = await fetch(`${API}/api/v1/reports/${currentReportId}/share`, {
       method: 'PATCH',
       headers: {
         'Authorization': `Bearer ${authToken}`,
@@ -1732,7 +1761,7 @@ async function loadSubscriptionInfo() {
   
   try {
     // Load subscription info
-    const subRes = await dedupedFetch(`${API}/api/v1/users/${currentUser.id}/subscriptions`, {
+    const subRes = await dedupedFetch(`${API}/api/v1/subscriptions/current`, {
       headers: { 'Authorization': `Bearer ${authToken}` }
     });
     

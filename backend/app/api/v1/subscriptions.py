@@ -121,7 +121,7 @@ async def get_subscription_plans():
         {
             "id": "tier1",
             "name": "Pro",
-            "price": 9.99,
+            "price": 20.00,
             "currency": "USD",
             "duration_days": 30,
             "features": [
@@ -136,7 +136,7 @@ async def get_subscription_plans():
         {
             "id": "tier2",
             "name": "Premium",
-            "price": 19.99,
+            "price": 50.00,
             "currency": "USD",
             "duration_days": 30,
             "features": [

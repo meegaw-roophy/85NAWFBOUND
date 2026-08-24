@@ -37,6 +37,7 @@ async def health():
 
 router.include_router(admin_router, prefix="/admin", tags=["admin"])
 router.include_router(snapshots_router)
+router.include_router(reports_router)
 router.include_router(auth_router)
 router.include_router(auth_extended_router)
 router.include_router(oauth_router)
