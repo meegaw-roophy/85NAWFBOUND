@@ -211,7 +211,7 @@ function goTo(screen) {
   }
   
   // Strip splash out of auth controller array and toggle bottom navigation bar
-  const authScreens = ['welcome', 'login', 'register', 'email-verification', 'password-reset-request', 'password-reset']; 
+  const authScreens = ['welcome', 'login', 'register', 'password-reset-request', 'password-reset']; 
   if (authScreens.includes(screen)) {
     hideBottomNav();
   } else {
@@ -527,11 +527,36 @@ async function register() {
       errEl.style.display = 'block';
       return;
     }
-    // Store credentials for login after verification
-    localStorage.setItem('pendingLogin', JSON.stringify({ username, password }));
+    // Auto-login after registration (email verification removed)
     localStorage.removeItem('pendingReferralCode');
     pendingReferralCode = null;
-    goTo('email-verification');
+    
+    // Login automatically
+    const loginRes = await fetch(`${API}/api/v1/auth/token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: `username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`
+    });
+    
+    if (loginRes.ok) {
+      const loginData = await loginRes.json();
+      localStorage.setItem('vektra_token', loginData.access_token);
+      authToken = loginData.access_token;
+      
+      // Get user data
+      const userRes = await fetch(`${API}/api/v1/users/me`, {
+        headers: { 'Authorization': `Bearer ${authToken}` }
+      });
+      
+      if (userRes.ok) {
+        currentUser = await userRes.json();
+        goTo('onboard-1');
+        showToast('Welcome to VEKTRA! 🚀', 'success', 5000);
+      }
+    } else {
+      showToast('Registration successful. Please log in.', 'success');
+      goTo('login');
+    }
   } catch (err) {
     errEl.textContent = 'Connecting to server... please try again in 30 seconds.';
     errEl.style.display = 'block';
@@ -1082,7 +1107,7 @@ async function submitWeeklyQuestions() {
   const satisfaction = document.getElementById('inp-wq-satisfaction').value;
   
   try {
-    const res = await fetch(`${API}/api/v1/users/${currentUser.id}/weekly-questions`, {
+    const res = await fetch(`${API}/api/v1/questions/users/${currentUser.id}/weekly-questions`, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -1115,7 +1140,7 @@ async function submitMonthlyQuestions() {
   const confidence = document.getElementById('inp-mq-confidence').value;
   
   try {
-    const res = await fetch(`${API}/api/v1/users/${currentUser.id}/monthly-questions`, {
+    const res = await fetch(`${API}/api/v1/questions/users/${currentUser.id}/monthly-questions`, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
