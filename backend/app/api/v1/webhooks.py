@@ -56,16 +56,12 @@ async def stripe_webhook(
 
 @router.post("/webhooks/mpesa")
 async def mpesa_webhook(payload: dict, db: AsyncSession = Depends(get_session)):
-    payment_id = payload.get("payment_id")
-    status_value = payload.get("status")
-    if not payment_id or not status_value:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="payment_id and status are required")
-
-    payment = await crud.update_payment_status(db, int(payment_id), status_value, payload)
-    if not payment:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Payment not found")
-
-    return {"received": True, "payment_id": payment_id, "status": status_value}
+    # Disabled: this accepted an unauthenticated {payment_id, status} body and
+    # would mark ANY payment record "succeeded" with no signature check and no
+    # real Safaricom Daraja integration behind it (initiate_mpesa_payment is
+    # still a placeholder). Re-enable only once M-Pesa is actually wired up
+    # with Daraja callback validation.
+    raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="M-Pesa is not yet available.")
 
 
 @router.post("/webhooks/paystack")

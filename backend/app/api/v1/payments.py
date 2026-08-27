@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi import status as http_status
 from typing import List
+from sqlalchemy import select
 from app.schemas import (
     SubscriptionCreate,
     SubscriptionOut,
@@ -14,6 +15,7 @@ from app.db.session import get_session
 from sqlalchemy.ext.asyncio import AsyncSession
 from app import crud
 from app.core.deps import get_current_user
+from app.db.models import Payment
 from app.services.payment_service import create_stripe_subscription, initiate_mpesa_payment
 from app.services.paystack_service import initialize_payment as initialize_paystack_payment
 
@@ -159,20 +161,46 @@ async def update_payment_status(
     return payment
 
 
-@router.get("/payments/paystack/verify/{reference}")
+@router.get("/paystack/verify/{reference}")
 async def verify_paystack(
     reference: str,
     db: AsyncSession = Depends(get_session),
     current_user=Depends(get_current_user),
 ):
+    """Called by the frontend when Paystack redirects back after checkout.
+
+    Confirms the charge directly with Paystack's servers (never trusts the
+    redirect alone — that's just a browser navigation anyone could fake),
+    then marks our local Payment row 'succeeded' so /subscriptions/create
+    will accept it and actually activate the subscription.
+    """
     from app.services.paystack_service import verify_payment
     result = await verify_payment(reference)
-    
+
     if result.get('data', {}).get('status') == 'success':
         metadata = result.get('data', {}).get('metadata', {})
-        current_user.tier = metadata.get('tier', 'tier1')
-        db.add(current_user)
+        tier = metadata.get('tier', 'tier1')
+
+        try:
+            payment_id = int(reference)
+        except (TypeError, ValueError):
+            payment_id = None
+
+        payment = None
+        if payment_id is not None:
+            payment_result = await db.execute(
+                select(Payment).where(Payment.id == payment_id, Payment.user_id == current_user.id)
+            )
+            payment = payment_result.scalar_one_or_none()
+
+        if not payment:
+            raise HTTPException(status_code=http_status.HTTP_404_NOT_FOUND, detail="Payment record not found")
+
+        payment.status = "succeeded"
+        payment.external_response = result
+        db.add(payment)
         await db.commit()
-        return {"status": "success", "tier": current_user.tier}
-    
+
+        return {"status": "success", "tier": tier, "payment_id": payment.id}
+
     return {"status": "pending"}

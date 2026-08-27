@@ -87,6 +87,35 @@ async function dedupedFetch(url, options = {}) {
   return promise;
 }
 
+// ── Wake-aware fetch ──
+// Render's app process and the Supabase DB connection can both go cold after
+// inactivity. A plain fetch() just hangs with no feedback, so this adds a
+// generous timeout, one silent retry, and an optional "still waking up"
+// callback the caller can use to update the UI instead of looking frozen.
+async function wakeAwareFetch(url, options = {}, onSlow = null) {
+  const attempt = async (timeoutMs) => {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      return await fetch(url, { ...options, signal: controller.signal });
+    } finally {
+      clearTimeout(timer);
+    }
+  };
+
+  const slowTimer = onSlow ? setTimeout(onSlow, 4000) : null;
+
+  try {
+    try {
+      return await attempt(65000);
+    } catch (firstErr) {
+      return await attempt(65000);
+    }
+  } finally {
+    if (slowTimer) clearTimeout(slowTimer);
+  }
+}
+
 // ── Toast notifications ──
 function showToast(message, type = 'info', duration = 3000) {
   const container = document.getElementById('toast-container');
@@ -327,6 +356,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     if (res.ok) {
       currentUser = await res.json();
       console.log('Auto-login successful:', currentUser);
+      await handlePaystackReturn();
       goTo('dashboard');
       await loadDashboard();
     } else {
@@ -338,6 +368,53 @@ window.addEventListener('DOMContentLoaded', async () => {
     console.log('Server error - staying on welcome:', err);
   }
 });
+
+// ── Paystack return handler ──
+// Paystack redirects the browser back to callback_url with ?reference=...
+// after the user completes (or abandons) checkout. That redirect alone
+// proves nothing — anyone could hit this URL with a made-up reference — so
+// this always re-confirms server-side with Paystack before activating.
+async function handlePaystackReturn() {
+  const params = new URLSearchParams(window.location.search);
+  const reference = params.get('reference') || params.get('trxref');
+  if (!reference) return;
+
+  // Strip the query string so a page refresh doesn't re-trigger this.
+  window.history.replaceState({}, document.title, window.location.pathname + window.location.hash);
+
+  showLoader('Confirming your payment...');
+  try {
+    const verifyRes = await wakeAwareFetch(`${API}/api/v1/users/${currentUser.id}/payments/paystack/verify/${reference}`, {
+      headers: { 'Authorization': `Bearer ${authToken}` }
+    });
+    const verifyData = await verifyRes.json();
+
+    if (verifyRes.ok && verifyData.status === 'success') {
+      const plan = localStorage.getItem('vektra_pending_plan') || verifyData.tier || 'tier1';
+      const subRes = await wakeAwareFetch(`${API}/api/v1/subscriptions/create`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ payment_id: verifyData.payment_id, plan, duration_days: 30 })
+      });
+
+      if (subRes.ok) {
+        localStorage.removeItem('vektra_pending_payment_id');
+        localStorage.removeItem('vektra_pending_plan');
+        currentUser.tier = plan;
+        showToast('Subscription activated — welcome aboard! 🎉', 'success', 6000);
+      } else {
+        showToast('Payment confirmed but activation failed — contact support and mention reference ' + reference, 'error', 9000);
+      }
+    } else {
+      showToast('Payment still processing. If you completed checkout, refresh in a minute.', 'warning', 7000);
+    }
+  } catch (e) {
+    console.error('Payment verification error:', e);
+    showToast("Couldn't confirm your payment. Please contact support with reference " + reference, 'error', 8000);
+  } finally {
+    hideLoader();
+  }
+}
 
 // ── Register service worker ──
 if ('serviceWorker' in navigator) {
@@ -488,11 +565,6 @@ async function register() {
     errEl.style.display = 'block';
     return;
   }
-  if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
-    errEl.textContent = 'Password must contain at least one symbol (e.g. !, @, #)';
-    errEl.style.display = 'block';
-    return;
-  }
 
   if (btnEl) {
     btnEl.disabled = true;
@@ -516,11 +588,13 @@ async function register() {
       bodyPayload.referral_code = referralCode;
     }
     
-    const res = await fetch(`${API}/api/v1/auth/register`, {
+    const onSlow = () => { if (btnEl) btnEl.textContent = 'Waking up server (up to ~60s on first visit)...'; };
+
+    const res = await wakeAwareFetch(`${API}/api/v1/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(bodyPayload)
-    });
+    }, onSlow);
     const data = await res.json();
     if (!res.ok) {
       errEl.textContent = data.detail || 'Registration failed. Try again.';
@@ -530,24 +604,24 @@ async function register() {
     // Auto-login after registration (email verification removed)
     localStorage.removeItem('pendingReferralCode');
     pendingReferralCode = null;
-    
+
     // Login automatically
-    const loginRes = await fetch(`${API}/api/v1/auth/token`, {
+    const loginRes = await wakeAwareFetch(`${API}/api/v1/auth/token`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: `username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`
-    });
-    
+    }, onSlow);
+
     if (loginRes.ok) {
       const loginData = await loginRes.json();
       localStorage.setItem('vektra_token', loginData.access_token);
       authToken = loginData.access_token;
-      
+
       // Get user data
-      const userRes = await fetch(`${API}/api/v1/users/me`, {
+      const userRes = await wakeAwareFetch(`${API}/api/v1/users/me`, {
         headers: { 'Authorization': `Bearer ${authToken}` }
       });
-      
+
       if (userRes.ok) {
         currentUser = await userRes.json();
         goTo('onboard-1');
@@ -558,41 +632,44 @@ async function register() {
       goTo('login');
     }
   } catch (err) {
-    errEl.textContent = 'Connecting to server... please try again in 30 seconds.';
+    errEl.textContent = "Couldn't reach the server after a couple of tries. Please check your connection and try again.";
     errEl.style.display = 'block';
   } finally {
     if (btnEl) {
       btnEl.disabled = false;
-      btnEl.textContent = 'Sign Up';
+      btnEl.textContent = 'Create Account';
     }
   }
 }
 
 // ── Login with credentials ──
-async function loginWithCredentials(username, password) {
+// The token fetch is left to throw on a genuine network/timeout failure so
+// the caller (login()) can tell "server unreachable" apart from "wrong
+// password" instead of collapsing both into the same generic message.
+async function loginWithCredentials(username, password, onSlow = null) {
+  const tokenBody = new URLSearchParams({ username, password });
+  const tokenRes = await wakeAwareFetch(`${API}/api/v1/auth/token`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: tokenBody
+  }, onSlow);
+
+  if (!tokenRes.ok) {
+      const error = await tokenRes.text();
+      console.error("LOGIN FAILED:", tokenRes.status, error);
+      return;
+  }
+
+  const tokenData = await tokenRes.json();
+  authToken = tokenData.access_token;
+  localStorage.setItem('vektra_token', authToken);
+
   try {
-    const tokenBody = new URLSearchParams({ username, password });
-    const tokenRes = await fetch(`${API}/api/v1/auth/token`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: tokenBody
-    });
-
-    if (!tokenRes.ok) {
-        const error = await tokenRes.text();
-        console.error("LOGIN FAILED:", tokenRes.status, error);
-        return;
-    }
-
-    const tokenData = await tokenRes.json();
-    authToken = tokenData.access_token;
-    localStorage.setItem('vektra_token', authToken);
-
     // 1. Fetch primary profile records
     const userRes = await fetch(`${API}/api/v1/users/me`, {
       headers: { 'Authorization': `Bearer ${authToken}` }
     });
-    
+
     if (userRes.ok) {
       currentUser = await userRes.json();
     } else {
@@ -607,9 +684,9 @@ async function loginWithCredentials(username, password) {
       const locationData = await detectUserLocation();
       await fetch(`${API}/api/v1/users/me`, {
         method: 'PATCH',
-        headers: { 
-          'Authorization': `Bearer ${authToken}`, 
-          'Content-Type': 'application/json' 
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           current_location: locationData.location || currentUser.current_location,
@@ -630,9 +707,13 @@ async function loginWithCredentials(username, password) {
       goTo('dashboard');
       loadDashboard();
     }
-
   } catch (error) {
-    console.error("Critical login connection error:", error);
+    // Auth already succeeded at this point — don't strand the user on a
+    // blank screen just because a non-critical profile step failed.
+    console.error("Post-login setup error (non-blocking):", error);
+    currentUser = currentUser || { currency: "USD", current_location: "US" };
+    goTo('dashboard');
+    loadDashboard();
   }
 }
 
@@ -653,13 +734,15 @@ async function login() {
     btnEl.textContent = 'Signing in...';
   }
   try {
-    await loginWithCredentials(username, password);
+    await loginWithCredentials(username, password, () => {
+      if (btnEl) btnEl.textContent = 'Waking up server (up to ~60s on first visit)...';
+    });
     if (!authToken) {
       errEl.textContent = 'Incorrect username or password.';
       errEl.style.display = 'block';
     }
   } catch (err) {
-    errEl.textContent = 'Connecting to server... please try again in 30 seconds.';
+    errEl.textContent = "Couldn't reach the server after a couple of tries. Please check your connection and try again.";
     errEl.style.display = 'block';
   } finally {
     if (btnEl) {
@@ -3367,74 +3450,27 @@ async function processPayment() {
     showToast('Please select a plan and payment method', 'error');
     return;
   }
-  
+
   const payButton = document.getElementById('pay-button');
   payButton.textContent = 'Processing...';
   payButton.disabled = true;
-  
+
   try {
     if (PAYMENT_PREVIEW_MODE) {
       showToast('Payment preview complete. No live charges are processed in this demo mode.', 'info');
       return;
     }
 
+    // Only Paystack is a real, working payment path right now — card
+    // payments and M-Pesa aren't wired up on the backend yet, so we tell
+    // people honestly instead of pretending to charge them.
     if (selectedPaymentMethod === 'stripe') {
-      // Stripe payment processing
-      const cardNumber = document.getElementById('stripe-card').value;
-      const expiry = document.getElementById('stripe-expiry').value;
-      const cvc = document.getElementById('stripe-cvc').value;
-      
-      if (!cardNumber || !expiry || !cvc) {
-        throw new Error('Please fill in all card details');
-      }
-      
-      // Call backend Stripe payment endpoint
-      const res = await fetch(`${API}/api/v1/users/${currentUser.id}/payments/stripe`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${authToken}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          customer_id: null, // Will be created by backend
-          price_id: selectedPlanId // Map plan ID to Stripe price ID
-        })
-      });
-      
-      if (!res.ok) throw new Error('Payment failed');
-      
+      showToast('Card payments are coming soon — please use Paystack for now.', 'info');
+      return;
     } else if (selectedPaymentMethod === 'mpesa') {
-      // M-Pesa payment processing
-      const phone = document.getElementById('mpesa-phone').value;
-
-      
-      if (!phone) {
-        throw new Error('Please enter phone number');
-      }
-      
-      // Call backend M-Pesa payment endpoint
-      const planPrices = {
-        'tier1': 9.99,
-        'tier2': 19.99,
-        'tier3': 49.99
-      };
-      const amount = planPrices[selectedPlanId] || 9.99;
-      
-      const res = await fetch(`${API}/api/v1/users/${currentUser.id}/payments/mpesa`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${authToken}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          phone_number: phone,
-          amount: amount
-        })
-      });
-      
-      if (!res.ok) throw new Error('Payment failed');
+      showToast('M-Pesa is coming soon — please use Paystack for now.', 'info');
+      return;
     } else if (selectedPaymentMethod === 'paystack') {
-      // Paystack payment processing
       const email = document.getElementById('paystack-email').value;
       if (!email) throw new Error('Please enter an email address for Paystack');
 
@@ -3454,41 +3490,26 @@ async function processPayment() {
         body: JSON.stringify({
           email: email,
           amount: amount,
-          currency: 'KES'
+          currency: 'KES',
+          callback_url: window.location.origin + window.location.pathname
         })
       });
 
-      if (!res.ok) throw new Error('Payment failed');
+      const payment = await res.json();
+      if (!res.ok) throw new Error(payment.detail || 'Payment failed');
+
+      // Nothing has actually been charged yet — Paystack only confirms
+      // payment once the user completes checkout on their hosted page.
+      // Send them there instead of claiming success up front.
+      const authUrl = payment?.external_response?.data?.authorization_url;
+      if (!authUrl) throw new Error('Could not start Paystack checkout. Please try again.');
+
+      localStorage.setItem('vektra_pending_payment_id', String(payment.id));
+      localStorage.setItem('vektra_pending_plan', selectedPlanId);
+      window.location.href = authUrl;
+      return;
     }
-    
-    showToast('Payment successful! Subscription activated.', 'success');
-    
-    // Create subscription
-    await fetch(`${API}/api/v1/subscriptions/create`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${authToken}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        provider: selectedPaymentMethod,
-        plan: selectedPlanId,
-        duration_days: 30,
-        amount_paid: selectedPlanId === 'tier1' ? 9.99 : selectedPlanId === 'tier2' ? 19.99 : 49.99,
-        currency: 'USD'
-      })
-    });
-    
-    // Reload subscription data
-    await loadCurrentSubscription();
-    
-    // Hide payment section
-    document.getElementById('payment-section').style.display = 'none';
-    
-    // Reset selection
-    selectedPaymentMethod = null;
-    selectedPlanId = null;
-    
+
   } catch (e) {
     console.error('Payment error:', e);
     showToast(e.message || 'Payment failed. Please try again.', 'error');

@@ -33,6 +33,8 @@ class UserOut(BaseModel):
     created_at: Optional[datetime] = None
     current_location: Optional[str] = None
 
+    model_config = ConfigDict(from_attributes=True)
+
 
 # ─────────────────────────────────────────────
 #  SNAPSHOT  (daily log — matches full VEKTRA model)
@@ -149,10 +151,14 @@ class ReportOut(BaseModel):
 
 
 class SubscriptionCreate(BaseModel):
+    payment_id: int
     provider: Optional[str] = "stripe"
     provider_customer_id: Optional[str] = None
     plan: Optional[str] = None
     duration_days: Optional[int] = None
+    discount_pct: Optional[float] = None
+    amount_paid: Optional[float] = None
+    currency: Optional[str] = None
     active: bool = True
 
 

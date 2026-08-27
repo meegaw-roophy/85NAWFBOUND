@@ -14,6 +14,14 @@ from app.api.v1.auth import get_current_user
 from app.db.models import User, Subscription, Payment
 from app.schemas import SubscriptionCreate, SubscriptionOut, PaymentOut
 
+# Plan id -> tier name granted on User.tier once a payment for that plan clears.
+PLAN_TO_TIER = {
+    "free": "free",
+    "tier1": "tier1",
+    "tier2": "tier2",
+    "tier3": "tier3",
+}
+
 router = APIRouter()
 
 
@@ -59,7 +67,26 @@ async def create_subscription(
     db: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user)
 ):
-    """Create a new subscription"""
+    """Create a new subscription — only once a real payment has cleared.
+
+    This never trusts client-supplied amount/plan on its own: it requires a
+    Payment row that belongs to this user and is already marked 'succeeded'
+    (set by a verified webhook, e.g. Paystack's charge.success handler).
+    Without that check, anyone could call this endpoint directly and grant
+    themselves any paid tier for free.
+    """
+    payment_result = await db.execute(
+        select(Payment).where(
+            Payment.id == subscription_data.payment_id,
+            Payment.user_id == current_user.id,
+        )
+    )
+    payment = payment_result.scalar_one_or_none()
+    if not payment:
+        raise HTTPException(status_code=404, detail="Payment not found")
+    if payment.status != "succeeded":
+        raise HTTPException(status_code=400, detail="Payment has not succeeded yet")
+
     # Deactivate existing subscriptions
     result = await db.execute(
         select(Subscription)
@@ -69,29 +96,37 @@ async def create_subscription(
     existing = result.scalars().all()
     for sub in existing:
         sub.active = False
-    
+
     # Calculate expiration
     duration_days = subscription_data.duration_days or 30
     expires_at = datetime.utcnow() + timedelta(days=duration_days)
-    
-    # Create new subscription
+
+    # Create new subscription, trusting the verified payment's own amount/
+    # currency/provider rather than whatever the client claims.
     subscription = Subscription(
         user_id=current_user.id,
-        provider=subscription_data.provider or "stripe",
+        provider=payment.provider,
         plan=subscription_data.plan,
         duration_days=duration_days,
         discount_pct=subscription_data.discount_pct,
-        amount_paid=subscription_data.amount_paid,
-        currency=subscription_data.currency or "USD",
+        amount_paid=payment.amount,
+        currency=payment.currency or "USD",
         active=True,
         starts_at=datetime.utcnow(),
         expires_at=expires_at
     )
-    
+
     db.add(subscription)
+
+    tier = PLAN_TO_TIER.get(subscription_data.plan, subscription_data.plan)
+    if tier:
+        current_user.tier = tier
+        current_user.tier_expires_at = expires_at
+        db.add(current_user)
+
     await db.commit()
     await db.refresh(subscription)
-    
+
     return {
         "id": subscription.id,
         "plan": subscription.plan,

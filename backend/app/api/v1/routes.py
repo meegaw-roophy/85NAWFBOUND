@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select, func
+from sqlalchemy import select, func, text
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.session import get_session
 from app.api.v1.auth import get_current_user
@@ -31,7 +31,10 @@ from .news import router as news_router
 router = APIRouter()
 
 @router.get("/health")
-async def health():
+async def health(db: AsyncSession = Depends(get_session)):
+    # Runs a real query so a keep-alive ping here also keeps the Supabase
+    # connection warm, not just the app process.
+    await db.execute(text("SELECT 1"))
     return {"status": "ok"}
 
 
@@ -40,7 +43,11 @@ router.include_router(snapshots_router)
 router.include_router(reports_router)
 router.include_router(auth_router)
 router.include_router(auth_extended_router)
-router.include_router(oauth_router)
+# oauth_router disabled: google/apple/github handlers trust client-supplied
+# id/email with no signature verification against the provider (account
+# takeover risk). Nothing in the frontend calls these yet — re-enable only
+# after wiring real token verification (see oauth.py TODOs).
+# router.include_router(oauth_router)
 router.include_router(payments_router, prefix="/users/{user_id}/payments")
 router.include_router(users_router)
 router.include_router(webhooks_router)
