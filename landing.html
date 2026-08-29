@@ -250,6 +250,85 @@
     }
 
     /* =========================
+       HERO VISUAL (live score teaser)
+    ========================= */
+
+    .hero-visual {
+      max-width: 380px;
+      margin: 0 auto 2.25rem;
+      padding: 1px;
+      border-radius: 18px;
+      background: linear-gradient(135deg, rgba(108,99,255,.55), rgba(236,72,153,.55));
+    }
+
+    .hero-visual-inner {
+      background: var(--card);
+      border-radius: 17px;
+      padding: 1.4rem 1.6rem;
+    }
+
+    .hero-visual-label {
+      font-size: 10px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .12em;
+      font-weight: 700;
+      margin-bottom: .3rem;
+    }
+
+    .hero-visual-score {
+      font-size: 44px;
+      font-weight: 900;
+      letter-spacing: -.04em;
+      background: linear-gradient(135deg, var(--accent), var(--pink));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1;
+    }
+
+    .hero-visual-score-sub {
+      font-size: 16px;
+      color: var(--muted);
+      -webkit-text-fill-color: var(--muted);
+      font-weight: 700;
+    }
+
+    .hero-visual-trend {
+      font-size: 12px;
+      color: var(--success);
+      font-weight: 700;
+      margin-top: .3rem;
+      margin-bottom: 1rem;
+    }
+
+    .hero-visual-engines {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .engine-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.04);
+      border: 1px solid var(--border);
+      font-size: 11px;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .engine-chip .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    /* =========================
        LAUNCH OFFER
     ========================= */
 
@@ -1151,11 +1230,11 @@
   <section class="hero">
 
     <div class="hero-badge">
-      🚀 Launching August 2026!
+      🚀 Now live — founding pricing ends soon
     </div>
 
     <h1 class="hero-title">
-      Stop Assuming!!<br>
+      Stop Guessing.<br>
       <span class="gradient">Know Your Trajectory.</span>
     </h1>
 
@@ -1183,13 +1262,42 @@
     </div>
 
 
+    <!-- Hero visual: live score teaser -->
+
+    <div class="hero-visual">
+      <div class="hero-visual-inner">
+
+        <div class="hero-visual-label">
+          Your VEKTRA Score
+        </div>
+
+        <div class="hero-visual-score">
+          74<span class="hero-visual-score-sub">/100</span>
+        </div>
+
+        <div class="hero-visual-trend">
+          ↑ Rising trajectory
+        </div>
+
+        <div class="hero-visual-engines">
+          <span class="engine-chip"><span class="dot" style="background:#22c55e"></span>Financial</span>
+          <span class="engine-chip"><span class="dot" style="background:#6c63ff"></span>Mental</span>
+          <span class="engine-chip"><span class="dot" style="background:#ec4899"></span>Execution</span>
+          <span class="engine-chip"><span class="dot" style="background:#f59e0b"></span>Body</span>
+          <span class="engine-chip"><span class="dot" style="background:#06b6d4"></span>Growth</span>
+        </div>
+
+      </div>
+    </div>
+
+
     <!-- Launch Offer -->
 
     <div class="launch-offer">
       <div class="launch-offer-inner">
 
         <div class="offer-label">
-          🔥 Founding Launch Offer....25% OFF!!
+          🔥 Founding Launch Offer — 25% OFF
         </div>
 
         <div class="offer-title">
@@ -1298,11 +1406,10 @@
 
     <p class="section-desc">
       You work. You plan. You make decisions. You chase goals.
-      But without looking at the patterns behind your days, it is easy
-      to confuse movement with progress.
-      You be moving in a path that really don't define you.
-      Maybe you in stagnant burnout or tight donut, just burning rubber and your fuel
-      when you could use to launch on a drag race which is finding your Vector!
+      But without looking at the patterns behind your days, it's easy
+      to confuse movement with progress — to spend months burning fuel
+      in a tight donut when you could be lined up on the strip, finding
+      your actual vector.
     </p>
 
 
@@ -1374,7 +1481,7 @@
         <div class="feature-desc">
           Your history becomes more useful as you keep logging.
           VEKTRA is built around observing your trajectory over time,
-          not judging one isolated day(but a pattern).
+          not judging one isolated day (but a pattern).
         </div>
       </div>
 
@@ -1415,8 +1522,8 @@
     <p class="section-desc">
       The score is not meant to define you. It is a signal.
       VEKTRA uses the underlying data to help you understand
-      what is strengthening your trajectory — and what is pulling it back.
-      So we both work on them effectively.
+      what is strengthening your trajectory — and what is pulling it back —
+      so you know exactly what to reinforce and what to fix.
     </p>
 
 
