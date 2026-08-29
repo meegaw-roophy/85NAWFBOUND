@@ -43,8 +43,3 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSessi
         raise HTTPException(status_code=400, detail="Incorrect username or password")
     access_token = create_access_token(subject=str(user.id))
     return {"access_token": access_token, "token_type": "bearer"}
-
-
-@router.get("/users/me", response_model=UserOut)
-async def read_current_user(current_user: User = Depends(get_current_user)):
-    return current_user

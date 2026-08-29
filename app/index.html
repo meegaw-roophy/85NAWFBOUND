@@ -489,6 +489,19 @@
     <div id="dash-northstar" style="font-size:14px;color:var(--text-secondary);font-style:italic">Not set yet</div>
   </div>
 
+  <!-- Referral Card -->
+  <div style="background:linear-gradient(135deg,rgba(108,99,255,0.1),rgba(236,72,153,0.1));border:1px solid var(--border);border-radius:var(--radius);padding:1.1rem;margin-bottom:1rem">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem">
+      <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em">Invite friends</div>
+      <div id="dash-referral-stats" style="font-size:11px;color:var(--accent);font-weight:700">0 credits · 0 invited</div>
+    </div>
+    <div style="font-size:13px;color:var(--text-secondary);margin-bottom:.75rem">Share your link — you both get 10 VEK credits when they join.</div>
+    <div style="display:flex;gap:8px">
+      <input id="dash-referral-link" readonly style="flex:1;padding:10px 12px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:12px;font-family:var(--font)" onclick="this.select()">
+      <button class="btn-secondary" style="padding:10px 16px;white-space:nowrap" onclick="copyReferralLink()">Copy</button>
+    </div>
+  </div>
+
   <!-- First Time Onboarding Prompt Banner -->
   <div id="first-log-prompt" style="display:none;background:linear-gradient(135deg,rgba(108,99,255,0.15),rgba(236,72,153,0.15));border:1px solid var(--accent);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem;text-align:center">
     <div style="font-size:24px;margin-bottom:8px">🚀</div>

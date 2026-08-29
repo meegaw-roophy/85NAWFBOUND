@@ -9,6 +9,19 @@ const API = 'https://vektra-backend-qic7.onrender.com';
 // this is meant to ship in frontend code.
 const GOOGLE_CLIENT_ID = '319745622236-8pqc8cdnv5b1cafago2uvkg7djava2g9.apps.googleusercontent.com';
 
+// ── Referral link ──
+function copyReferralLink() {
+  const el = document.getElementById('dash-referral-link');
+  if (!el || !el.value) return;
+  navigator.clipboard.writeText(el.value)
+    .then(() => showToast('Referral link copied! 🔗', 'success'))
+    .catch(() => {
+      el.select();
+      showToast('Select and copy the link above', 'info');
+    });
+}
+window.copyReferralLink = copyReferralLink;
+
 // ── Token storage ──
 let authToken = null; // Ensure this is not declared as a 'const' anywhere!
 let currentUser = {};
@@ -878,6 +891,17 @@ async function loadDashboard() {
 
   document.getElementById('dash-northstar').textContent =
     currentUser.north_star || 'Not set yet — update in profile';
+
+  const referralLinkEl = document.getElementById('dash-referral-link');
+  if (referralLinkEl) {
+    referralLinkEl.value = `https://vektraapp.online/app/?ref=${encodeURIComponent(currentUser.username)}`;
+  }
+  const referralStatsEl = document.getElementById('dash-referral-stats');
+  if (referralStatsEl) {
+    const credits = currentUser.vek_credit_balance ?? 0;
+    const invited = currentUser.referral_count ?? 0;
+    referralStatsEl.textContent = `${credits} credits · ${invited} invited`;
+  }
 
   try {
     const res = await fetch(
