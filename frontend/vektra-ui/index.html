@@ -6,6 +6,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#6c63ff">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 
 <!-- Toast container -->
 <div id="toast-container"></div>
@@ -45,7 +46,15 @@
     <div class="welcome-desc">Track what matters, measure what moves, and see the trajectory behind every choice.</div>
     <button class="btn-primary" onclick="goTo('register')">Get Started</button>
     <button class="btn-secondary" onclick="goTo('login')">I already have an account</button>
-    
+
+    <div style="display:flex;align-items:center;gap:10px;margin:1.25rem 0;color:var(--text-muted);font-size:11px">
+      <div style="flex:1;height:1px;background:var(--border)"></div>
+      OR
+      <div style="flex:1;height:1px;background:var(--border)"></div>
+    </div>
+
+    <div id="google-signin-btn" style="display:flex;justify-content:center"></div>
+
     <div style="margin-top:2rem;font-size:11px;color:var(--text-muted)">
       <span onclick="goTo('terms')" style="cursor:pointer;margin:0 8px">Terms</span>
       <span onclick="goTo('privacy')" style="cursor:pointer;margin:0 8px">Privacy</span>

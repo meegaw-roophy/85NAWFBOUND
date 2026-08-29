@@ -25,6 +25,7 @@ class Settings(BaseSettings):
     PAYSTACK_SECRET_KEY: str = ""
     PAYSTACK_PUBLIC_KEY: str = ""
     PAYSTACK_WEBHOOK_SECRET: str = ""
+    GOOGLE_CLIENT_ID: str = ""
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # one week
 
     model_config = SettingsConfigDict(env_file=_detect_env_file(), env_file_encoding="utf-8")

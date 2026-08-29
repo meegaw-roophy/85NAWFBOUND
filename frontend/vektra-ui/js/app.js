@@ -4,6 +4,11 @@ console.log('VEKTRA app.js loaded successfully');
 // ── API base URL ──
 const API = 'https://vektra-backend-qic7.onrender.com';
 
+// ── Google Sign-In ──
+// Client IDs are public identifiers, safe to embed - unlike a client secret,
+// this is meant to ship in frontend code.
+const GOOGLE_CLIENT_ID = '319745622236-8pqc8cdnv5b1cafago2uvkg7djava2g9.apps.googleusercontent.com';
+
 // ── Token storage ──
 let authToken = null; // Ensure this is not declared as a 'const' anywhere!
 let currentUser = {};
@@ -320,6 +325,8 @@ window.addEventListener('DOMContentLoaded', async () => {
     splash.style.opacity = '0';
     splash.style.visibility = 'hidden';
   }
+
+  initGoogleSignIn();
 
   // 2. Capture referral code from URL if present
   const params = new URLSearchParams(window.location.search);
@@ -639,6 +646,68 @@ async function register() {
       btnEl.disabled = false;
       btnEl.textContent = 'Create Account';
     }
+  }
+}
+
+// ── Google Sign-In ──
+// The GSI script loads async/defer, so its readiness isn't guaranteed to
+// line up with DOMContentLoaded - poll briefly instead of assuming order.
+function initGoogleSignIn(retries = 20) {
+  const container = document.getElementById('google-signin-btn');
+  if (!container) return;
+
+  if (window.google && window.google.accounts && window.google.accounts.id) {
+    google.accounts.id.initialize({
+      client_id: GOOGLE_CLIENT_ID,
+      callback: handleGoogleCredentialResponse
+    });
+    google.accounts.id.renderButton(container, {
+      theme: 'filled_black',
+      shape: 'pill',
+      size: 'large',
+      text: 'continue_with',
+      width: 280
+    });
+  } else if (retries > 0) {
+    setTimeout(() => initGoogleSignIn(retries - 1), 250);
+  }
+}
+
+async function handleGoogleCredentialResponse(response) {
+  try {
+    const res = await wakeAwareFetch(`${API}/api/v1/auth/oauth/google`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ credential: response.credential })
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      showToast(data.detail || 'Google sign-in failed', 'error');
+      return;
+    }
+
+    authToken = data.access_token;
+    localStorage.setItem('vektra_token', authToken);
+    Cache.clear();
+
+    const userRes = await wakeAwareFetch(`${API}/api/v1/users/me`, {
+      headers: { 'Authorization': `Bearer ${authToken}` }
+    });
+
+    if (userRes.ok) {
+      currentUser = await userRes.json();
+      showToast('Welcome to VEKTRA! 🚀', 'success', 4000);
+      if (!currentUser.north_star) {
+        goTo('onboard-1');
+      } else {
+        goTo('dashboard');
+        loadDashboard();
+      }
+    }
+  } catch (e) {
+    console.error('Google sign-in error:', e);
+    showToast("Couldn't complete Google sign-in. Please try again.", 'error');
   }
 }
 

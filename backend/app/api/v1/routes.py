@@ -43,11 +43,10 @@ router.include_router(snapshots_router)
 router.include_router(reports_router)
 router.include_router(auth_router)
 router.include_router(auth_extended_router)
-# oauth_router disabled: google/apple/github handlers trust client-supplied
-# id/email with no signature verification against the provider (account
-# takeover risk). Nothing in the frontend calls these yet — re-enable only
-# after wiring real token verification (see oauth.py TODOs).
-# router.include_router(oauth_router)
+# Re-enabled: oauth.py now verifies Google ID tokens against Google's own
+# certs (audience-checked) instead of trusting client-supplied identity.
+# Apple/GitHub handlers were removed from that file, not just left disabled.
+router.include_router(oauth_router)
 router.include_router(payments_router, prefix="/users/{user_id}/payments")
 router.include_router(users_router)
 router.include_router(webhooks_router)
