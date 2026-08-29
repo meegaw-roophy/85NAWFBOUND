@@ -119,15 +119,14 @@ async def paystack_payment(
             payment = await crud.update_payment_status(db, payment.id, "failed", result)
             raise HTTPException(status_code=http_status.HTTP_400_BAD_REQUEST, detail=result.get("message") or "Paystack initialization failed")
 
-        # FIX: Renamed 'status' variable to 'paystack_status' to bypass FastAPI namespace shadowing error
-        raw_status = result.get('status')
-        if isinstance(raw_status, bool):
-            paystack_status = 'success' if raw_status else 'pending'
-        elif isinstance(raw_status, str):
-            paystack_status = raw_status.lower()
-        else:
-            paystack_status = 'pending'
-            
+        # result['status'] here is Paystack's /transaction/initialize response,
+        # where 'status' just means "the checkout session was created" - it is
+        # NOT payment completion (that only comes from verify_paystack() after
+        # the user returns, or the charge.success webhook). This record must
+        # stay 'pending' regardless, or /subscriptions/create's succeeded-only
+        # check becomes meaningless.
+        paystack_status = 'pending'
+
         provider_payment_id = None
         try:
             provider_payment_id = result.get('data', {}).get('reference')

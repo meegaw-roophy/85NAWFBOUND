@@ -5482,45 +5482,19 @@ window.checkBirthday = checkBirthday;
 window.triggerBirthdayAnimations = triggerBirthdayAnimations;
 
 // ── Check payment return ──
+// This used to run its own separate verify+activate logic, pointed at a
+// URL that didn't match the real route and never called
+// /subscriptions/create - meaning even a genuinely successful payment
+// through this screen's duration-slider checkout would never have
+// actually activated a subscription. Delegates to handlePaystackReturn()
+// (the correct, single implementation) instead of duplicating it.
 function checkPaymentReturn() {
   const params = new URLSearchParams(window.location.search);
-  if (params.get('payment_success') === 'true') {
-    const tier = params.get('tier') || 'tier1';
-    const ref = params.get('reference');
-    
-    showToast('Payment received! Activating your plan... 🔥', 'success', 5000);
-    
-    // Verify and activate
-    if (ref) verifyAndActivate(ref, tier);
-    
-    // Clean URL
-    window.history.replaceState({}, '', window.location.pathname);
-  }
-}
-
-async function verifyAndActivate(reference, tier) {
-  try {
-    const res = await fetch(`${API}/api/v1/payments/paystack/verify/${reference}`, {
-      headers: { 'Authorization': `Bearer ${authToken}` }
-    });
-    if (res.ok) {
-      // Refresh user data
-      const userRes = await fetch(`${API}/api/v1/users/me`, {
-        headers: { 'Authorization': `Bearer ${authToken}` }
-      });
-      if (userRes.ok) {
-        currentUser = await userRes.json();
-        showToast(`Welcome to ${tier === 'tier2' ? 'Apex' : 'Vector'}! 🔥`, 'success', 5000);
-        goTo('dashboard');
-        loadDashboard();
-      }
-    }
-  } catch(e) {
-    console.log('Verification error:', e);
+  if (params.get('payment_success') === 'true' || params.get('reference') || params.get('trxref')) {
+    handlePaystackReturn();
   }
 }
 window.checkPaymentReturn = checkPaymentReturn;
-window.verifyAndActivate = verifyAndActivate;
 
 // ── Special Offer Functions ──
 let specialOfferActive = false;
