@@ -498,7 +498,7 @@
     <div style="font-size:13px;color:var(--text-secondary);margin-bottom:.75rem">Share your link — you both get 10 VEK credits when they join.</div>
     <div style="display:flex;gap:8px">
       <input id="dash-referral-link" readonly style="flex:1;padding:10px 12px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:12px;font-family:var(--font)" onclick="this.select()">
-      <button class="btn-secondary" style="padding:10px 16px;white-space:nowrap" onclick="copyReferralLink()">Copy</button>
+      <button class="btn-secondary" style="padding:10px 16px;white-space:nowrap" onclick="shareReferral(event)">Share</button>
     </div>
   </div>
 
@@ -1220,24 +1220,6 @@
   <!-- Settings + Sign Out buttons -->
   <button class="btn-secondary" style="margin-top:12px;width:100%" onclick="openSettings()">⚙ Settings</button>
   <button class="btn-secondary" style="margin-top:12px;margin-bottom:1rem;width:100%" onclick="logout()">Sign Out</button>
-
-  <!-- Referral Code -->
-  <div style="background:linear-gradient(135deg,#1a1a2e,#16213e);border:1px solid var(--accent);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem;margin-top:1rem">
-    <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">Your Referral Code</div>
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem">
-      <div id="referral-code" style="font-size:22px;font-weight:800;letter-spacing:0.1em;background:linear-gradient(135deg,#6c63ff,#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">—</div>
-      <button onclick="copyReferral(event)" style="padding:8px 14px;background:rgba(108,99,255,0.2);border:1px solid var(--accent);border-radius:var(--radius-sm);color:var(--accent);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font)">Copy</button>
-    </div>
-    <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-muted);margin-bottom:.75rem">
-      <span>Friends joined</span>
-      <span id="referral-count" style="color:var(--text-primary);font-weight:600">0</span>
-    </div>
-    <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-muted);margin-bottom:.75rem">
-      <span>VEK Credits earned</span>
-      <span id="vek-credits" style="color:var(--gold);font-weight:600">0</span>
-    </div>
-    <button onclick="shareReferral(event)" style="width:100%;padding:10px;background:linear-gradient(135deg,#6c63ff,#ec4899);border:none;border-radius:var(--radius-sm);color:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:var(--font)">Share VEKTRA 🔥</button>
-  </div>
 
   <!-- Support / Contact -->
   <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">

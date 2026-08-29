@@ -9,19 +9,6 @@ const API = 'https://vektra-backend-qic7.onrender.com';
 // this is meant to ship in frontend code.
 const GOOGLE_CLIENT_ID = '319745622236-8pqc8cdnv5b1cafago2uvkg7djava2g9.apps.googleusercontent.com';
 
-// ── Referral link ──
-function copyReferralLink() {
-  const el = document.getElementById('dash-referral-link');
-  if (!el || !el.value) return;
-  navigator.clipboard.writeText(el.value)
-    .then(() => showToast('Referral link copied! 🔗', 'success'))
-    .catch(() => {
-      el.select();
-      showToast('Select and copy the link above', 'info');
-    });
-}
-window.copyReferralLink = copyReferralLink;
-
 // ── Token storage ──
 let authToken = null; // Ensure this is not declared as a 'const' anywhere!
 let currentUser = {};
@@ -2102,11 +2089,7 @@ async function openProfile() {
   document.getElementById('profile-northstar').value = currentUser.north_star || '';
   profileTone = currentUser.preferred_feedback_tone || 'Balanced';
   setProfileTone(profileTone);
-  const code = currentUser.username?.toUpperCase() || '—';
-  document.getElementById('referral-code').textContent = code;
-  document.getElementById('vek-credits').textContent = currentUser.vek_credit_balance != null ? currentUser.vek_credit_balance : '0';
-  document.getElementById('referral-count').textContent = currentUser.referral_count != null ? currentUser.referral_count : '0';
-  
+
   // Populate body metrics
   document.getElementById('profile-weight').value = currentUser.weight || '';
   document.getElementById('profile-height').value = currentUser.height || '';
@@ -2242,55 +2225,26 @@ async function saveProfile() {
 
 // ── Referral system ──
 // Pass 'e' (the event object) directly into the function parameter
-function copyReferral(e) {
-  // Global variable window.event fallback wrapper 
-  const currentEvent = e || window.event;
-  const code = document.getElementById('referral-code').textContent;
-  
-  navigator.clipboard.writeText(code).then(() => {
-    // Hardened element extraction sequence
-    let btn = null;
-    if (currentEvent) {
-      btn = currentEvent.currentTarget || currentEvent.target;
-    }
-    
-    // Safely execute visual rendering even if event extraction drops
-    if (btn) {
-      btn.textContent = 'Copied!';
-      btn.style.background = 'rgba(34,197,94,0.2)';
-      btn.style.borderColor = 'var(--success)';
-      btn.style.color = 'var(--success)';
-      
-      setTimeout(() => {
-        btn.textContent = 'Copy';
-        btn.style.background = 'rgba(108,99,255,0.2)';
-        btn.style.borderColor = 'var(--accent)';
-        btn.style.color = 'var(--accent)';
-      }, 2000);
-    }
-  });
-}
-
 function shareReferral(e) {
   // Global variable window.event fallback wrapper
   const currentEvent = e || window.event;
-  const code = currentUser?.username?.toUpperCase() || 'VEXTRA';
+  const code = currentUser?.username?.toUpperCase() || 'VEKTRA';
   const baseUrl = `${window.location.origin}${window.location.pathname}`;
   const link = `${baseUrl}?ref=${encodeURIComponent(code)}`;
-  
-  const message = `I've been tracking my trajectory with VEXTRA — the AI-powered self-tracking app that gives you harsh truths about your progress.\n\nUse my referral code: ${code}\n\nVector = Magnitude × Direction 🔥`;
+
+  const message = `I've been tracking my trajectory with VEKTRA — the AI-powered self-tracking app that gives you harsh truths about your progress.\n\nUse my referral code: ${code}\n\nVector = Magnitude × Direction 🔥`;
   const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-  
+
   let btn = null;
   if (currentEvent) {
     btn = currentEvent.currentTarget || currentEvent.target;
   }
-  
+
   if (isMobile && navigator.share) {
-    navigator.share({ 
-      title: 'Join me on VEXTRA', 
+    navigator.share({
+      title: 'Join me on VEKTRA',
       text: message,
-      url: link 
+      url: link
     }).catch((err) => console.log('Share canceled or failed:', err));
   } else {
     const fullDesktopText = `${message}\nJoin directly here:\n${link}`;
@@ -4271,7 +4225,6 @@ window.submitLog = submitLog;
 window.logout = logout;
 window.openProfile = openProfile;
 window.saveProfile = saveProfile;
-window.copyReferral = copyReferral;
 window.shareReferral = shareReferral;
 window.loadSubscriptionInfo = loadSubscriptionInfo;
 window.toggleAutoRenew = toggleAutoRenew;
