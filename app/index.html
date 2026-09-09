@@ -107,24 +107,6 @@
   </div>
 </div>
 
-<!-- EMAIL VERIFICATION SCREEN -->
-<div id="email-verification" style="display:none;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:2rem;">
-  <div style="width:100%;max-width:320px;text-align:center">
-    <div style="font-size:48px;margin-bottom:1rem">📧</div>
-    <h2 style="font-size:22px;font-weight:700;margin-bottom:0.5rem;color:var(--text-primary)">Verify your email</h2>
-    <p style="font-size:14px;color:var(--text-secondary);line-height:1.5;margin-bottom:2rem">We sent a verification link to your email. Click it to activate your account.</p>
-    
-    <div id="verify-error" style="display:none;color:var(--danger);font-size:13px;margin-bottom:1rem"></div>
-    
-    <button id="resend-verify-btn" class="btn-secondary" onclick="resendVerificationEmail()" style="width:100%;margin-bottom:1rem">Resend verification email</button>
-    <button class="btn-primary" onclick="verifyEmailWithToken()" style="width:100%">I've verified my email</button>
-    
-    <div style="margin-top:1.5rem;font-size:13px;color:var(--text-muted)">
-      Wrong email? <span onclick="goTo('login')" style="color:var(--accent);cursor:pointer">Sign in with different account</span>
-    </div>
-  </div>
-</div>
-
 <!-- PASSWORD RESET REQUEST SCREEN -->
 <div id="password-reset-request" style="display:none;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:2rem;">
   <div style="width:100%;max-width:320px">
@@ -495,7 +477,7 @@
       <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em">Invite friends</div>
       <div id="dash-referral-stats" style="font-size:11px;color:var(--accent);font-weight:700">0 credits · 0 invited</div>
     </div>
-    <div style="font-size:13px;color:var(--text-secondary);margin-bottom:.75rem">Share your link — you both get 10 VEK credits when they join.</div>
+    <div style="font-size:13px;color:var(--text-secondary);margin-bottom:.75rem">Share VEKTRA — you both earn 10 credits when they join.</div>
     <div style="display:flex;gap:8px">
       <input id="dash-referral-link" readonly style="flex:1;padding:10px 12px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:12px;font-family:var(--font)" onclick="this.select()">
       <button class="btn-secondary" style="padding:10px 16px;white-space:nowrap" onclick="shareReferral(event)">Share</button>
@@ -505,21 +487,21 @@
   <!-- First Time Onboarding Prompt Banner -->
   <div id="first-log-prompt" style="display:none;background:linear-gradient(135deg,rgba(108,99,255,0.15),rgba(236,72,153,0.15));border:1px solid var(--accent);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem;text-align:center">
     <div style="font-size:24px;margin-bottom:8px">🚀</div>
-    <div style="font-weight:700;margin-bottom:6px">Your vector is set.</div>
-    <div style="font-size:13px;color:var(--text-secondary);margin-bottom:12px">Log your first day to activate your VEKTRA trajectory score.</div>
-    <button class="btn-primary" onclick="openDailyLog()" style="width:100%">Log Your First Day</button>
+    <div style="font-weight:700;margin-bottom:6px">Your trajectory begins now</div>
+    <div style="font-size:13px;color:var(--text-secondary);margin-bottom:12px">Log your first day to unlock your VEKTRA score and insights.</div>
+    <button class="btn-primary" onclick="openDailyLog()" style="width:100%">Start Your First Log</button>
   </div>
 
   <!-- Operational Core System Navigation Action Toggles -->
   <button class="btn-primary" onclick="openDailyLog()">+ Log Today</button>
 
   <button type="button" class="btn-secondary" style="margin-top:12px" onclick="event.preventDefault(); event.stopPropagation(); generateReport(event)">
-    View Weekly Report
+    Generate Weekly Report
   </button>
-  <div style="font-size:12px;color:var(--text-muted);margin-top:10px;line-height:1.5">Your first weekly report becomes available after 3 logged days. Keep logging to unlock richer insights and trajectory guidance.</div>
+  <div style="font-size:12px;color:var(--text-muted);margin-top:10px;line-height:1.5">AI-powered reports available after 3 logged days. Get brutal honesty about your trajectory.</div>
 
-  <button class="btn-secondary" style="margin-top:12px" onclick="openWeeklyQuestions()">📋 Weekly Check-in</button>
-  <div style="font-size:12px;color:var(--text-muted);margin-top:10px;line-height:1.5">Answer weekly reflection questions for deeper insights. Takes 2 minutes.</div>
+  <button class="btn-secondary" style="margin-top:12px" onclick="openWeeklyQuestions()">📋 Weekly Reflection</button>
+  <div style="font-size:12px;color:var(--text-muted);margin-top:10px;line-height:1.5">Reflect on your wins, blockers, and focus for the week ahead. Takes 2 minutes.</div>
 
   <button class="btn-secondary" style="margin-top:12px; margin-bottom: 1rem;" onclick="openHistory()">📋 View Log History</button>
 
@@ -1743,7 +1725,7 @@
     <div style="font-size:12px;color:var(--text-muted);margin-bottom:1.5rem;line-height:1.5">The premium upgrade flow is under refinement. This preview helps you visualize pricing and commitment options before launch.</div>
     <div id="quick-money-offer-banner" style="display:none;background:rgba(250,204,21,.12);border:1px solid #facc15;border-radius:var(--radius);padding:12px;margin-bottom:1rem;color:var(--text-primary);font-size:13px;line-height:1.45">
       <strong>Quick Money Strategy: 25% off</strong><br>
-      Pay 3 months and receive 4 months of access. Offer closes September 9, 2026 at 23:59. Access ends January 1, 2027 at 23:59.
+      Pay 3 months and receive 4 months of access. Offer closes September 20, 2026 at 23:59. Access ends January 3, 2027 at 23:59.
     </div>
 
     <!-- Quick Money Strategy Offer Banner -->

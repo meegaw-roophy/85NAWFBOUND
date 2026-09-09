@@ -27,6 +27,7 @@ from .notifications import router as notifications_router
 from .pricing import router as pricing_router
 from .questions import router as questions_router
 from .news import router as news_router
+from .analytics import router as analytics_router
 
 router = APIRouter()
 
@@ -64,3 +65,4 @@ router.include_router(notifications_router, prefix="/notifications", tags=["noti
 router.include_router(pricing_router)
 router.include_router(questions_router, prefix="/questions", tags=["questions"])
 router.include_router(news_router)
+router.include_router(analytics_router, prefix="/analytics", tags=["analytics"])

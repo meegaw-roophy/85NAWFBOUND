@@ -97,6 +97,7 @@ function showAdminDashboard() {
   loadAdminStats();
   loadAdminUsers();
   loadAdminActivity();
+  loadLandingClickStats();
 }
 
 function adminLogout() {
@@ -133,6 +134,29 @@ async function loadAdminStats() {
     }
   } catch (e) {
     console.error('Failed to load admin stats:', e);
+  }
+}
+
+async function loadLandingClickStats() {
+  try {
+    const res = await fetch(`${API}/api/v1/analytics/landing-clicks`, {
+      headers: { 'Authorization': `Bearer ${authToken}` }
+    });
+
+    if (res.ok) {
+      const stats = await res.json();
+      document.getElementById('admin-landing-clicks-24h').textContent = stats.last_24h;
+
+      const breakdownEl = document.getElementById('admin-landing-clicks-breakdown');
+      breakdownEl.innerHTML = stats.by_link_24h.map(row => `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px;background:var(--bg-secondary);border-radius:var(--radius-sm)">
+          <div style="font-size:13px;color:var(--text-primary)">${row.link}</div>
+          <div style="font-size:14px;font-weight:700;color:var(--accent)">${row.count}</div>
+        </div>
+      `).join('');
+    }
+  } catch (e) {
+    console.error('Failed to load landing click stats:', e);
   }
 }
 

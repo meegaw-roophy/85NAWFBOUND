@@ -864,6 +864,13 @@ async function loadDashboard() {
   
   console.log('currentUser =', currentUser);
 
+  // Show loading state
+  const dashboardEl = document.getElementById('dashboard');
+  if (dashboardEl) {
+    dashboardEl.style.opacity = '0.5';
+    dashboardEl.style.pointerEvents = 'none';
+  }
+
   // Dynamic greeting
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' :
@@ -1023,6 +1030,12 @@ async function loadDashboard() {
   } catch (e) {
     console.error('Could not load snapshots:', e);
     showToast('Could not load your data. Please refresh.', 'error');
+  } finally {
+    // Remove loading state
+    if (dashboardEl) {
+      dashboardEl.style.opacity = '1';
+      dashboardEl.style.pointerEvents = 'auto';
+    }
   }
   checkBirthday();
   checkPaymentReturn();
@@ -5544,7 +5557,7 @@ window.checkPaymentReturn = checkPaymentReturn;
 
 // ── Special Offer Functions ──
 let specialOfferActive = false;
-const SPECIAL_OFFER_DEADLINE = new Date("2026-09-09T23:59:59+03:00").getTime();
+const SPECIAL_OFFER_DEADLINE = new Date("2026-09-20T23:59:59+03:00").getTime();
 const SPECIAL_OFFER_DAYS = 120; // 4 months (3 paid + 1 free)
 
 function updateOfferCountdown() {
@@ -5579,8 +5592,8 @@ function activateSpecialOffer() {
   document.getElementById('price-loading').style.display = 'none';
   document.getElementById('price-content').style.display = 'block';
   
-  // Set expiry to Jan 1st 2027
-  const expires = new Date('2027-01-01T23:59:59');
+  // Set expiry to Jan 3rd 2027
+  const expires = new Date('2027-01-03T23:59:59');
   
   // Calculate 3-month price based on tier and currency
   const currency = currentUser.currency || 'USD';
@@ -5603,7 +5616,7 @@ function activateSpecialOffer() {
   
   // Update price card
   document.getElementById('price-total').textContent = `${sym} ${offerTotal.toLocaleString()}`;
-  document.getElementById('price-monthly-eq').textContent = `Access until Jan 1st, 2027`;
+  document.getElementById('price-monthly-eq').textContent = `Access until Jan 3rd, 2027`;
   
   document.getElementById('savings-card').style.display = 'block';
   document.getElementById('price-saved').textContent = `${sym} ${saved.toLocaleString()}`;
@@ -5611,7 +5624,7 @@ function activateSpecialOffer() {
   
   document.getElementById('total-days-display').textContent = '~120 days';
   document.getElementById('price-final').textContent = `${sym} ${offerTotal.toLocaleString()}`;
-  document.getElementById('price-expires').textContent = 'January 1st, 2027';
+  document.getElementById('price-expires').textContent = 'January 3rd, 2027';
   
   // Store offer price for checkout
   currentPriceData = {

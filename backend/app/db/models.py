@@ -423,6 +423,22 @@ class Referral(Base):
 
 
 # ─────────────────────────────────────────────
+#  LANDING CLICK (anonymous landing-page CTA analytics)
+# ─────────────────────────────────────────────
+class LandingClick(Base):
+    __tablename__ = 'landing_clicks'
+
+    id              = Column(Integer,  primary_key=True, index=True)
+    created_at      = Column(DateTime, default=datetime.datetime.utcnow, index=True)
+
+    link            = Column(String(100), nullable=False)   # which CTA was clicked, e.g. "nav-cta"
+    referrer        = Column(String(500), nullable=True)
+    utm_source      = Column(String(100), nullable=True)
+    utm_medium      = Column(String(100), nullable=True)
+    utm_campaign    = Column(String(100), nullable=True)
+
+
+# ─────────────────────────────────────────────
 #  ACHIEVEMENT
 # ─────────────────────────────────────────────
 class Achievement(Base):

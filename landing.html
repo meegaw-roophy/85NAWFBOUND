@@ -1216,7 +1216,7 @@
     <div class="nav-actions">
       <a href="#pricing" class="nav-link">Pricing</a>
       <a href="#how-it-works" class="nav-link">How it works</a>
-      <a href="https://vektraapp.online/app/" class="nav-cta">
+      <a href="https://vektraapp.online/app/" class="nav-cta" data-track="nav-cta">
         Try VEKTRA
       </a>
     </div>
@@ -1248,6 +1248,7 @@
       <a
         href="https://vektraapp.online/app/"
         class="primary-btn"
+        data-track="hero-cta"
       >
         Try VEKTRA Free →
       </a>
@@ -1305,8 +1306,8 @@
         </div>
 
         <div class="offer-desc">
-          Pay only 3 × your normal monthly price and get 4 months of access.
-          Available until September 9, 2026 at 23:59.
+          Pay only 3× your normal monthly price and get 4 months of access.
+          Available until September 20, 2026 at 23:59.
           <i>(Offer may end before deadline arrives, so purchase early)</i>
           Regional pricing may apply.
         </div>
@@ -1314,6 +1315,7 @@
         <a
           href="https://vektraapp.online/app/?offer=quick-money"
           class="primary-btn"
+          data-track="offer-cta"
         >
           Claim Quick Money Offer →
         </a>
@@ -2002,7 +2004,7 @@
           </div>
 
           <div class="launch-price-sub">
-            Available until September 9, 2026.
+            Available until September 20, 2026.
           </div>
 
         </div>
@@ -2070,7 +2072,7 @@
           </div>
 
           <div class="launch-price-sub">
-            Available until September 9, 2026.
+            Available until September 20, 2026.
           </div>
 
         </div>
@@ -2192,6 +2194,7 @@
       <a
         href="https://vektraapp.online/app/"
         class="primary-btn"
+        data-track="bottom-cta"
       >
         Try VEKTRA Free →
       </a>
@@ -2228,6 +2231,7 @@
 
       <a
         href="https://vektraapp.online/app/"
+        data-track="footer-cta"
       >
         VEKTRA App
       </a>
@@ -2366,11 +2370,11 @@
 
       /*
         Launch offer ends:
-        September 9, 2026 at 23:59:59.
+        September 20, 2026 at 23:59:59.
       */
 
       const deadline =
-        new Date("2026-09-09T23:59:59+03:00").getTime();
+        new Date("2026-09-20T23:59:59+03:00").getTime();
 
       const now =
         new Date().getTime();
@@ -2416,6 +2420,39 @@
     updateCountdown();
 
     setInterval(updateCountdown, 60000);
+
+
+    /* =========================
+       CTA CLICK TRACKING
+       First-party click counts for the app links below, so we're not
+       relying on an ad platform's own click attribution.
+    ========================== */
+
+    const ANALYTICS_API = "https://vektra-backend-qic7.onrender.com/api/v1/analytics/landing-click";
+
+    function trackLandingClick(linkId) {
+      const params = new URLSearchParams(window.location.search);
+      try {
+        fetch(ANALYTICS_API, {
+          method: "POST",
+          keepalive: true,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            link: linkId,
+            referrer: document.referrer || null,
+            utm_source: params.get("utm_source"),
+            utm_medium: params.get("utm_medium"),
+            utm_campaign: params.get("utm_campaign")
+          })
+        });
+      } catch (error) {
+        console.error("Click tracking error:", error);
+      }
+    }
+
+    document.querySelectorAll("a[data-track]").forEach(link => {
+      link.addEventListener("click", () => trackLandingClick(link.dataset.track));
+    });
 
 
   </script>

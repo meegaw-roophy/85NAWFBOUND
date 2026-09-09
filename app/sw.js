@@ -1,17 +1,21 @@
-const CACHE_NAME = 'vektra-v3';
+const CACHE_NAME = 'vektra-v4';
 
 // 1. Core static assets to cache for 100% offline functionality
 const PRECACHE_ASSETS = [
-  '/',
-  '/index.html',
-  '/css/styles.css',    // Adjust paths to match your folder structure
-  '/js/app.js',
-  '/manifest.json',
-  '/favicon.ico'
+  '/app/',
+  '/app/index.html',
+  '/app/css/style.css',
+  '/app/js/app.js',
+  '/app/manifest.json'
 ];
 
-// Install Event: Cache the critical static assets immediately
+// Install Event: Pre-cache the critical static assets immediately
 self.addEventListener('install', e => {
+  e.waitUntil(
+    caches.open(CACHE_NAME)
+      .then(cache => cache.addAll(PRECACHE_ASSETS))
+      .catch(err => console.warn('sw.js precache failed:', err))
+  );
   self.skipWaiting();
 });
 // Activate Event: Safely clear out OLD versions of Vektra caches only
@@ -20,10 +24,10 @@ self.addEventListener('activate', e => {
     caches.keys().then(keys => {
       return Promise.all(
         keys.map(key => {
-            return caches.delete(key);
+          if (key !== CACHE_NAME) return caches.delete(key);
         })
       );
-    })
+    }).then(() => self.clients.claim())
   );
 });
 
@@ -31,25 +35,31 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   const requestUrl = new URL(e.request.url);
 
-  // 1. ABSOLUTE BYPASS: If it hits your Render API domain, or uses POST/PUT methods, let it go to the internet directly
+  // 1. Only ever handle plain http(s) GET requests for our own origin.
+  // Cross-origin requests (API calls, fonts, CDN scripts) and non-GET
+  // requests are left alone so the browser's normal network stack
+  // handles them — trying to proxy those here is what was throwing
+  // "Failed to fetch" errors from this file.
   if (
-    requestUrl.hostname === '://onrender.com' || 
-    requestUrl.pathname.includes('/api/v1') || 
-    e.request.method !== 'GET'
+    e.request.method !== 'GET' ||
+    requestUrl.origin !== self.location.origin ||
+    requestUrl.pathname.includes('/sw.js')
   ) {
-    return; // Returning nothing completely hands control back to the browser network layer, bypassing sw.js entirely
-  }
-
-  // 2. DO NOT cache the service worker itself
-  if (requestUrl.pathname.includes('/sw.js')) {
     return;
   }
 
-  // 3. For static assets (CSS, JS, UI Images), use cache-first strategy
+  // 2. For same-origin static assets, use cache-first with a network fallback
   e.respondWith(
     caches.match(e.request).then(cachedResponse => {
-      return cachedResponse || fetch(e.request);
-    })
+      if (cachedResponse) return cachedResponse;
+      return fetch(e.request).then(networkResponse => {
+        if (networkResponse && networkResponse.ok) {
+          const clone = networkResponse.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(e.request, clone));
+        }
+        return networkResponse;
+      });
+    }).catch(() => caches.match('/app/index.html'))
   );
 });
 

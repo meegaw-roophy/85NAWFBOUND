@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>VEKTRA Admin Panel</title>
-  <link rel="stylesheet" href="../vektra-ui/css/style.css">
+  <link rel="stylesheet" href="../../app/css/style.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
@@ -65,7 +65,13 @@
       <div style="font-size:10px;color:var(--text-muted);margin-bottom:4px">REVENUE</div>
       <div id="admin-revenue" style="font-size:24px;font-weight:700">—</div>
     </div>
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:1rem">
+      <div style="font-size:10px;color:var(--text-muted);margin-bottom:4px">LANDING CLICKS (24H)</div>
+      <div id="admin-landing-clicks-24h" style="font-size:24px;font-weight:700">—</div>
+    </div>
   </div>
+
+  <div id="admin-landing-clicks-breakdown" style="display:flex;flex-direction:column;gap:6px;margin-top:1rem"></div>
 
   <!-- Two Column Layout -->
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.5rem">
