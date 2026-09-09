@@ -48,7 +48,27 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  // 2. For same-origin static assets, use cache-first with a network fallback
+  // 2. For navigation requests (requests that accept HTML), always serve index.html
+  // This enables SPA routing with query parameters like ?offer=quick-money
+  const isNavigation = e.request.mode === 'navigate';
+  
+  if (isNavigation) {
+    e.respondWith(
+      caches.match('/app/index.html').then(cachedResponse => {
+        if (cachedResponse) return cachedResponse;
+        return fetch('/app/index.html').then(networkResponse => {
+          if (networkResponse && networkResponse.ok) {
+            const clone = networkResponse.clone();
+            caches.open(CACHE_NAME).then(cache => cache.put('/app/index.html', clone));
+          }
+          return networkResponse;
+        });
+      }).catch(() => fetch('/app/index.html'))
+    );
+    return;
+  }
+
+  // 3. For same-origin static assets, use cache-first with a network fallback
   e.respondWith(
     caches.match(e.request).then(cachedResponse => {
       if (cachedResponse) return cachedResponse;
