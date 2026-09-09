@@ -1631,6 +1631,8 @@ async function onboardStep3() {
 }
 
 // ── Load and display report ──
+let currentReportData = null; // { report, content } for the loaded weekly report, used by shareReportAsImage()
+
 async function loadReport(reportType = 'weekly') {
   console.log('loadReport called - START');
   
@@ -1706,6 +1708,7 @@ async function loadReport(reportType = 'weekly') {
     
     console.log('Rendering report data...');
     const content = report.content || {};
+    currentReportData = reportType === 'weekly' ? { report, content } : currentReportData;
     const uniqueDays = content.unique_days_logged ?? content.days_logged ?? 0;
     const reportCountdown = content.report_countdown ?? Math.max(0, 7 - uniqueDays);
     const signalScores = content.signal_scores || {};
@@ -1813,6 +1816,226 @@ function switchReport(type) {
   }
 }
 
+
+// ── Shareable weekly report image ──
+function buildRadarSVG(scores, size = 440) {
+  const categories = [
+    { key: 'Financial', color: '#22c55e' },
+    { key: 'Mental',    color: '#6c63ff' },
+    { key: 'Execution', color: '#ec4899' },
+    { key: 'Body',      color: '#f59e0b' },
+    { key: 'Growth',    color: '#06b6d4' }
+  ];
+  const labelPad = Math.round(size * 0.18);
+  const svgSize = size + labelPad * 2;
+  const center = svgSize / 2;
+  const maxRadius = size / 2;
+  const angleStep = (Math.PI * 2) / categories.length;
+  const startAngle = -Math.PI / 2;
+
+  const pointAt = (i, radiusRatio) => {
+    const angle = startAngle + i * angleStep;
+    return [
+      center + Math.cos(angle) * maxRadius * radiusRatio,
+      center + Math.sin(angle) * maxRadius * radiusRatio
+    ];
+  };
+
+  const gridRings = [0.25, 0.5, 0.75, 1].map(ratio => {
+    const pts = categories.map((_, i) => pointAt(i, ratio).join(',')).join(' ');
+    return `<polygon points="${pts}" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1.5"/>`;
+  }).join('');
+
+  const axisLines = categories.map((_, i) => {
+    const [x, y] = pointAt(i, 1);
+    return `<line x1="${center}" y1="${center}" x2="${x}" y2="${y}" stroke="rgba(255,255,255,0.1)" stroke-width="1.5"/>`;
+  }).join('');
+
+  const dataPoints = categories.map((cat, i) => {
+    const val = Math.max(0, Math.min(100, scores[cat.key] ?? 0));
+    return pointAt(i, val / 100);
+  });
+  const dataPolygon = dataPoints.map(p => p.join(',')).join(' ');
+
+  const dots = categories.map((cat, i) => {
+    const [x, y] = dataPoints[i];
+    return `<circle cx="${x}" cy="${y}" r="${size * 0.014}" fill="${cat.color}" stroke="#0a0a0f" stroke-width="2"/>`;
+  }).join('');
+
+  const labels = categories.map((cat, i) => {
+    const [lx, ly] = pointAt(i, 1.32);
+    const val = Math.round(scores[cat.key] ?? 0);
+    const fontSize = Math.round(size * 0.05);
+    return `
+      <text x="${lx}" y="${ly - fontSize * 0.2}" text-anchor="middle" fill="${cat.color}" font-size="${fontSize}" font-weight="700" font-family="Inter, sans-serif">${cat.key}</text>
+      <text x="${lx}" y="${ly + fontSize * 0.9}" text-anchor="middle" fill="#8888aa" font-size="${Math.round(fontSize * 0.85)}" font-family="Inter, sans-serif">${val}</text>
+    `;
+  }).join('');
+
+  return `
+    <svg width="${svgSize}" height="${svgSize}" viewBox="0 0 ${svgSize} ${svgSize}" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="radarFill" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#6c63ff" stop-opacity="0.55"/>
+          <stop offset="100%" stop-color="#ec4899" stop-opacity="0.55"/>
+        </linearGradient>
+      </defs>
+      ${gridRings}
+      ${axisLines}
+      <polygon points="${dataPolygon}" fill="url(#radarFill)" stroke="#a78bfa" stroke-width="2.5"/>
+      ${dots}
+      ${labels}
+    </svg>
+  `;
+}
+
+function extractReportHighlight(narrative) {
+  if (!narrative) return '';
+  const match = narrative.match(/YOUR WINS THIS WEEK:([\s\S]*?)(?=(SILENT KILLERS:|THE NUMBERS DON'T LIE:|NEXT WEEK DIRECTIVE:|$))/);
+  if (match && match[1]) {
+    const line = match[1].split('\n').map(s => s.trim().replace(/^[-•*]\s*/, '')).find(s => s.length > 3);
+    if (line) return line;
+  }
+  return '';
+}
+
+function buildShareCardHTML({ report, content }) {
+  const score = report.vektra_score ? Math.round(report.vektra_score) : '—';
+  const signalScores = content.signal_scores || {};
+  const uniqueDays = content.unique_days_logged ?? content.days_logged ?? 0;
+  const cashFlow = content.net_cash_flow;
+  const goalRate = content.goal_hit_rate;
+  const sleepAvg = content.avg_sleep;
+
+  const end = new Date();
+  const start = new Date(end.getTime() - 6 * 24 * 60 * 60 * 1000);
+  const fmt = d => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  const periodLabel = `${fmt(start)} – ${fmt(end)}, ${end.getFullYear()}`;
+
+  const name = currentUser?.full_name?.split(' ')[0] || currentUser?.username || 'My';
+  const highlight = extractReportHighlight(report.summary_text) || 'Consistency compounds. Keep logging to sharpen your trajectory.';
+
+  const statTile = (label, value, color) => `
+    <div style="flex:1;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:20px;padding:24px 12px;text-align:center">
+      <div style="font-size:15px;color:#8888aa;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px">${label}</div>
+      <div style="font-size:34px;font-weight:800;color:${color}">${value}</div>
+    </div>
+  `;
+
+  return `
+    <div style="width:1080px;height:1920px;background:radial-gradient(circle at 50% 0%, #1a1a2e 0%, #0a0a0f 55%);display:flex;flex-direction:column;padding:80px 70px;box-sizing:border-box;font-family:'Inter',-apple-system,sans-serif;color:#f0f0f5">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:40px">
+        <div style="font-size:38px;font-weight:800;letter-spacing:0.02em;background:linear-gradient(135deg,#6c63ff,#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent">VEKTRA</div>
+        <div style="font-size:22px;color:#8888aa;text-transform:uppercase;letter-spacing:0.1em">Weekly Trajectory</div>
+      </div>
+
+      <div style="font-size:24px;color:#8888aa;margin-bottom:6px">${name}'s week · ${periodLabel}</div>
+
+      <div style="text-align:center;margin:20px 0 0">
+        <div style="font-size:180px;font-weight:800;line-height:1;background:linear-gradient(135deg,#6c63ff,#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent">${score}</div>
+        <div style="font-size:24px;color:#8888aa;text-transform:uppercase;letter-spacing:0.15em;margin-top:8px">VEKTRA Score</div>
+      </div>
+
+      <div style="display:flex;justify-content:center;margin:10px 0 20px">
+        ${buildRadarSVG(signalScores, 560)}
+      </div>
+
+      <div style="display:flex;gap:16px;margin-bottom:40px">
+        ${statTile('Days Logged', `${uniqueDays}/7`, '#f0f0f5')}
+        ${statTile('Cash Flow', (cashFlow !== undefined && cashFlow !== null) ? (cashFlow >= 0 ? '+' : '') + Math.round(cashFlow) : '—', (cashFlow ?? 0) >= 0 ? '#22c55e' : '#da0e0e')}
+        ${statTile('Goal Rate', (goalRate !== undefined && goalRate !== null) ? `${Math.round(goalRate)}%` : '—', '#ec4899')}
+        ${statTile('Avg Sleep', sleepAvg ? `${sleepAvg.toFixed(1)}h` : '—', '#f59e0b')}
+      </div>
+
+      <div style="background:rgba(108,99,255,0.1);border:1px solid rgba(108,99,255,0.3);border-radius:24px;padding:36px;font-size:26px;line-height:1.5;color:#f0f0f5;margin-top:auto">
+        <div style="font-size:18px;color:#6c63ff;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:12px;font-weight:700">This Week's Win</div>
+        ${highlight}
+      </div>
+
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:40px;font-size:20px;color:#8888aa">
+        <div>vektraapp.online</div>
+        <div>Vector = Magnitude × Direction</div>
+      </div>
+    </div>
+  `;
+}
+
+function showShareImagePreview(dataUrl) {
+  let modal = document.getElementById('share-image-modal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'share-image-modal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;padding:24px;gap:16px';
+    modal.innerHTML = `
+      <img id="share-image-preview" style="max-width:min(360px,90vw);max-height:70vh;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,0.5)">
+      <div style="display:flex;gap:12px">
+        <a id="share-image-download" download="vektra-weekly-report.png" class="btn-primary" style="text-decoration:none;padding:12px 24px;display:inline-block">Download</a>
+        <button class="btn-secondary" style="padding:12px 24px" onclick="document.getElementById('share-image-modal').remove()">Close</button>
+      </div>
+    `;
+    document.body.appendChild(modal);
+  }
+  document.getElementById('share-image-preview').src = dataUrl;
+  document.getElementById('share-image-download').href = dataUrl;
+}
+
+async function shareReportAsImage() {
+  if (!currentReportData) {
+    showToast('Generate a weekly report first', 'error');
+    return;
+  }
+  if (typeof html2canvas !== 'function') {
+    showToast('Image export is unavailable right now. Please refresh and try again.', 'error');
+    return;
+  }
+
+  showLoader('Building your shareable report...');
+
+  let renderHost = document.getElementById('share-card-render');
+  if (!renderHost) {
+    renderHost = document.createElement('div');
+    renderHost.id = 'share-card-render';
+    renderHost.style.position = 'fixed';
+    renderHost.style.left = '-99999px';
+    renderHost.style.top = '0';
+    document.body.appendChild(renderHost);
+  }
+  renderHost.innerHTML = buildShareCardHTML(currentReportData);
+
+  try {
+    const cardEl = renderHost.firstElementChild;
+    const canvas = await html2canvas(cardEl, { backgroundColor: null, useCORS: true });
+    hideLoader();
+
+    canvas.toBlob(async (blob) => {
+      if (!blob) {
+        showToast('Could not generate image. Try again.', 'error');
+        return;
+      }
+      const file = new File([blob], 'vektra-weekly-report.png', { type: 'image/png' });
+
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({
+            files: [file],
+            title: 'My VEKTRA Weekly Trajectory',
+            text: 'Check out my VEKTRA weekly trajectory report.'
+          });
+          return;
+        } catch (shareErr) {
+          if (shareErr.name === 'AbortError') return;
+        }
+      }
+
+      showShareImagePreview(canvas.toDataURL('image/png'));
+    }, 'image/png');
+  } catch (e) {
+    hideLoader();
+    console.error('Share image error:', e);
+    showToast('Could not generate shareable image. Try again.', 'error');
+  }
+}
+window.shareReportAsImage = shareReportAsImage;
 
 function calculateDaysUntilBirthday(dob) {
   const today = new Date();

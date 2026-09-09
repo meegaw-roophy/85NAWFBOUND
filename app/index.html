@@ -838,6 +838,7 @@
     <div style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px">Composite VEKTRA Score</div>
     <div id="report-score" style="font-size:56px;font-weight:800;background:linear-gradient(135deg,#6c63ff,#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1">—</div>
     <div style="font-size:12px;color:var(--text-muted);margin-top:4px">out of 100</div>
+    <button class="btn-primary" style="width:100%;margin-top:16px" onclick="shareReportAsImage()">📸 Share as Image</button>
   </div>
 
   <!-- Quick Stats -->
@@ -2434,6 +2435,7 @@
 <!-- This empty container tricks live server into injecting its script here safely -->
 <div id="live-server-hook"></div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script type="module" src="js/app.js"></script>
 
 <!-- Ensure this is the absolute last script block before </body> -->
