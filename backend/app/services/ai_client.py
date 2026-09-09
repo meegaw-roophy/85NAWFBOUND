@@ -66,6 +66,81 @@ class AIClient:
             # Fallback wrapper: If API drops, times out, or runs out of cash, the app never crashes
             return self._mock_weekly_report(weekly_summary, historical_context)
 
+    async def generate_daily_report(
+        self,
+        user_data: dict,
+        daily_snapshot: dict,
+        feedback_tone: str = "Balanced",
+    ) -> str:
+        """
+        Generate a short, personalized daily VEKTRA narrative for paid tiers.
+        Free tier never calls this — it renders buildDailySummaryText() client-side
+        from the raw snapshot instead, at zero AI cost.
+        """
+        if not self.client:
+            return self._mock_daily_report(daily_snapshot)
+
+        prompt = self._build_daily_prompt(user_data, daily_snapshot, feedback_tone)
+
+        try:
+            loop = asyncio.get_running_loop()
+            response = await loop.run_in_executor(
+                None,
+                lambda: self.client.messages.create(
+                    model="claude-3-5-sonnet-20240620",
+                    max_tokens=350,
+                    temperature=0.3,
+                    system=VEKTRA_SYSTEM_PROMPT,
+                    messages=[{"role": "user", "content": prompt}]
+                )
+            )
+            return response.content[0].text
+        except Exception:
+            return self._mock_daily_report(daily_snapshot)
+
+    def _build_daily_prompt(self, user_data: dict, snap: dict, tone: str) -> str:
+        north_star = user_data.get('north_star', 'Not set')
+        tone_instruction = {
+            'Harsh': 'Be brutally direct. No softening.',
+            'Balanced': 'Be clinical and honest.',
+            'Gentle': 'Be constructive, frame gaps as opportunities.',
+        }.get(tone, 'Be honest but constructive.')
+
+        return f"""Generate a short VEKTRA daily check-in for a single day of logged data.
+
+CORE STRATEGY MATRIX: {tone_instruction}
+North Star: {north_star}
+
+TODAY'S DATA:
+- VEKTRA Score: {snap.get('vektra_score', 'N/A')}/100
+- Mood: {snap.get('mood_score', 'N/A')}/10, Energy: {snap.get('energy_level', 'N/A')}/10
+- Sleep: {snap.get('sleep_hours', 'N/A')} hours
+- Cash flow: {snap.get('cashflow', 'N/A')}
+- Hit yesterday's goal: {snap.get('goal_hit', 'N/A')}
+- Best decision: {snap.get('best_decision', 'N/A')}
+- Tomorrow's goal: {snap.get('tomorrow_goal', 'N/A')}
+
+Write 2-3 short sentences reacting to today specifically (reference at least one real number above), then one specific action directive for tomorrow. Under 80 words total. No headers, no bullet points — just plain prose."""
+
+    def _mock_daily_report(self, snap: dict) -> str:
+        """Zero-cost fallback when Claude is unavailable — still data-specific, not generic filler."""
+        score = snap.get('vektra_score') or 50
+        mood = snap.get('mood_score')
+        sleep = snap.get('sleep_hours')
+        cashflow = snap.get('cashflow')
+        tomorrow = snap.get('tomorrow_goal')
+
+        pieces = [f"Today's score: {score:.0f}/100."]
+        if mood is not None:
+            pieces.append(f"Mood logged at {mood}/10.")
+        if sleep is not None:
+            sleep_note = " — that will show up in tomorrow's focus" if sleep < 6.5 else ""
+            pieces.append(f"Sleep at {sleep}h{sleep_note}.")
+        if cashflow is not None:
+            pieces.append(f"Cash flow {'+' if cashflow >= 0 else ''}{cashflow:.0f} for the day.")
+        directive = f"Tomorrow: {tomorrow}." if tomorrow else "Set a specific target for tomorrow before you log off."
+        return " ".join(pieces) + " " + directive
+
     def _build_weekly_prompt(
         self,
         user_data: dict,

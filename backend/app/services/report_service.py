@@ -257,10 +257,74 @@ async def generate_weekly_report(
     return report
 
 
+async def generate_daily_report(db: AsyncSession, user_id: int) -> object:
+    """
+    Short AI-personalized narrative for today's single snapshot. Paid tiers only —
+    free tier renders buildDailySummaryText() client-side instead, at zero AI cost.
+    """
+    result = await db.execute(
+        select(Snapshot)
+        .where(Snapshot.user_id == user_id)
+        .order_by(Snapshot.timestamp.desc())
+        .limit(1)
+    )
+    snap = result.scalars().first()
+    if not snap:
+        report_payload = {
+            'report_type':  'daily',
+            'status':       'ready',
+            'summary_text': 'No log found for today. Submit your daily log first.',
+            'content':      {},
+        }
+        return await crud.create_report(db, user_id, report_payload)
+
+    user_result = await db.execute(select(User).where(User.id == user_id))
+    user = user_result.scalars().first()
+    user_data = {
+        'north_star': user.north_star if user else None,
+        'feedback_tone': user.preferred_feedback_tone if user else 'Balanced',
+    }
+
+    cashflow = None
+    if snap.daily_income is not None and snap.expenses is not None:
+        cashflow = snap.daily_income - snap.expenses
+
+    daily_snapshot = {
+        'vektra_score':  snap.vektra_score,
+        'mood_score':    snap.mood_score,
+        'energy_level':  snap.energy_level,
+        'sleep_hours':   snap.sleep_hours,
+        'cashflow':      cashflow,
+        'goal_hit':      snap.target_hit_bool,
+        'best_decision': snap.best_decision,
+        'tomorrow_goal': snap.tomorrow_goal,
+    }
+
+    summary_text = await ai_client.generate_daily_report(
+        user_data=user_data,
+        daily_snapshot=daily_snapshot,
+        feedback_tone=user_data.get('feedback_tone', 'Balanced'),
+    )
+
+    report_payload = {
+        'period_start':  snap.timestamp,
+        'period_end':    snap.timestamp,
+        'report_type':   'daily',
+        'status':        'ready',
+        'summary_text':  summary_text,
+        'vektra_score':  snap.vektra_score,
+        'content':       daily_snapshot,
+    }
+    return await crud.create_report(db, user_id, report_payload)
+
+
 async def generate_and_store_report(
     db: AsyncSession,
     user_id: int,
+    report_type: str = 'weekly',
     period_start=None,
     period_end=None,
 ) -> object:
+    if report_type == 'daily':
+        return await generate_daily_report(db, user_id)
     return await generate_weekly_report(db, user_id, period_start, period_end)

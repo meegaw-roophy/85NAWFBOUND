@@ -33,7 +33,8 @@ async def generate_report(user_id: int, payload: Optional[ReportCreate] = None, 
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not allowed")
     period_start = payload.period_start if payload else None
     period_end = payload.period_end if payload else None
-    rpt = await generate_and_store_report(db, user_id, period_start=period_start, period_end=period_end)
+    report_type = payload.report_type if payload else 'weekly'
+    rpt = await generate_and_store_report(db, user_id, report_type=report_type, period_start=period_start, period_end=period_end)
     return rpt
 
 

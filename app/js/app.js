@@ -1762,15 +1762,20 @@ async function loadReport(reportType = 'weekly') {
     }
 
     const raw = report.summary_text || 'No report generated yet.';
+    // NOTE: these headers must match what ai_client.py actually emits (both the
+    // live Claude prompt and the _mock_weekly_report fallback use this exact
+    // wording) — a previous version of this list didn't match either, so the
+    // emoji/spacing pass below silently never fired. Emoji are optionally
+    // matched so we don't double them when the source already includes one.
     const formatted = raw
       .replace(/={3,}/g, '')
       .replace(/VEKTRA WEEKLY REPORT/g, '')
       .replace(/\[Note:.*?\]/g, '')
-      .replace(/TRAJECTORY STATUS:/g, '\n🎯 TRAJECTORY STATUS:')
-      .replace(/YOUR WINS THIS WEEK:/g, '\n\n🏆 YOUR WINS THIS WEEK:')
-      .replace(/SILENT KILLERS:/g, '\n\n⚠️ SILENT KILLERS:')
-      .replace(/THE NUMBERS DON'T LIE:/g, '\n\n📊 THE NUMBERS DON\'T LIE:')
-      .replace(/NEXT WEEK DIRECTIVE:/g, '\n\n🔥 NEXT WEEK DIRECTIVE:')
+      .replace(/(?:🎯\s*)?TRAJECTORY STATUS:/g, '\n🎯 TRAJECTORY STATUS:')
+      .replace(/(?:🏆\s*)?TARGETED VECTOR WINS:/g, '\n\n🏆 TARGETED VECTOR WINS:')
+      .replace(/(?:⚠️\s*)?THE SILENT KILLER:/g, '\n\n⚠️ THE SILENT KILLER:')
+      .replace(/(?:📊\s*)?SYSTEM STATISTICAL ANALYSIS:/g, '\n\n📊 SYSTEM STATISTICAL ANALYSIS:')
+      .replace(/(?:🔥\s*)?IMMEDIATE ACTION DIRECTIVE:/g, '\n\n🔥 IMMEDIATE ACTION DIRECTIVE:')
       .replace(/<a[^>]*>/g, '') // Remove opening anchor tags
       .replace(/<\/a>/g, '') // Remove closing anchor tags
       .replace(/<form[^>]*>/g, '') // Remove form tags
@@ -1891,9 +1896,12 @@ function buildRadarSVG(scores, size = 440) {
 
 function extractReportHighlight(narrative) {
   if (!narrative) return '';
-  const match = narrative.match(/YOUR WINS THIS WEEK:([\s\S]*?)(?=(SILENT KILLERS:|THE NUMBERS DON'T LIE:|NEXT WEEK DIRECTIVE:|$))/);
+  // Matches the real section headers ai_client.py emits (see loadReport's
+  // `formatted` block above for the same list) — pulls the first bullet out
+  // of the wins section to use as the shareable card's highlight line.
+  const match = narrative.match(/TARGETED VECTOR WINS:([\s\S]*?)(?=(THE SILENT KILLER:|SYSTEM STATISTICAL ANALYSIS:|IMMEDIATE ACTION DIRECTIVE:|$))/);
   if (match && match[1]) {
-    const line = match[1].split('\n').map(s => s.trim().replace(/^[-•*]\s*/, '')).find(s => s.length > 3);
+    const line = match[1].split('\n').map(s => s.trim().replace(/^[→\-•*]\s*/, '')).find(s => s.length > 3);
     if (line) return line;
   }
   return '';
@@ -5535,14 +5543,29 @@ async function loadDailyReport() {
       cfEl.style.color = (snap.daily_income - snap.expenses) >= 0 ? 'var(--success)' : 'var(--danger)';
     }
 
-    // Daily narrative — free tier is data only, no AI
+    // Daily narrative — free tier is data only (zero AI cost), paid tiers get
+    // a short AI-personalized narrative from the backend
     const tier = currentUser.tier || 'free';
-    if (tier === 'free') {
-      const summary = buildDailySummaryText(snap);
-      document.getElementById('report-narrative').innerHTML = summary;
-    } else {
-      // Tier 1/2 — AI narrative (needs Claude API)
-      document.getElementById('report-narrative').innerHTML = buildDailySummaryText(snap);
+    const narrativeEl = document.getElementById('report-narrative');
+    narrativeEl.innerHTML = buildDailySummaryText(snap);
+
+    if (tier !== 'free') {
+      try {
+        const aiRes = await fetch(`${API}/api/v1/users/${currentUser.id}/reports/generate`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ report_type: 'daily' })
+        });
+        if (aiRes.ok) {
+          const aiReport = await aiRes.json();
+          if (aiReport.summary_text) {
+            narrativeEl.innerHTML = aiReport.summary_text.replace(/\n/g, '<br>') + '<br><br>' + buildDailySummaryText(snap);
+          }
+        }
+      } catch (aiErr) {
+        console.error('Daily AI narrative error:', aiErr);
+        // narrativeEl already has the data-only fallback rendered above
+      }
     }
 
     // Engine bars from today's snapshot
