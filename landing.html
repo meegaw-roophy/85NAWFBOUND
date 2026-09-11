@@ -24,7 +24,8 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"></noscript>
 
   <style>
     * {
@@ -42,7 +43,7 @@
       --pink: #ec4899;
       --text: #f3f3f7;
       --muted: #9292a8;
-      --muted-2: #6e6e82;
+      --muted-2: #8888a0;
       --border: rgba(255,255,255,0.07);
       --border-strong: rgba(255,255,255,0.12);
       --success: #22c55e;
@@ -430,7 +431,7 @@
     }
 
     .waitlist-input::placeholder {
-      color: #606071;
+      color: var(--muted);
     }
 
     .waitlist-input:focus {
@@ -1236,6 +1237,8 @@
       </a>
     </div>
   </nav>
+
+  <main>
 
 
   <!-- =========================
@@ -2225,6 +2228,7 @@
 
   </section>
 
+  </main>
 
   <!-- =========================
        FOOTER
