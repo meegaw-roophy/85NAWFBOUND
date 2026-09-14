@@ -58,6 +58,7 @@
     <div style="margin-top:2rem;font-size:11px;color:var(--text-muted)">
       <span onclick="goTo('terms')" style="cursor:pointer;margin:0 8px">Terms</span>
       <span onclick="goTo('privacy')" style="cursor:pointer;margin:0 8px">Privacy</span>
+      <span onclick="goTo('cookies')" style="cursor:pointer;margin:0 8px">Cookies</span>
       <span onclick="goTo('about')" style="cursor:pointer;margin:0 8px">About</span>
     </div>
   </div>
@@ -71,28 +72,35 @@
   <div style="width:100%;max-width:320px">
     
     <div style="margin-bottom:16px">
-      <label style="font-size:12px;color:var(--text-secondary);letter-spacing:0.08em;text-transform:uppercase;display:block;margin-bottom:6px">Full Name <span style="color:var(--text-muted);font-weight:400;text-transform:none;letter-spacing:normal">(optional)</span></label>
+      <label for="reg-name" style="font-size:12px;color:var(--text-secondary);letter-spacing:0.08em;text-transform:uppercase;display:block;margin-bottom:6px">Full Name <span style="color:var(--text-muted);font-weight:400;text-transform:none;letter-spacing:normal">(optional)</span></label>
       <input id="reg-name" type="text" placeholder="John Bob" style="width:100%;padding:14px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:15px;outline:none;font-family:var(--font)">
     </div>
 
     <div style="margin-bottom:16px">
-      <label style="font-size:12px;color:var(--text-secondary);letter-spacing:0.08em;text-transform:uppercase;display:block;margin-bottom:6px">Username</label>
+      <label for="reg-username" style="font-size:12px;color:var(--text-secondary);letter-spacing:0.08em;text-transform:uppercase;display:block;margin-bottom:6px">Username</label>
       <input id="reg-username" type="text" placeholder="sivle" style="width:100%;padding:14px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:15px;outline:none;font-family:var(--font)">
     </div>
 
     <div style="margin-bottom:16px">
-      <label style="font-size:12px;color:var(--text-secondary);letter-spacing:0.08em;text-transform:uppercase;display:block;margin-bottom:6px">Email</label>
+      <label for="reg-email" style="font-size:12px;color:var(--text-secondary);letter-spacing:0.08em;text-transform:uppercase;display:block;margin-bottom:6px">Email</label>
       <input id="reg-email" type="email" placeholder="you@example.com" style="width:100%;padding:14px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:15px;outline:none;font-family:var(--font)">
     </div>
 
     <div style="margin-bottom:16px">
-      <label style="font-size:12px;color:var(--text-secondary);letter-spacing:0.08em;text-transform:uppercase;display:block;margin-bottom:6px">Password</label>
+      <label for="reg-password" style="font-size:12px;color:var(--text-secondary);letter-spacing:0.08em;text-transform:uppercase;display:block;margin-bottom:6px">Password</label>
       <input id="reg-password" type="password" placeholder="Min 8 chars + symbol" style="width:100%;padding:14px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:15px;outline:none;font-family:var(--font)">
     </div>
 
     <div style="margin-bottom:24px">
-      <label style="font-size:12px;color:var(--text-secondary);letter-spacing:0.08em;text-transform:uppercase;display:block;margin-bottom:6px">Referral code <span style="color:var(--text-muted);font-weight:400">(optional)</span></label>
+      <label for="reg-referral" style="font-size:12px;color:var(--text-secondary);letter-spacing:0.08em;text-transform:uppercase;display:block;margin-bottom:6px">Referral code <span style="color:var(--text-muted);font-weight:400">(optional)</span></label>
       <input id="reg-referral" type="text" placeholder="ABCD1234 or friend username" style="width:100%;padding:14px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:15px;outline:none;font-family:var(--font)">
+    </div>
+
+    <div style="display:flex;align-items:start;gap:8px;margin-bottom:16px">
+      <input type="checkbox" id="reg-terms-checkbox" style="margin-top:3px;accent-color:var(--accent);cursor:pointer">
+      <label for="reg-terms-checkbox" style="font-size:12px;color:var(--text-muted);cursor:pointer;line-height:1.4">
+        I agree to the <span style="color:var(--accent);cursor:pointer;text-decoration:underline" onclick="goTo('terms')">Terms of Service</span>, <span style="color:var(--accent);cursor:pointer;text-decoration:underline" onclick="goTo('privacy')">Privacy Policy</span>, and <span style="color:var(--accent);cursor:pointer;text-decoration:underline" onclick="goTo('cookies')">Cookie Policy</span>.
+      </label>
     </div>
 
     <div id="reg-error" style="display:none;color:var(--danger);font-size:13px;margin-bottom:16px;text-align:center"></div>
@@ -275,12 +283,12 @@
   <div style="width:100%;max-width:320px">
 
     <div style="margin-bottom:16px">
-      <label style="font-size:12px;color:var(--text-secondary);letter-spacing:0.08em;text-transform:uppercase;display:block;margin-bottom:6px">Username</label>
+      <label for="login-username" style="font-size:12px;color:var(--text-secondary);letter-spacing:0.08em;text-transform:uppercase;display:block;margin-bottom:6px">Username</label>
       <input id="login-username" type="text" placeholder="roophy" style="width:100%;padding:14px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:15px;outline:none;font-family:var(--font)">
     </div>
 
     <div style="margin-bottom:24px">
-      <label style="font-size:12px;color:var(--text-secondary);letter-spacing:0.08em;text-transform:uppercase;display:block;margin-bottom:6px">Password</label>
+      <label for="login-password" style="font-size:12px;color:var(--text-secondary);letter-spacing:0.08em;text-transform:uppercase;display:block;margin-bottom:6px">Password</label>
       <input id="login-password" type="password" placeholder="Your password" style="width:100%;padding:14px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:15px;outline:none;font-family:var(--font)">
     </div>
 
@@ -2248,34 +2256,50 @@
       <button onclick="goTo('dashboard')" style="background:transparent;border:none;color:var(--text-secondary);font-size:14px;cursor:pointer;margin-bottom:1rem">← Back</button>
       <h1 style="font-size:28px;font-weight:800;margin-bottom:1rem;color:var(--text-primary)">Terms of Service</h1>
       <div style="font-size:13px;color:var(--text-secondary);line-height:1.6">
-        <p style="margin-bottom:1rem"><strong>Last Updated:</strong> August 2026</p>
-        
+        <p style="margin-bottom:1rem"><strong>Last Updated:</strong> September 2026</p>
+        <p style="margin-bottom:1rem">VEKTRA is operated by Elvis Obulemire ("we", "us"), currently as an individual operator (incorporation of a formal company entity is in progress; this page will be updated once that completes). Contact: <a href="mailto:vektraapp@gmail.com" style="color:var(--accent)">vektraapp@gmail.com</a>.</p>
+
         <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">1. Acceptance of Terms</h2>
         <p style="margin-bottom:1rem">By accessing and using VEKTRA, you accept and agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use our service.</p>
-        
-        <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">2. Service Description</h2>
-        <p style="margin-bottom:1rem">VEKTRA is a personal progress tracking application that helps users monitor their daily activities, goals, and personal metrics through data logging and AI-powered insights.</p>
-        
-        <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">3. User Responsibilities</h2>
-        <p style="margin-bottom:1rem">Users are responsible for maintaining the confidentiality of their account credentials and for all activities that occur under their account. You agree to provide accurate and complete information.</p>
-        
-        <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">4. Subscription and Payment</h2>
-        <p style="margin-bottom:1rem">VEKTRA offers both free and paid subscription tiers. Paid subscriptions are billed in advance for the selected duration. No refunds will be provided for unused portions of a subscription period.</p>
-        
-        <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">5. Cancellation</h2>
-        <p style="margin-bottom:1rem">You may cancel your subscription at any time. Cancellation will take effect at the end of the current billing period. You will retain access until the period expires.</p>
-        
-        <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">6. Data and Privacy</h2>
-        <p style="margin-bottom:1rem">Your data is stored securely and processed according to our Privacy Policy. We do not sell your personal data to third parties.</p>
-        
-        <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">7. Disclaimer</h2>
-        <p style="margin-bottom:1rem">VEKTRA is provided "as is" without warranties of any kind. We are not liable for any damages arising from use of the service.</p>
-        
-        <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">8. Changes to Terms</h2>
-        <p style="margin-bottom:1rem">We reserve the right to modify these terms at any time. Continued use of the service constitutes acceptance of updated terms.</p>
-        
-        <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">9. Contact</h2>
-        <p style="margin-bottom:1rem">For questions about these terms, contact us through the app or via email.</p>
+
+        <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">2. Eligibility</h2>
+        <p style="margin-bottom:1rem">You must be at least 18 years old, or the age of majority in your jurisdiction, to create an account or purchase a subscription. By registering, you confirm you meet this requirement.</p>
+
+        <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">3. Service Description</h2>
+        <p style="margin-bottom:1rem">VEKTRA is a personal self-tracking and progress-analysis tool. You log daily data (mood, sleep, finances, goals, etc.) and VEKTRA computes scores and generates narrative summaries, including AI-generated text.</p>
+
+        <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">4. Not Medical, Financial, or Professional Advice</h2>
+        <p style="margin-bottom:1rem">VEKTRA's scores, insights, and AI-generated narratives are automated, data-driven summaries for personal reflection only. They are <strong>not</strong> medical, psychological, financial, investment, or professional advice of any kind, and are not a substitute for consulting a qualified professional. AI-generated text can be inaccurate or miss context — use your own judgment.</p>
+
+        <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">5. User Responsibilities</h2>
+        <p style="margin-bottom:1rem">Users are responsible for maintaining the confidentiality of their account credentials and for all activities that occur under their account. You agree to provide accurate and complete information and not to misuse the referral system or share fraudulent data.</p>
+
+        <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">6. Subscription and Payment</h2>
+        <p style="margin-bottom:1rem">VEKTRA offers both free and paid subscription tiers, billed in advance for the selected duration via our payment processors. No refunds are provided for unused portions of a subscription period — see our <span style="color:var(--accent);cursor:pointer;text-decoration:underline" onclick="goTo('refund')">Refund Policy</span> for full details and exceptions.</p>
+
+        <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">7. Cancellation</h2>
+        <p style="margin-bottom:1rem">You may cancel your subscription at any time. Cancellation stops future renewal; you retain access until the current paid period ends.</p>
+
+        <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">8. Data and Privacy</h2>
+        <p style="margin-bottom:1rem">Your data is processed according to our <span style="color:var(--accent);cursor:pointer;text-decoration:underline" onclick="goTo('privacy')">Privacy Policy</span>. We do not sell your personal data.</p>
+
+        <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">9. Disclaimer of Warranties</h2>
+        <p style="margin-bottom:1rem">VEKTRA is provided "as is" and "as available," without warranties of any kind, express or implied. We do not guarantee the service will be uninterrupted, error-free, or that AI-generated content will be accurate.</p>
+
+        <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">10. Limitation of Liability</h2>
+        <p style="margin-bottom:1rem">To the maximum extent permitted by law, VEKTRA and its operator are not liable for any indirect, incidental, or consequential damages arising from use of the service, including decisions made based on logged data or AI-generated insights.</p>
+
+        <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">11. Termination</h2>
+        <p style="margin-bottom:1rem">We may suspend or terminate accounts that violate these terms, engage in fraud (including referral abuse or payment fraud), or misuse the service.</p>
+
+        <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">12. Governing Law</h2>
+        <p style="margin-bottom:1rem">These Terms are governed by the laws of Kenya. This clause will be revisited once VEKTRA's registered corporate entity is established.</p>
+
+        <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">13. Changes to Terms</h2>
+        <p style="margin-bottom:1rem">We may modify these terms at any time. Continued use of the service after changes constitutes acceptance of the updated terms.</p>
+
+        <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">14. Contact</h2>
+        <p style="margin-bottom:1rem">Questions about these terms: <a href="mailto:vektraapp@gmail.com" style="color:var(--accent)">vektraapp@gmail.com</a>.</p>
       </div>
     </div>
   </div>
@@ -2286,37 +2310,66 @@
       <button onclick="goTo('dashboard')" style="background:transparent;border:none;color:var(--text-secondary);font-size:14px;cursor:pointer;margin-bottom:1rem">← Back</button>
       <h1 style="font-size:28px;font-weight:800;margin-bottom:1rem;color:var(--text-primary)">Privacy Policy</h1>
       <div style="font-size:13px;color:var(--text-secondary);line-height:1.6">
-        <p style="margin-bottom:1rem"><strong>Last Updated:</strong> August 2026</p>
-        
+        <p style="margin-bottom:1rem"><strong>Last Updated:</strong> September 2026</p>
+
         <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">1. Information We Collect</h2>
-        <p style="margin-bottom:1rem">We collect information you provide directly, including your username, email, date of birth, and the data you log through daily snapshots (mood, finances, goals, activities, etc.).</p>
-        
+        <p style="margin-bottom:1rem">Account info you provide directly: username, email, optional full name and date of birth. If you sign in with Google, we receive your name, email, and profile picture from Google. Daily snapshot data you log: mood, energy, sleep, screen time, income/expenses/savings, goals, decisions, and similar self-reported metrics. This data is self-reported personal reflection, not medical or financial records.</p>
+
         <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">2. How We Use Your Data</h2>
-        <p style="margin-bottom:1rem">Your data is used to provide personalized insights, generate reports, calculate trajectory scores, and improve our services. We use AI to analyze your logged data for pattern recognition and coaching insights.</p>
-        
+        <p style="margin-bottom:1rem">To calculate your VEKTRA score, generate reports, and provide the service you sign up for. To generate AI narrative reports, relevant portions of your logged data (not your name or contact details) are sent to Anthropic's Claude API for processing under Anthropic's own data handling terms.</p>
+
         <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">3. Data Storage and Security</h2>
-        <p style="margin-bottom:1rem">Your data is stored securely on Supabase with encryption at rest. We implement industry-standard security measures to protect your information.</p>
-        
-        <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">4. Data Sharing</h2>
-        <p style="margin-bottom:1rem">We do not sell your personal data to third parties. Your data may be shared with service providers (like AI APIs) only as necessary to provide the service, under strict confidentiality agreements.</p>
-        
+        <p style="margin-bottom:1rem">Your data is stored on our hosted database infrastructure and transmitted over encrypted HTTPS connections. We use standard security practices, but no system is 100% secure.</p>
+
+        <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">4. Third Parties We Use</h2>
+        <p style="margin-bottom:1rem">Anthropic (AI report generation), Stripe and Paystack (payment processing — we never see or store your full card/M-Pesa details), Google (Sign-In authentication and web fonts), Cloudflare (content delivery for a library used to generate shareable images), and our hosting providers. We do not sell your personal data to advertisers or data brokers.</p>
+
         <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">5. Your Rights</h2>
-        <p style="margin-bottom:1rem">You have the right to access, correct, or delete your personal data. You can export your data at any time through the app. Account deletion permanently removes all your data.</p>
-        
-        <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">6. Cookies and Tracking</h2>
-        <p style="margin-bottom:1rem">We use essential cookies for app functionality. We do not use tracking cookies for advertising purposes.</p>
-        
+        <p style="margin-bottom:1rem">You can export your logged data as CSV/JSON at any time from within the app. To request correction or deletion of your account and data, email <a href="mailto:vektraapp@gmail.com" style="color:var(--accent)">vektraapp@gmail.com</a> — we will action verified requests within 30 days. (Self-service in-app account deletion is planned but not yet available.)</p>
+
+        <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">6. Cookies and Local Storage</h2>
+        <p style="margin-bottom:1rem">See our <span style="color:var(--accent);cursor:pointer;text-decoration:underline" onclick="goTo('cookies')">Cookie Policy</span> for full detail. In short: we use browser local storage (not cookies) for login sessions and preferences, and do not use advertising or tracking cookies.</p>
+
         <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">7. Children's Privacy</h2>
-        <p style="margin-bottom:1rem">VEKTRA is not intended for users under 13 years of age. We do not knowingly collect data from children.</p>
-        
+        <p style="margin-bottom:1rem">VEKTRA is not intended for children under 13, and accounts/subscriptions require you to be 18 or the age of majority in your jurisdiction (see Terms). We do not knowingly collect data from children under 13.</p>
+
         <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">8. International Data Transfers</h2>
-        <p style="margin-bottom:1rem">Your data may be processed and stored in servers located outside your country. We ensure appropriate safeguards are in place.</p>
-        
+        <p style="margin-bottom:1rem">Our service providers (hosting, AI, payments) operate infrastructure in multiple countries, so your data may be processed outside your home country.</p>
+
         <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">9. Policy Updates</h2>
-        <p style="margin-bottom:1rem">We may update this policy from time to time. Significant changes will be communicated through the app.</p>
-        
+        <p style="margin-bottom:1rem">We may update this policy from time to time. Material changes will be reflected here with an updated date.</p>
+
         <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">10. Contact</h2>
-        <p style="margin-bottom:1rem">For privacy-related inquiries, contact us through the app or via email.</p>
+        <p style="margin-bottom:1rem">Privacy questions or data requests: <a href="mailto:vektraapp@gmail.com" style="color:var(--accent)">vektraapp@gmail.com</a>.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREEN: COOKIE POLICY -->
+  <div id="cookies" style="display:none;flex-direction:column;align-items:center;min-height:100vh;padding:2rem;background:var(--bg-primary)">
+    <div style="max-width:600px;width:100%;text-align:left">
+      <button onclick="goTo('dashboard')" style="background:transparent;border:none;color:var(--text-secondary);font-size:14px;cursor:pointer;margin-bottom:1rem">← Back</button>
+      <h1 style="font-size:28px;font-weight:800;margin-bottom:1rem;color:var(--text-primary)">Cookie Policy</h1>
+      <div style="font-size:13px;color:var(--text-secondary);line-height:1.6">
+        <p style="margin-bottom:1rem"><strong>Last Updated:</strong> September 2026</p>
+
+        <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">1. We Don't Use Tracking Cookies</h2>
+        <p style="margin-bottom:1rem">VEKTRA does not use advertising cookies, analytics cookies, or any third-party tracking cookies. We don't run Google Analytics, Meta Pixel, or similar tools.</p>
+
+        <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">2. What We Actually Use: Local Storage</h2>
+        <p style="margin-bottom:1rem">Instead of cookies, the VEKTRA app uses your browser's local storage to keep you logged in, remember your preferences (like theme), and save unsaved drafts. This data stays on your device, is not readable by other websites, and is considered "strictly necessary" for the app to function — it doesn't require consent under most privacy laws.</p>
+
+        <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">3. Cookies Set by Third-Party Services</h2>
+        <p style="margin-bottom:1rem">A few features load scripts from other companies, and those companies may set their own cookies under their own privacy policies, independent of VEKTRA:</p>
+        <p style="margin-bottom:0.5rem">→ <strong>Google Sign-In</strong> — when you choose to sign in with Google.</p>
+        <p style="margin-bottom:0.5rem">→ <strong>Google Fonts</strong> — used to load our typeface.</p>
+        <p style="margin-bottom:1rem">→ <strong>Cloudflare (cdnjs)</strong> — used only when you generate a shareable report image.</p>
+
+        <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">4. Our Own Analytics</h2>
+        <p style="margin-bottom:1rem">Our marketing landing page logs anonymous click events (which button was clicked, not who clicked it) directly to our own server — no cookie is set to do this.</p>
+
+        <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">5. Contact</h2>
+        <p style="margin-bottom:1rem">Questions: <a href="mailto:vektraapp@gmail.com" style="color:var(--accent)">vektraapp@gmail.com</a>.</p>
       </div>
     </div>
   </div>
@@ -2488,51 +2541,4 @@
     else window.goTo(screenId);
   };
 </script>
-
-<!-- TERMS SCREEN -->
-<div id="terms" style="display:none;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:2rem;">
-  <div style="width:100%;max-width:600px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:2rem;">
-    <h2 style="font-size:24px;font-weight:700;margin-bottom:1rem;color:var(--text-primary)">Terms of Service</h2>
-    <div style="font-size:14px;color:var(--text-secondary);line-height:1.6;margin-bottom:2rem;max-height:400px;overflow-y:auto;">
-      <p style="margin-bottom:1rem"><strong>1. Acceptance of Terms</strong><br>By using VEKTRA, you agree to these terms.</p>
-      <p style="margin-bottom:1rem"><strong>2. User Responsibilities</strong><br>You are responsible for maintaining account security and accurate data.</p>
-      <p style="margin-bottom:1rem"><strong>3. Data Privacy</strong><br>Your data is stored securely and used to provide trajectory insights.</p>
-      <p style="margin-bottom:1rem"><strong>4. Subscription Terms</strong><br>Subscriptions auto-renew unless cancelled. Refunds handled case-by-case.</p>
-      <p style="margin-bottom:1rem"><strong>5. Limitation of Liability</strong><br>VEKTRA is not liable for decisions based on trajectory data.</p>
-      <p style="margin-bottom:1rem"><strong>6. Contact</strong><br>For questions, contact support@vektra.app</p>
-    </div>
-    <button class="btn-primary" onclick="goTo('welcome')">Back</button>
-  </div>
-</div>
-
-<!-- PRIVACY SCREEN -->
-<div id="privacy" style="display:none;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:2rem;">
-  <div style="width:100%;max-width:600px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:2rem;">
-    <h2 style="font-size:24px;font-weight:700;margin-bottom:1rem;color:var(--text-primary)">Privacy Policy</h2>
-    <div style="font-size:14px;color:var(--text-secondary);line-height:1.6;margin-bottom:2rem;max-height:400px;overflow-y:auto;">
-      <p style="margin-bottom:1rem"><strong>1. Data Collection</strong><br>We collect daily logs, goals, and analytics data you provide.</p>
-      <p style="margin-bottom:1rem"><strong>2. Data Usage</strong><br>Data is used to generate trajectory insights and improve services.</p>
-      <p style="margin-bottom:1rem"><strong>3. Data Security</strong><br>All data is encrypted and stored securely. We never sell your data.</p>
-      <p style="margin-bottom:1rem"><strong>4. Third-Party Services</strong><br>We use payment processors (Paystack) for subscriptions only.</p>
-      <p style="margin-bottom:1rem"><strong>5. Your Rights</strong><br>You can export or delete your data at any time from your profile.</p>
-      <p style="margin-bottom:1rem"><strong>6. Contact</strong><br>For privacy inquiries, contact privacy@vektra.app</p>
-    </div>
-    <button class="btn-primary" onclick="goTo('welcome')">Back</button>
-  </div>
-</div>
-
-<!-- ABOUT SCREEN -->
-<div id="about" style="display:none;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:2rem;">
-  <div style="width:100%;max-width:600px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:2rem;">
-    <h2 style="font-size:24px;font-weight:700;margin-bottom:1rem;color:var(--text-primary)">About VEKTRA</h2>
-    <div style="font-size:14px;color:var(--text-secondary);line-height:1.6;margin-bottom:2rem;max-height:400px;overflow-y:auto;">
-      <p style="margin-bottom:1rem"><strong>What is VEKTRA?</strong><br>VEKTRA turns your daily life data into a measurable trajectory. Track, analyze, and understand whether you're actually moving forward.</p>
-      <p style="margin-bottom:1rem"><strong>The Mission</strong><br>To help people see their life trajectory clearly and make data-driven decisions about their future.</p>
-      <p style="margin-bottom:1rem"><strong>How It Works</strong><br>Log daily metrics (mood, energy, focus, habits) and we calculate your VEKTRA score - a composite measure of your life's direction and momentum.</p>
-      <p style="margin-bottom:1rem"><strong>Version</strong><br>VEKTRA v1.0 - Launch 2026</p>
-      <p style="margin-bottom:1rem"><strong>Contact</strong><br>hello@vektra.app</p>
-    </div>
-    <button class="btn-primary" onclick="goTo('welcome')">Back</button>
-  </div>
-</div>
 

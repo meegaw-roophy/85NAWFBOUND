@@ -573,6 +573,13 @@ async function register() {
     return;
   }
 
+  const termsCheckbox = document.getElementById('reg-terms-checkbox');
+  if (termsCheckbox && !termsCheckbox.checked) {
+    errEl.textContent = 'Please agree to the Terms, Privacy Policy, and Cookie Policy to continue.';
+    errEl.style.display = 'block';
+    return;
+  }
+
   if (btnEl) {
     btnEl.disabled = true;
     btnEl.textContent = 'Creating account...';
