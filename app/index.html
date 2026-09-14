@@ -966,6 +966,8 @@
     <button onclick="openUpgrade()" style="padding:8px 16px;background:linear-gradient(135deg,#6c63ff,#ec4899);border:none;border-radius:var(--radius-sm);color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font)">Upgrade</button>
   </div>
 
+  <button id="admin-link-btn" class="btn-secondary" style="display:none;margin-bottom:1rem" onclick="openAdminAnalytics()">📊 Admin: Landing Analytics</button>
+
   <!-- Stats Row -->
   <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:1rem">
     <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:.75rem;text-align:center">
@@ -1241,6 +1243,37 @@
       </div>
     </div>
   </div>
+
+</div>
+
+<!-- SCREEN: ADMIN ANALYTICS (visible only to the roophy account) -->
+<div id="admin" style="display:none;flex-direction:column;min-height:100vh;padding:1.5rem;max-width:420px;margin:0 auto">
+
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;padding-top:1rem">
+    <div>
+      <div style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.1em">Admin</div>
+      <div style="font-size:18px;font-weight:700">Landing Page Clicks</div>
+    </div>
+    <div onclick="goTo('profile')" style="color:var(--text-muted);cursor:pointer;font-size:13px">← Back</div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:1rem">
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;text-align:center">
+      <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px">Last 24H</div>
+      <div id="admin-clicks-24h" style="font-size:32px;font-weight:800;color:var(--accent)">—</div>
+    </div>
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;text-align:center">
+      <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px">All Time</div>
+      <div id="admin-clicks-total" style="font-size:32px;font-weight:800">—</div>
+    </div>
+  </div>
+
+  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem">
+    <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">By Link (Last 24H)</div>
+    <div id="admin-clicks-breakdown" style="display:flex;flex-direction:column;gap:8px;font-size:13px;color:var(--text-secondary)">Loading…</div>
+  </div>
+
+  <button class="btn-secondary" style="margin-top:1rem" onclick="openAdminAnalytics()">↺ Refresh</button>
 
 </div>
 

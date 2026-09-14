@@ -2337,6 +2337,8 @@ async function openProfile() {
   if (!currentUser) return;
   document.getElementById('profile-username').textContent = currentUser.username || '—';
   document.getElementById('profile-tier').textContent = currentUser.tier || 'Free';
+  const adminBtn = document.getElementById('admin-link-btn');
+  if (adminBtn) adminBtn.style.display = currentUser.username === 'roophy' ? 'block' : 'none';
   document.getElementById('profile-northstar').value = currentUser.north_star || '';
   profileTone = currentUser.preferred_feedback_tone || 'Balanced';
   setProfileTone(profileTone);
@@ -4416,6 +4418,42 @@ function clearCache() {
     showToast('Cache cleared successfully', 'success');
   }
 }
+
+async function openAdminAnalytics() {
+  goTo('admin');
+  if (!currentUser || !authToken) return;
+
+  const breakdownEl = document.getElementById('admin-clicks-breakdown');
+  breakdownEl.textContent = 'Loading…';
+
+  try {
+    const res = await fetch(`${API}/api/v1/analytics/landing-clicks`, {
+      headers: { 'Authorization': `Bearer ${authToken}` }
+    });
+    if (!res.ok) {
+      breakdownEl.textContent = res.status === 403 ? 'Admin access required.' : 'Could not load analytics.';
+      return;
+    }
+    const data = await res.json();
+    document.getElementById('admin-clicks-24h').textContent = data.last_24h ?? '—';
+    document.getElementById('admin-clicks-total').textContent = data.total ?? '—';
+
+    if (!data.by_link_24h || data.by_link_24h.length === 0) {
+      breakdownEl.innerHTML = '<span style="color:var(--text-muted)">No clicks in the last 24 hours.</span>';
+    } else {
+      breakdownEl.innerHTML = data.by_link_24h.map(row => `
+        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)">
+          <span>${row.link}</span>
+          <span style="font-weight:700;color:var(--text-primary)">${row.count}</span>
+        </div>
+      `).join('');
+    }
+  } catch (e) {
+    console.error('Admin analytics load error:', e);
+    breakdownEl.textContent = 'Connection error. Try again.';
+  }
+}
+window.openAdminAnalytics = openAdminAnalytics;
 
 function confirmDeleteAccount() {
   if (confirm('Are you absolutely sure? This cannot be undone. All your data will be permanently deleted.')) {
