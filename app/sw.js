@@ -1,4 +1,4 @@
-const CACHE_NAME = 'vektra-v4';
+const CACHE_NAME = 'vektra-v5';
 
 // 1. Core static assets to cache for 100% offline functionality
 const PRECACHE_ASSETS = [
@@ -50,36 +50,36 @@ self.addEventListener('fetch', e => {
 
   // 2. For navigation requests (requests that accept HTML), always serve index.html
   // This enables SPA routing with query parameters like ?offer=quick-money
+  // NETWORK-FIRST: a stale cached shell is worse than a slow one — this app
+  // deploys often, and cache-first here previously meant returning users could
+  // be stuck on whatever was cached weeks ago until they cleared site data.
+  // Cache is now purely an offline fallback, not the default source.
   const isNavigation = e.request.mode === 'navigate';
-  
+
   if (isNavigation) {
     e.respondWith(
-      caches.match('/app/index.html').then(cachedResponse => {
-        if (cachedResponse) return cachedResponse;
-        return fetch('/app/index.html').then(networkResponse => {
-          if (networkResponse && networkResponse.ok) {
-            const clone = networkResponse.clone();
-            caches.open(CACHE_NAME).then(cache => cache.put('/app/index.html', clone));
-          }
-          return networkResponse;
-        });
-      }).catch(() => fetch('/app/index.html'))
+      fetch('/app/index.html').then(networkResponse => {
+        if (networkResponse && networkResponse.ok) {
+          const clone = networkResponse.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put('/app/index.html', clone));
+        }
+        return networkResponse;
+      }).catch(() => caches.match('/app/index.html'))
     );
     return;
   }
 
-  // 3. For same-origin static assets, use cache-first with a network fallback
+  // 3. For same-origin static assets, also network-first for the same reason —
+  // app.js/style.css aren't filename-versioned, so a stale cache-first hit
+  // means shipped JS/CSS changes silently never reach returning users.
   e.respondWith(
-    caches.match(e.request).then(cachedResponse => {
-      if (cachedResponse) return cachedResponse;
-      return fetch(e.request).then(networkResponse => {
-        if (networkResponse && networkResponse.ok) {
-          const clone = networkResponse.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(e.request, clone));
-        }
-        return networkResponse;
-      });
-    }).catch(() => caches.match('/app/index.html'))
+    fetch(e.request).then(networkResponse => {
+      if (networkResponse && networkResponse.ok) {
+        const clone = networkResponse.clone();
+        caches.open(CACHE_NAME).then(cache => cache.put(e.request, clone));
+      }
+      return networkResponse;
+    }).catch(() => caches.match(e.request).then(cached => cached || caches.match('/app/index.html')))
   );
 });
 
