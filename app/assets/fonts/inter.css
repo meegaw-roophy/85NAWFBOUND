@@ -1,0 +1,11 @@
+/* Self-hosted Inter (Latin subset, variable weight 100-900), replacing the
+   Google Fonts CDN link. Avoids sending visitor IPs to Google on every page
+   load (the exact pattern that drew a GDPR fine in Germany in 2022) and
+   removes an external network dependency. */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('Inter.woff2') format('woff2');
+}
