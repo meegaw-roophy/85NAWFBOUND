@@ -146,6 +146,13 @@ async def refresh_fx_cache_if_stale() -> None:
 #  handful of genuine edge cases. Revisit every value here once real
 #  paying-user geography exists (country_code is now actually populated —
 #  see the pricing pipeline fix) instead of guessing further from priors.
+#
+#  2026-09 price test: nudged 26 countries upward (a couple down) from the
+#  initial estimate below, on the theory that if a market can absorb more,
+#  charge more. Values marked "tested" are the live ones being watched;
+#  everything else is still the original estimate. No A/B split exists —
+#  this replaces the old value outright, watch conversion/revenue over the
+#  following weeks to judge it.
 # ─────────────────────────────────────────────
 PPP_FACTORS = {
     # ── 1.00 — core high-income anglophone / nordic / western european ──
@@ -164,49 +171,67 @@ PPP_FACTORS = {
     # ── 0.92 — high income, smaller markets ──
     "IL": 0.92, "CY": 0.92, "MT": 0.92,
 
-    # ── 0.88 — southern europe / advanced asia ──
-    "ES": 0.88, "IT": 0.88, "TW": 0.88, "SA": 0.88, "SI": 0.88,
+    # ── ~0.88 — southern europe / advanced asia / gulf ──
+    "ES": 0.88, "IT": 0.88, "TW": 0.88, "SI": 0.88,
+    "SA": 0.90,  # tested, was 0.88
 
-    # ── 0.83 — upper southern/eastern europe ──
-    "PT": 0.83, "EE": 0.83, "LT": 0.83, "LV": 0.83, "GR": 0.83,
+    # ── ~0.83 — upper southern/eastern europe ──
+    "EE": 0.83, "LT": 0.83, "LV": 0.83, "GR": 0.83,
+    "PT": 0.85,  # tested, was 0.83
 
-    # ── 0.78 — central europe ──
-    "PL": 0.78, "HU": 0.78, "SK": 0.78, "HR": 0.78,
+    # ── ~0.78 — central europe ──
+    "SK": 0.78, "HR": 0.78,
+    "PL": 0.80,  # tested, was 0.78
+    "HU": 0.77,  # tested, was 0.78 (down slightly)
 
-    # ── 0.73 — upper-middle, resource/industrial economies ──
-    "CZ": 0.73, "RU": 0.73, "KZ": 0.73, "BG": 0.73, "UY": 0.73,
+    # ── ~0.73 — upper-middle, resource/industrial economies ──
+    "RU": 0.73, "KZ": 0.73, "BG": 0.73, "UY": 0.73,
+    "CZ": 0.78,  # tested, was 0.73
 
-    # ── 0.68 — upper-middle latin/balkan ──
-    "CL": 0.68, "RO": 0.68, "RS": 0.68, "ME": 0.68, "MK": 0.68,
-    "PA": 0.68, "CR": 0.68,
+    # ── ~0.68 — upper-middle latin/balkan ──
+    "CL": 0.68, "RS": 0.68, "ME": 0.68, "MK": 0.68, "PA": 0.68, "CR": 0.68,
+    "RO": 0.71,  # tested, was 0.68
 
-    # ── 0.63 — large emerging markets ──
-    "CN": 0.63, "MX": 0.63, "TR": 0.63, "BW": 0.63, "GE": 0.63,
-    "AM": 0.63, "AZ": 0.63,
+    # ── ~0.63 — large emerging markets ──
+    "TR": 0.63, "BW": 0.63, "GE": 0.63, "AM": 0.63, "AZ": 0.63,
+    "CN": 0.70,  # tested, was 0.63
+    "MX": 0.66,  # tested, was 0.63
 
-    # ── 0.58 — middle income, mixed regions ──
-    "MY": 0.58, "TH": 0.58, "EC": 0.58, "JO": 0.58, "TN": 0.58,
-    "AL": 0.58, "NA": 0.58, "FJ": 0.58,
+    # ── ~0.58 — middle income, mixed regions ──
+    "EC": 0.58, "JO": 0.58, "TN": 0.58, "AL": 0.58, "NA": 0.58, "FJ": 0.58,
+    "MY": 0.62,  # tested, was 0.58
+    "TH": 0.61,  # tested, was 0.58
 
-    # ── 0.53 — lower-middle, larger populations ──
-    "BR": 0.53, "ZA": 0.53, "CO": 0.53, "PE": 0.53, "AR": 0.53,
-    "DO": 0.53, "JM": 0.53, "LK": 0.53,
+    # ── ~0.53 — lower-middle, larger populations ──
+    "AR": 0.53, "DO": 0.53, "JM": 0.53, "LK": 0.53,
+    "ZA": 0.57,  # tested, was 0.53
+    "BR": 0.56,  # tested, was 0.53
+    "CO": 0.55,  # tested, was 0.53
+    "PE": 0.55,  # tested, was 0.53
 
-    # ── 0.48 — lower-middle income ──
+    # ── ~0.48 — lower-middle income ──
     "MA": 0.48, "DZ": 0.48, "LY": 0.48, "IQ": 0.48, "GT": 0.48,
-    "SV": 0.48, "HN": 0.48, "NI": 0.48, "BO": 0.48, "ID": 0.48,
-    "PH": 0.48,
+    "SV": 0.48, "HN": 0.48, "NI": 0.48, "BO": 0.48,
+    "ID": 0.51,  # tested, was 0.48
+    "PH": 0.51,  # tested, was 0.48
 
-    # ── 0.44 — low-middle income ──
-    "VN": 0.44, "EG": 0.44, "GH": 0.44, "CI": 0.44, "SN": 0.44,
-    "CM": 0.44, "ZM": 0.44, "AO": 0.44, "KH": 0.44, "LA": 0.44,
-    "MM": 0.44, "NP": 0.44, "UZ": 0.44, "BD": 0.44,
+    # ── ~0.44 — low-middle income ──
+    "CI": 0.44, "SN": 0.44, "CM": 0.44, "ZM": 0.44, "AO": 0.44,
+    "KH": 0.44, "LA": 0.44, "MM": 0.44, "NP": 0.44, "UZ": 0.44, "BD": 0.44,
+    "VN": 0.47,  # tested, was 0.44
+    "GH": 0.46,  # tested, was 0.44
+    "EG": 0.50,  # tested, was 0.44
 
-    # ── 0.40 — floor: lowest-income markets ──
-    "IN": 0.40, "NG": 0.40, "PK": 0.40, "KE": 0.40, "TZ": 0.40,
-    "ET": 0.40, "UG": 0.40, "RW": 0.40, "ML": 0.40, "BF": 0.40,
-    "NE": 0.40, "TD": 0.40, "MZ": 0.40, "MW": 0.40, "MG": 0.40,
-    "SD": 0.40, "GN": 0.40, "BJ": 0.40,
+    # ── 0.40 floor, minus the tested markets below ──
+    "ET": 0.40, "ML": 0.40, "BF": 0.40, "NE": 0.40, "TD": 0.40,
+    "MZ": 0.40, "MW": 0.40, "MG": 0.40, "SD": 0.40, "GN": 0.40, "BJ": 0.40,
+    "PK": 0.42,  # tested, was 0.40
+    "TZ": 0.42,  # tested, was 0.40
+    "UG": 0.42,  # tested, was 0.40
+    "IN": 0.43,  # tested, was 0.40
+    "NG": 0.43,  # tested, was 0.40
+    "RW": 0.44,  # tested, was 0.40
+    "KE": 0.45,  # tested, was 0.40
 
     "DEFAULT": 0.75,
 }
