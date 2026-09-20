@@ -465,7 +465,7 @@ async function detectUserLocation() {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 5000);
 
-    const res = await fetch('https://ipapi.co', { signal: controller.signal });
+    const res = await fetch('https://ipapi.co/json/', { signal: controller.signal });
     clearTimeout(timeoutId);
 
     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
@@ -595,7 +595,8 @@ async function register() {
       username,
       email,
       password,
-      current_location: locationData.location,
+      current_location: locationData.location_string,
+      country_code: locationData.country_code,
       currency: locationData.currency
     };
     if (referralCode) {
@@ -756,19 +757,23 @@ async function loginWithCredentials(username, password, onSlow = null) {
     Cache.clear();
 
     // 2. Auto-detect and sync location if not set
-    if (currentUser && (!currentUser.current_location || !currentUser.currency)) {
+    if (currentUser && (!currentUser.current_location || !currentUser.country_code || !currentUser.currency)) {
       const locationData = await detectUserLocation();
-      await fetch(`${API}/api/v1/users/me`, {
+      const patchRes = await fetch(`${API}/api/v1/users/me`, {
         method: 'PATCH',
         headers: {
           'Authorization': `Bearer ${authToken}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          current_location: locationData.location || currentUser.current_location,
+          current_location: locationData.location_string || currentUser.current_location,
+          country_code: locationData.country_code || currentUser.country_code,
           currency: locationData.currency || currentUser.currency
         })
       });
+      if (patchRes.ok) {
+        currentUser = await patchRes.json();
+      }
     }
 
     // 3. Absolute safety fallback to prevent "reading properties of null"
@@ -5064,7 +5069,7 @@ async function calculatePrice(days) {
     const body = {
       tier: selectedTierUpgrade,
       currency: currentUser.currency || 'USD',
-      country_code: currentUser.current_location ? getCountryCode() : 'DEFAULT',
+      country_code: currentUser.country_code || 'DEFAULT',
       special_offer: specialOfferActive
     };
     
@@ -5106,15 +5111,6 @@ async function calculatePrice(days) {
 
 // Debounced version for amount input events
 const debouncedCalculatePrice = debounce((days) => calculatePrice(days), 500);
-
-function getCountryCode() {
-  const currencyToCountry = {
-    'KES':'KE','NGN':'NG','GHS':'GH','ZAR':'ZA',
-    'UGX':'UG','TZS':'TZ','GBP':'GB','EUR':'DE',
-    'INR':'IN','BRL':'BR','MXN':'MX','USD':'US'
-  };
-  return currencyToCountry[currentUser.currency] || 'DEFAULT';
-}
 
 function renderPriceCard(data) {
   const amount = data?.total || parseFloat(document.getElementById('amount-input').value) || 0;
@@ -5322,7 +5318,6 @@ window.onAmountChange = onAmountChange;
 window.switchTab = switchTab;
 window.updateAmountConstraints = updateAmountConstraints;
 window.calculatePrice = calculatePrice;
-window.getCountryCode = getCountryCode;
 window.renderPriceCard = renderPriceCard;
 window.startPriceLockCountdown = startPriceLockCountdown;
 window.proceedToCheckout = proceedToCheckout;

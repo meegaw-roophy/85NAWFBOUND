@@ -30,6 +30,7 @@ from typing import Optional
 import datetime
 import json
 import os
+import httpx
 
 router = APIRouter(prefix="/pricing", tags=["pricing"])
 
@@ -71,18 +72,56 @@ CURRENCY_SYMBOLS = {
     "MXN": "$", "EGP": "EGP", "ZMW": "ZMW", "XOF": "XOF",
 }
 
+FX_CACHE_PATH = os.path.join(os.path.dirname(__file__), "fx_cache.json")
+FX_API_URL = "https://open.er-api.com/v6/latest/USD"  # free, no API key, updates daily
+FX_CACHE_MAX_AGE_HOURS = 24
+
+
 def get_fx_rates() -> dict:
-    """Load live FX rates from cache file, fall back to hardcoded."""
-    cache_path = os.path.join(os.path.dirname(__file__), "fx_cache.json")
-    if os.path.exists(cache_path):
+    """Load FX rates from cache file (refreshed by refresh_fx_cache_if_stale), fall back to hardcoded."""
+    if os.path.exists(FX_CACHE_PATH):
         try:
-            with open(cache_path, "r") as f:
+            with open(FX_CACHE_PATH, "r") as f:
                 data = json.load(f)
                 if data and isinstance(data, dict):
                     return {**FALLBACK_FX, **data}
         except Exception:
             pass
     return FALLBACK_FX
+
+
+async def refresh_fx_cache_if_stale() -> None:
+    """
+    Fetch live FX rates once per day and write them to fx_cache.json.
+
+    No background worker exists for this (the comment above previously
+    promised one that was never built, so this file never got created and
+    pricing silently ran on hardcoded rates forever — some off by ~3x from
+    live, e.g. ETB). Lazily refreshing on the first pricing request after the
+    cache goes stale avoids needing a separate always-running process. Never
+    raises: any failure just means pricing keeps using whatever was cached
+    (or FALLBACK_FX), which is always safe.
+    """
+    try:
+        if os.path.exists(FX_CACHE_PATH):
+            age_hours = (datetime.datetime.now().timestamp() - os.path.getmtime(FX_CACHE_PATH)) / 3600
+            if age_hours < FX_CACHE_MAX_AGE_HOURS:
+                return
+    except Exception:
+        pass
+
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            resp = await client.get(FX_API_URL)
+            resp.raise_for_status()
+            data = resp.json()
+            rates = data.get("rates") or {}
+            wanted = {code: rates[code] for code in FALLBACK_FX if code in rates}
+            if wanted:
+                with open(FX_CACHE_PATH, "w") as f:
+                    json.dump(wanted, f)
+    except Exception:
+        pass
 
 
 # ─────────────────────────────────────────────
@@ -301,7 +340,9 @@ async def calculate_price(
     current_user: User = Depends(get_current_user)
 ):
     """Calculate final price — single source of truth."""
-    
+
+    await refresh_fx_cache_if_stale()
+
     # Check if special offer is active
     campaign_timezone = datetime.timezone(datetime.timedelta(hours=3))
     SPECIAL_OFFER_DEADLINE = datetime.datetime(2026, 9, 9, 23, 59, 59, tzinfo=campaign_timezone)

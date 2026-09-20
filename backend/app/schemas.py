@@ -11,6 +11,8 @@ class UserCreate(BaseModel):
     full_name: Optional[str] = None
     dob: Optional[date] = None
     current_location: Optional[str] = None
+    country_code: Optional[str] = None
+    currency: Optional[str] = None
     language: Optional[str] = None
     primary_goal: Optional[str] = None
 
@@ -32,6 +34,7 @@ class UserOut(BaseModel):
     tier_expires_at: Optional[datetime] = None  # 2. RECOMMENDED: Kept as datetime/date or string
     created_at: Optional[datetime] = None
     current_location: Optional[str] = None
+    country_code: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
 

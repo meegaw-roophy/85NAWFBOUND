@@ -26,6 +26,7 @@ class UserUpdate(BaseModel):
     ai_tone_language: Optional[str] = None
     reminder_time: Optional[time] = None
     current_location: Optional[str] = None
+    country_code: Optional[str] = None
     dob: Optional[date] = None
 
 
@@ -51,6 +52,7 @@ class UserOut(BaseModel):
     tier_expires_at: Optional[datetime] = None  # 2. RECOMMENDED: Kept as datetime/date or string
     created_at: Optional[datetime] = None
     current_location: Optional[str] = None
+    country_code: Optional[str] = None
     dob: Optional[date] = None
     vek_credit_balance: Optional[int] = 0
     referral_count: Optional[int] = 0

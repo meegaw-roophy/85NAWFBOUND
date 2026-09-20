@@ -60,7 +60,8 @@ class User(Base):
     tier_expires_at         = Column(DateTime,    nullable=True)
 
     # ── location (for PPP pricing) ────────────
-    current_location        = Column(String(100), nullable=True)
+    current_location        = Column(String(100), nullable=True)  # human-readable, e.g. "Nairobi, Kenya"
+    country_code            = Column(String(5),   nullable=True)  # ISO alpha-2, e.g. "KE" — used directly for PPP lookup
 
     # ── relationships ─────────────────────────
     snapshots               = relationship('Snapshot',    back_populates='user', cascade='all, delete')
