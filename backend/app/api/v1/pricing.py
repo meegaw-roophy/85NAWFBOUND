@@ -42,26 +42,26 @@ router = APIRouter(prefix="/pricing", tags=["pricing"])
 #  Falls back to hardcoded rates if file missing.
 # ─────────────────────────────────────────────
 FALLBACK_FX = {
-    "USD": 1.00,
-    "KES": 129.50,
-    "NGN": 1520.00,
-    "GHS": 15.20,
-    "ZAR": 18.40,
-    "UGX": 3720.00,
-    "TZS": 2680.00,
-    "ETB": 57.00,
-    "RWF": 1380.00,
-    "GBP": 0.78,
-    "EUR": 0.91,
-    "CAD": 1.36,
-    "AUD": 1.52,
-    "INR": 83.50,
-    "PKR": 278.00,
-    "BRL": 5.10,
-    "MXN": 17.20,
-    "EGP": 48.50,
-    "ZMW": 27.00,
+    "USD": 1.00, "KES": 129.50, "NGN": 1520.00, "GHS": 15.20, "ZAR": 18.40,
+    "UGX": 3720.00, "TZS": 2680.00, "ETB": 57.00, "RWF": 1380.00,
+    "GBP": 0.78, "EUR": 0.91, "CAD": 1.36, "AUD": 1.52, "INR": 83.50,
+    "PKR": 278.00, "BRL": 5.10, "MXN": 17.20, "EGP": 48.50, "ZMW": 27.00,
     "XOF": 600.00,
+    # ── extended coverage (matches the countries in PPP_FACTORS below) ──
+    "JPY": 157.00, "KRW": 1387.00, "SGD": 1.28, "NZD": 1.75, "CHF": 0.82,
+    "NOK": 9.42, "DKK": 6.52, "SEK": 9.84, "AED": 3.67, "ILS": 3.03,
+    "TWD": 31.80, "SAR": 3.75, "PLN": 3.80, "CZK": 21.20, "CLP": 960.00,
+    "UYU": 40.60, "RON": 4.59, "RUB": 84.30, "KZT": 446.70, "TRY": 48.80,
+    "MYR": 4.08, "THB": 33.36, "COP": 3140.00, "PEN": 3.38, "ARS": 1512.00,
+    "MAD": 9.50, "DZD": 134.90, "IDR": 17768.00, "PHP": 62.84, "VND": 26128.00,
+    "BDT": 123.30, "JOD": 0.71, "TND": 2.94, "ALL": 80.20, "GEL": 2.62,
+    "AMD": 365.45, "AZN": 1.71, "CRC": 451.50, "BWP": 14.29, "NAD": 16.26,
+    "FJD": 2.24, "IQD": 1322.50, "GTQ": 7.70, "DOP": 59.54, "JMD": 159.07,
+    "LKR": 331.27, "HNL": 27.09, "NIO": 37.13, "BOB": 11.07, "AOA": 927.30,
+    "KHR": 4087.28, "LAK": 22558.92, "MMK": 2119.34, "NPR": 153.52,
+    "UZS": 11883.88, "ISK": 121.53, "HUF": 317.16, "BGN": 1.70, "BAM": 1.70,
+    "MKD": 53.87, "QAR": 3.64, "KWD": 0.31, "BHD": 0.38, "OMR": 0.38,
+    "RSD": 102.37,
 }
 
 CURRENCY_SYMBOLS = {
@@ -70,6 +70,19 @@ CURRENCY_SYMBOLS = {
     "RWF": "RWF", "GBP": "£", "EUR": "€", "CAD": "CA$",
     "AUD": "A$", "INR": "₹", "PKR": "₨", "BRL": "R$",
     "MXN": "$", "EGP": "EGP", "ZMW": "ZMW", "XOF": "XOF",
+    "JPY": "¥", "KRW": "₩", "SGD": "S$", "NZD": "NZ$", "CHF": "CHF",
+    "NOK": "kr", "DKK": "kr", "SEK": "kr", "AED": "AED", "ILS": "₪",
+    "TWD": "NT$", "SAR": "SAR", "PLN": "zł", "CZK": "Kč", "CLP": "$",
+    "UYU": "$U", "RON": "lei", "RUB": "₽", "KZT": "₸", "TRY": "₺",
+    "MYR": "RM", "THB": "฿", "COP": "$", "PEN": "S/", "ARS": "$",
+    "MAD": "MAD", "DZD": "DZD", "IDR": "Rp", "PHP": "₱", "VND": "₫",
+    "BDT": "৳", "JOD": "JOD", "TND": "TND", "ALL": "L", "GEL": "₾",
+    "AMD": "֏", "AZN": "₼", "CRC": "₡", "BWP": "P", "NAD": "N$",
+    "FJD": "FJ$", "IQD": "IQD", "GTQ": "Q", "DOP": "RD$", "JMD": "J$",
+    "LKR": "Rs", "HNL": "L", "NIO": "C$", "BOB": "Bs", "AOA": "Kz",
+    "KHR": "៛", "LAK": "₭", "MMK": "K", "NPR": "Rs", "UZS": "so'm",
+    "ISK": "kr", "HUF": "Ft", "BGN": "лв", "BAM": "KM", "MKD": "ден",
+    "QAR": "QAR", "KWD": "KWD", "BHD": "BHD", "OMR": "OMR", "RSD": "дин",
 }
 
 FX_CACHE_PATH = os.path.join(os.path.dirname(__file__), "fx_cache.json")
@@ -125,46 +138,77 @@ async def refresh_fx_cache_if_stale() -> None:
 
 
 # ─────────────────────────────────────────────
-#  PPP FACTORS
-#  Range: 0.40 (most affordable) to 1.00 (US baseline)
-#  7 bands covering ~180 countries
+#  PPP FACTORS — individually assigned per country, not banded.
+#  Range: 0.40 (floor — matches lowest-income markets) to 1.00 (US baseline).
+#  DEFAULT deliberately sits high (0.75), not low: an unrecognized/VPN'd
+#  visitor shouldn't get charity pricing by default — under-charging a
+#  country we simply have no data on costs more than over-charging a
+#  handful of genuine edge cases. Revisit every value here once real
+#  paying-user geography exists (country_code is now actually populated —
+#  see the pricing pipeline fix) instead of guessing further from priors.
 # ─────────────────────────────────────────────
 PPP_FACTORS = {
-    # Band 1 — 0.40 (Poorest purchasing power)
-    "ET": 0.40, "UG": 0.40, "RW": 0.40, "ML": 0.40,
-    "BF": 0.40, "NE": 0.40, "TD": 0.40, "MZ": 0.40,
-    "MW": 0.40, "MG": 0.40,
+    # ── 1.00 — core high-income anglophone / nordic / western european ──
+    "US": 1.00, "GB": 1.00, "CA": 1.00, "AU": 1.00, "CH": 1.00,
+    "NO": 1.00, "DK": 1.00, "NL": 1.00, "SE": 1.00, "IE": 1.00,
+    "DE": 1.00, "FR": 1.00, "JP": 1.00, "KR": 1.00, "SG": 1.00,
+    "NZ": 1.00, "FI": 1.00, "AT": 1.00, "BE": 1.00, "IS": 1.00,
+    "LU": 1.00, "HK": 1.00,
 
-    # Band 2 — 0.48
-    "TZ": 0.48, "ZM": 0.48, "SD": 0.48, "SN": 0.48,
-    "CM": 0.48, "CI": 0.48, "GN": 0.48, "BJ": 0.48,
+    # ── 0.97 — small, very high income (oil/finance) ──
+    "QA": 0.97, "KW": 0.97,
 
-    # Band 3 — 0.55
-    "KE": 0.55, "NG": 0.55, "GH": 0.55, "PK": 0.55,
-    "BD": 0.55, "IN": 0.55, "VN": 0.55, "PH": 0.55,
-    "EG": 0.55, "MA": 0.55,
+    # ── 0.95 — high income gulf ──
+    "AE": 0.95, "BH": 0.95, "OM": 0.95,
 
-    # Band 4 — 0.65
-    "ZA": 0.65, "BR": 0.65, "MX": 0.65, "ID": 0.65,
-    "TH": 0.65, "UA": 0.65, "BO": 0.65, "PY": 0.65,
+    # ── 0.92 — high income, smaller markets ──
+    "IL": 0.92, "CY": 0.92, "MT": 0.92,
 
-    # Band 5 — 0.75
-    "CN": 0.75, "TR": 0.75, "CO": 0.75, "PE": 0.75,
-    "RO": 0.75, "BG": 0.75, "RS": 0.75, "AR": 0.75,
+    # ── 0.88 — southern europe / advanced asia ──
+    "ES": 0.88, "IT": 0.88, "TW": 0.88, "SA": 0.88, "SI": 0.88,
 
-    # Band 6 — 0.88
-    "PL": 0.88, "HU": 0.88, "CZ": 0.88, "MY": 0.88,
-    "RU": 0.88, "SA": 0.88, "AE": 0.88, "IL": 0.88,
-    "KR": 0.88, "TW": 0.88, "PT": 0.88, "GR": 0.88,
+    # ── 0.83 — upper southern/eastern europe ──
+    "PT": 0.83, "EE": 0.83, "LT": 0.83, "LV": 0.83, "GR": 0.83,
 
-    # Band 7 — 1.00 (Full price)
-    "US": 1.00, "GB": 1.00, "DE": 1.00, "FR": 1.00,
-    "NL": 1.00, "SE": 1.00, "NO": 1.00, "DK": 1.00,
-    "FI": 1.00, "CH": 1.00, "AT": 1.00, "BE": 1.00,
-    "CA": 1.00, "AU": 1.00, "NZ": 1.00, "JP": 1.00,
-    "SG": 1.00, "HK": 1.00,
+    # ── 0.78 — central europe ──
+    "PL": 0.78, "HU": 0.78, "SK": 0.78, "HR": 0.78,
 
-    "DEFAULT": 0.70,
+    # ── 0.73 — upper-middle, resource/industrial economies ──
+    "CZ": 0.73, "RU": 0.73, "KZ": 0.73, "BG": 0.73, "UY": 0.73,
+
+    # ── 0.68 — upper-middle latin/balkan ──
+    "CL": 0.68, "RO": 0.68, "RS": 0.68, "ME": 0.68, "MK": 0.68,
+    "PA": 0.68, "CR": 0.68,
+
+    # ── 0.63 — large emerging markets ──
+    "CN": 0.63, "MX": 0.63, "TR": 0.63, "BW": 0.63, "GE": 0.63,
+    "AM": 0.63, "AZ": 0.63,
+
+    # ── 0.58 — middle income, mixed regions ──
+    "MY": 0.58, "TH": 0.58, "EC": 0.58, "JO": 0.58, "TN": 0.58,
+    "AL": 0.58, "NA": 0.58, "FJ": 0.58,
+
+    # ── 0.53 — lower-middle, larger populations ──
+    "BR": 0.53, "ZA": 0.53, "CO": 0.53, "PE": 0.53, "AR": 0.53,
+    "DO": 0.53, "JM": 0.53, "LK": 0.53,
+
+    # ── 0.48 — lower-middle income ──
+    "MA": 0.48, "DZ": 0.48, "LY": 0.48, "IQ": 0.48, "GT": 0.48,
+    "SV": 0.48, "HN": 0.48, "NI": 0.48, "BO": 0.48, "ID": 0.48,
+    "PH": 0.48,
+
+    # ── 0.44 — low-middle income ──
+    "VN": 0.44, "EG": 0.44, "GH": 0.44, "CI": 0.44, "SN": 0.44,
+    "CM": 0.44, "ZM": 0.44, "AO": 0.44, "KH": 0.44, "LA": 0.44,
+    "MM": 0.44, "NP": 0.44, "UZ": 0.44, "BD": 0.44,
+
+    # ── 0.40 — floor: lowest-income markets ──
+    "IN": 0.40, "NG": 0.40, "PK": 0.40, "KE": 0.40, "TZ": 0.40,
+    "ET": 0.40, "UG": 0.40, "RW": 0.40, "ML": 0.40, "BF": 0.40,
+    "NE": 0.40, "TD": 0.40, "MZ": 0.40, "MW": 0.40, "MG": 0.40,
+    "SD": 0.40, "GN": 0.40, "BJ": 0.40,
+
+    "DEFAULT": 0.75,
 }
 
 
