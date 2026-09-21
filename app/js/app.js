@@ -4461,12 +4461,81 @@ async function openAdminAnalytics() {
 window.openAdminAnalytics = openAdminAnalytics;
 
 function confirmDeleteAccount() {
-  if (confirm('Are you absolutely sure? This cannot be undone. All your data will be permanently deleted.')) {
-    showToast('Account deletion coming soon. Contact support.', 'warning');
+  if (!confirm('Are you absolutely sure? This cannot be undone. All your data will be permanently deleted.')) {
+    return;
+  }
+
+  let modal = document.getElementById('delete-account-modal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'delete-account-modal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;z-index:9999;padding:24px';
+    modal.innerHTML = `
+      <div style="width:100%;max-width:340px;background:var(--bg-card);border:1px solid var(--danger);border-radius:var(--radius);padding:1.5rem">
+        <div style="font-size:15px;font-weight:700;color:var(--danger);margin-bottom:8px">Confirm account deletion</div>
+        <div style="font-size:13px;color:var(--text-secondary);margin-bottom:1rem">Enter your password to permanently delete your account and all data.</div>
+        <input type="password" id="delete-account-password" placeholder="Your password" style="width:100%;padding:12px 14px;margin-bottom:8px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;outline:none;font-family:var(--font)">
+        <div id="delete-account-error" style="display:none;color:var(--danger);font-size:12px;margin-bottom:8px"></div>
+        <div style="display:flex;gap:8px">
+          <button class="btn-secondary" style="flex:1" onclick="document.getElementById('delete-account-modal').remove()">Cancel</button>
+          <button id="delete-account-confirm-btn" style="flex:1;padding:12px;background:var(--danger);border:none;border-radius:var(--radius-sm);color:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:var(--font)" onclick="submitDeleteAccount()">Delete Forever</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+  }
+  document.getElementById('delete-account-password').focus();
+}
+
+async function submitDeleteAccount() {
+  const password = document.getElementById('delete-account-password').value;
+  const errEl = document.getElementById('delete-account-error');
+  const btnEl = document.getElementById('delete-account-confirm-btn');
+  errEl.style.display = 'none';
+
+  if (!password) {
+    errEl.textContent = 'Please enter your password.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  btnEl.disabled = true;
+  btnEl.textContent = 'Deleting...';
+
+  try {
+    const res = await fetch(`${API}/api/v1/users/me`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${authToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ password })
+    });
+
+    if (res.status === 204) {
+      document.getElementById('delete-account-modal').remove();
+      localStorage.removeItem('vektra_token');
+      showToast('Account deleted.', 'success');
+      goTo('welcome');
+      return;
+    }
+
+    const data = await res.json().catch(() => ({}));
+    errEl.textContent = data.detail || 'Could not delete account. Try again.';
+    errEl.style.display = 'block';
+    btnEl.disabled = false;
+    btnEl.textContent = 'Delete Forever';
+  } catch (e) {
+    console.error('Account deletion error:', e);
+    errEl.textContent = 'Connection error. Try again.';
+    errEl.style.display = 'block';
+    btnEl.disabled = false;
+    btnEl.textContent = 'Delete Forever';
   }
 }
 
 window.confirmDeleteAccount = confirmDeleteAccount;
+window.submitDeleteAccount = submitDeleteAccount;
 window.toggleDarkMode = toggleDarkMode;
 window.clearCache = clearCache;
 window.showNotifications = showNotifications;

@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, update
 from app.db.session import get_session
-from app.db.models import User
+from app.db.models import User, Wager
 from app import crud
 from app.core.deps import get_current_user
 from app.core.security import verify_password, get_password_hash
@@ -33,6 +33,10 @@ class UserUpdate(BaseModel):
 class PasswordChange(BaseModel):
     current_password: str
     new_password: str
+
+
+class DeleteAccountRequest(BaseModel):
+    password: str
 
 
 class UserOut(BaseModel):
@@ -105,5 +109,32 @@ async def change_password(
     current_user.password_hash = get_password_hash(payload.new_password)
     db.add(current_user)
     await db.commit()
-    
+
     return {"message": "Password changed successfully"}
+
+
+@router.delete("/me", status_code=204)
+async def delete_me(
+    payload: DeleteAccountRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_session),
+):
+    """
+    Self-service account deletion. Requires re-entering the current
+    password so a hijacked/left-open session can't nuke an account.
+
+    Every user_id foreign key cascades at the DB level except
+    Wager.winner_id, which has no ON DELETE rule (defaults to RESTRICT) -
+    null it out first so deleting a user who's won a wager doesn't fail on
+    a foreign-key violation.
+    """
+    if not verify_password(payload.password, current_user.password_hash):
+        raise HTTPException(status_code=400, detail="Incorrect password")
+
+    await db.execute(
+        update(Wager).where(Wager.winner_id == current_user.id).values(winner_id=None)
+    )
+
+    await db.delete(current_user)
+    await db.commit()
+    return None
