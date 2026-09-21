@@ -32,10 +32,12 @@ def _safe_list(values: list, limit: int = 3) -> list:
     return [v for v in values if v and len(str(v)) > 3][:limit]
 
 
-async def build_weekly_summary(snapshots: List[Snapshot]) -> dict:
+async def build_weekly_summary(snapshots: List[Snapshot], period_days: int = 7) -> dict:
     """
-    Compute weekly summary statistics from a list of snapshots.
-    This is what gets sent to the AI and stored in the report.
+    Compute period summary statistics from a list of snapshots (used for
+    both weekly and monthly reports - period_days controls the "X/N days
+    logged" framing and readiness threshold). This is what gets sent to the
+    AI and stored in the report.
     """
     if not snapshots:
         return {}
@@ -88,14 +90,17 @@ async def build_weekly_summary(snapshots: List[Snapshot]) -> dict:
         s.timestamp.date() for s in snapshots if getattr(s, 'timestamp', None) is not None
     }
     unique_days_logged = len(snapshot_dates) or len(snapshots)
-    minimum_days_for_report = 3
+    # 3 days is enough to say something meaningful about a week; a month
+    # deserves more data before claiming to summarize it.
+    minimum_days_for_report = 3 if period_days <= 7 else 7
     report_ready = unique_days_logged >= minimum_days_for_report
-    report_countdown = max(0, 7 - unique_days_logged)
+    report_countdown = max(0, period_days - unique_days_logged)
     days_needed = max(0, minimum_days_for_report - unique_days_logged)
+    period_label = 'week' if period_days <= 7 else 'month'
     report_readiness_message = (
-        'Enough data for a meaningful weekly report.'
+        f'Enough data for a meaningful {period_label}ly report.'
         if report_ready
-        else f'Need {days_needed} more day{"s" if days_needed != 1 else ""} to reach 3 logged days for a richer weekly report.'
+        else f'Need {days_needed} more day{"s" if days_needed != 1 else ""} to reach {minimum_days_for_report} logged days for a richer {period_label}ly report.'
     )
     component_scores = {
         'Financial': round(min(100, max(0, avg_vektra_score or 50))),
@@ -160,27 +165,33 @@ async def build_weekly_summary(snapshots: List[Snapshot]) -> dict:
     }
 
 
-async def generate_weekly_report(
+async def generate_period_report(
     db: AsyncSession,
     user_id: int,
+    report_type: str,
+    period_days: int,
     period_start: Optional[datetime.datetime] = None,
     period_end: Optional[datetime.datetime] = None,
 ) -> object:
     """
-    Full weekly report pipeline:
-    1. Pull last 7 days of snapshots
+    Full period report pipeline, shared by weekly (period_days=7) and
+    monthly (period_days=30) reports:
+    1. Pull last period_days of snapshots
     2. Build summary statistics
     3. Get user context (north star, tone preference)
-    4. Pull historical reports for AI memory
+    4. Pull historical reports of the SAME report_type for AI memory
+       (monthly compares against past months, not past weeks)
     5. Call AI to generate narrative with historical context
     6. Store report in database
     7. Return report object
     """
-    # ── Default to last 7 days ───────────────
+    period_label = 'week' if period_days <= 7 else 'month'
+
+    # ── Default to the last period_days ──────
     if not period_end:
         period_end = datetime.datetime.utcnow()
     if not period_start:
-        period_start = period_end - datetime.timedelta(days=7)
+        period_start = period_end - datetime.timedelta(days=period_days)
 
     # ── Pull snapshots ───────────────────────
     result = await db.execute(
@@ -201,20 +212,20 @@ async def generate_weekly_report(
         'feedback_tone': user.preferred_feedback_tone if user else 'Balanced',
     }
 
-    # ── Build weekly summary ─────────────────
-    summary = await build_weekly_summary(snapshots)
+    # ── Build period summary ─────────────────
+    summary = await build_weekly_summary(snapshots, period_days=period_days)
 
-    # ── Pull historical reports for AI Memory ──
+    # ── Pull historical reports of the same type for AI Memory ──
     historical_result = await db.execute(
         select(Report)
         .where(Report.user_id == user_id)
-        .where(Report.report_type == 'weekly')
+        .where(Report.report_type == report_type)
         .where(Report.status == 'ready')
         .order_by(Report.generated_at.desc())
-        .limit(4)  # Last 4 weeks for context
+        .limit(4)  # Last 4 periods for context
     )
     historical_reports = historical_result.scalars().all()
-    
+
     # Build historical context
     historical_context = []
     for report in historical_reports:
@@ -235,7 +246,9 @@ async def generate_weekly_report(
         user_data=user_data,
         weekly_summary=summary,
         feedback_tone=user_data.get('feedback_tone', 'Balanced'),
-        historical_context=historical_context
+        historical_context=historical_context,
+        period_days=period_days,
+        period_label=period_label,
     )
 
     # ── Calculate headline report score ─────
@@ -245,7 +258,7 @@ async def generate_weekly_report(
     report_payload = {
         'period_start':  period_start,
         'period_end':    period_end,
-        'report_type':   'weekly',
+        'report_type':   report_type,
         'status':        'ready',
         'summary_text':  summary_text,
         'vektra_score':  avg_score,
@@ -255,6 +268,24 @@ async def generate_weekly_report(
     }
     report = await crud.create_report(db, user_id, report_payload)
     return report
+
+
+async def generate_weekly_report(
+    db: AsyncSession,
+    user_id: int,
+    period_start: Optional[datetime.datetime] = None,
+    period_end: Optional[datetime.datetime] = None,
+) -> object:
+    return await generate_period_report(db, user_id, 'weekly', 7, period_start, period_end)
+
+
+async def generate_monthly_report(
+    db: AsyncSession,
+    user_id: int,
+    period_start: Optional[datetime.datetime] = None,
+    period_end: Optional[datetime.datetime] = None,
+) -> object:
+    return await generate_period_report(db, user_id, 'monthly', 30, period_start, period_end)
 
 
 async def generate_daily_report(db: AsyncSession, user_id: int) -> object:
@@ -327,4 +358,6 @@ async def generate_and_store_report(
 ) -> object:
     if report_type == 'daily':
         return await generate_daily_report(db, user_id)
+    if report_type == 'monthly':
+        return await generate_monthly_report(db, user_id, period_start, period_end)
     return await generate_weekly_report(db, user_id, period_start, period_end)

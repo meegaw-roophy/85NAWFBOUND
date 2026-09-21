@@ -1720,12 +1720,13 @@ async function loadReport(reportType = 'weekly') {
     
     console.log('Rendering report data...');
     const content = report.content || {};
-    currentReportData = reportType === 'weekly' ? { report, content } : currentReportData;
+    currentReportData = (reportType === 'weekly' || reportType === 'monthly') ? { report, content } : currentReportData;
+    const periodDays = reportType === 'monthly' ? 30 : 7;
     const uniqueDays = content.unique_days_logged ?? content.days_logged ?? 0;
-    const reportCountdown = content.report_countdown ?? Math.max(0, 7 - uniqueDays);
+    const reportCountdown = content.report_countdown ?? Math.max(0, periodDays - uniqueDays);
     const signalScores = content.signal_scores || {};
     const reportReady = content.report_ready ?? uniqueDays >= 3;
-    const readinessMessage = content.report_readiness_message || (reportReady ? 'Your weekly report is ready.' : 'Log a few more days to unlock a richer weekly report.');
+    const readinessMessage = content.report_readiness_message || (reportReady ? `Your ${reportType} report is ready.` : `Log a few more days to unlock a richer ${reportType} report.`);
 
     const scoreEl = document.getElementById('report-score');
     const periodEl = document.getElementById('report-period');
@@ -1735,6 +1736,13 @@ async function loadReport(reportType = 'weekly') {
     const goalsEl = document.getElementById('report-goals');
     
     if (scoreEl) scoreEl.textContent = report.vektra_score ? report.vektra_score.toFixed(0) : '—';
+    const eyebrowEl = document.getElementById('report-eyebrow');
+    if (eyebrowEl) {
+      eyebrowEl.textContent = reportType === 'monthly' ? 'Monthly Report'
+        : reportType === 'daily' ? 'Daily Report'
+        : reportType === 'birthday' ? 'Birthday Report'
+        : 'Weekly Report';
+    }
     if (periodEl) {
       if (reportType === 'daily') {
         periodEl.textContent = 'Daily Report';
@@ -1746,8 +1754,8 @@ async function loadReport(reportType = 'weekly') {
         periodEl.textContent = uniqueDays > 0 ? `${uniqueDays} unique day${uniqueDays === 1 ? '' : 's'} logged` : 'No week data yet';
       }
     }
-    if (daysEl) daysEl.textContent = `${uniqueDays}/7`;
-    if (timerEl) timerEl.textContent = `${reportCountdown}/7`;
+    if (daysEl) daysEl.textContent = `${uniqueDays}/${periodDays}`;
+    if (timerEl) timerEl.textContent = `${reportCountdown}/${periodDays}`;
     if (cashflowEl) {
       cashflowEl.textContent = content.net_cash_flow !== undefined ? (content.net_cash_flow >= 0 ? '+' : '') + content.net_cash_flow : '—';
       cashflowEl.style.color = content.net_cash_flow >= 0 ? 'var(--success)' : 'var(--danger)';
