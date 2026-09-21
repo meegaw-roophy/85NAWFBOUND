@@ -4916,21 +4916,61 @@ function getPricingForCurrency(currency) {
   return pricing[currency] || pricing['USD'];
 }
 
+// Cached copy of the backend's real FX/PPP tables, so the instant preview
+// (shown before /pricing/calculate resolves) doesn't drift from a third,
+// separately-hand-maintained set of numbers. Refreshed once per day per
+// browser, same pattern as detectUserLocation()'s cache.
+let pricingReferenceData = null;
+
+async function loadPricingReferenceData() {
+  const CACHE_KEY = 'vektra_pricing_reference';
+  const ONE_DAY = 24 * 60 * 60 * 1000;
+
+  try {
+    const cached = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null');
+    if (cached && cached.fetchedAt && (Date.now() - cached.fetchedAt < ONE_DAY)) {
+      pricingReferenceData = cached;
+      return;
+    }
+  } catch (e) { /* fall through to fetch */ }
+
+  if (!currentUser || !authToken) return;
+
+  try {
+    const [fxRes, pppRes] = await Promise.all([
+      fetch(`${API}/api/v1/pricing/fx-rates`, { headers: { 'Authorization': `Bearer ${authToken}` } }),
+      fetch(`${API}/api/v1/pricing/ppp-factors`, { headers: { 'Authorization': `Bearer ${authToken}` } })
+    ]);
+    if (fxRes.ok && pppRes.ok) {
+      const fxRates = await fxRes.json();
+      const pppFactors = await pppRes.json();
+      pricingReferenceData = { fxRates, pppFactors, fetchedAt: Date.now() };
+      localStorage.setItem(CACHE_KEY, JSON.stringify(pricingReferenceData));
+    }
+  } catch (e) {
+    console.warn('Could not load live pricing reference data, using fallback estimate:', e);
+  }
+}
+
 function getTierPreviewPrice(tier, currency = 'USD') {
   const pricing = getPricingForCurrency(currency);
   const base = pricing[tier] || pricing.tier1 || 20;
-  const fxRates = {
-    USD: 1, KES: 129.5, NGN: 1520, GHS: 15.2, ZAR: 18.4, UGX: 3720,
+
+  // Fallback only used before loadPricingReferenceData() has ever resolved
+  // (e.g. this screen's very first paint) — deliberately not kept precise
+  // since it's overwritten by real data moments later.
+  const fallbackFx = {
+    USD: 1, KES: 130, NGN: 1520, GHS: 15.2, ZAR: 18.4, UGX: 3720,
     TZS: 2680, GBP: 0.78, EUR: 0.91, CAD: 1.36, AUD: 1.52, INR: 83.5,
     PKR: 278, BRL: 5.1, MXN: 17.2, EGP: 48.5, ZMW: 27, XOF: 600
   };
-  const pppRates = {
-    USD: 1.0, KES: 0.70, NGN: 0.55, GHS: 0.55, ZAR: 0.65, UGX: 0.40,
-    TZS: 0.48, GBP: 1.0, EUR: 1.0, INR: 0.55, PKR: 0.55, BRL: 0.65,
-    MXN: 0.65, CAD: 1.0, AUD: 1.0, EGP: 0.55, ZMW: 0.48, XOF: 0.40
-  };
-  const fx = fxRates[currency] || 1;
-  const ppp = pppRates[currency] || 0.70;
+  const fallbackPpp = { USD: 1.0, GBP: 1.0, EUR: 1.0, CAD: 1.0, AUD: 1.0 };
+
+  const fx = pricingReferenceData?.fxRates?.[currency] ?? fallbackFx[currency] ?? 1;
+  const ppp = pricingReferenceData?.pppFactors?.[currentUser?.country_code]
+    ?? fallbackPpp[currency]
+    ?? 0.75; // matches backend DEFAULT
+
   return Math.round(base * ppp * fx);
 }
 
@@ -4974,6 +5014,7 @@ let priceLockSeconds = 900; // 15 minutes
 async function openUpgrade() {
   goTo('upgrade');
   initOfferCountdown();
+  await loadPricingReferenceData();
   selectedTierUpgrade = 'tier1';
   document.getElementById('days-slider').value = 30;
   const currency = currentUser?.currency || 'USD';

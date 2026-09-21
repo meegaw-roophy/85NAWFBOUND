@@ -573,3 +573,13 @@ async def get_tiers(current_user: User = Depends(get_current_user)):
 async def get_current_fx_rates(current_user: User = Depends(get_current_user)):
     """Returns current FX rates in use — for transparency."""
     return get_fx_rates()
+
+
+@router.get("/ppp-factors")
+async def get_current_ppp_factors(current_user: User = Depends(get_current_user)):
+    """
+    Returns current PPP factors — lets the frontend's instant price preview
+    (shown before /calculate resolves) stay in sync with this table instead
+    of maintaining its own separate hardcoded copy that drifts over time.
+    """
+    return PPP_FACTORS
