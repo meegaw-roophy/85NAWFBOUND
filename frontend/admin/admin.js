@@ -1,5 +1,5 @@
 // Admin Panel - Separate from user-facing app
-const API = 'http://127.0.0.1:8000';
+const API = 'https://vektra-backend-qic7.onrender.com';
 let authToken = null;
 let currentUser = null;
 let adminUserOffset = 0;
@@ -51,12 +51,12 @@ async function adminLogin() {
   btn.textContent = 'Authenticating...';
   
   try {
-    const res = await fetch(`${API}/api/v1/auth/login`, {
+    const res = await fetch(`${API}/api/v1/auth/token`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password })
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: `username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`
     });
-    
+
     const data = await res.json();
     
     if (res.ok) {

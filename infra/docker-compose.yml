@@ -20,16 +20,6 @@ services:
       - db
     ports:
       - "8000:8000"
-  web:
-    build: ../frontend/django_project
-    command: python manage.py runserver 0.0.0.0:8001
-    volumes:
-      - ../frontend/django_project:/srv/vektra
-    working_dir: /srv/vektra
-    depends_on:
-      - db
-    ports:
-      - "8001:8001"
 
 volumes:
   db_data:
