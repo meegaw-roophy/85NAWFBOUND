@@ -174,17 +174,17 @@
     </div>
 
     <div class="text-field" style="margin-bottom:16px">
-      <label>Your primary goal <span style="color:var(--text-muted);font-weight:400">(optional)</span></label>
+      <label for="ob-goal">Your primary goal <span style="color:var(--text-muted);font-weight:400">(optional)</span></label>
       <textarea id="ob-goal" placeholder="e.g. Make $100M ARR by end of 2026!" style="min-height:100px"></textarea>
     </div>
 
     <div class="text-field" style="margin-bottom:16px">
-      <label>Deadline <span style="color:var(--text-muted);font-weight:400">(optional)</span></label>
+      <label for="ob-deadline">Deadline <span style="color:var(--text-muted);font-weight:400">(optional)</span></label>
       <input type="date" id="ob-deadline" style="width:100%;padding:12px 14px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;font-family:var(--font);outline:none">
     </div>
 
     <div class="text-field" style="margin-bottom:24px">
-      <label style="font-size:12px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.08em;display:block;margin-bottom:6px">Date of Birth *</label>
+      <label for="ob-dob" style="font-size:12px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.08em;display:block;margin-bottom:6px">Date of Birth *</label>
       <input type="date" id="ob-dob" style="width:100%;padding:12px 14px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;font-family:var(--font);outline:none">
     </div>
 
@@ -211,12 +211,12 @@
     </div>
 
     <div class="number-field" style="margin-bottom:16px">
-      <label>Current net worth <span style="color:var(--text-muted);font-weight:400">(optional)</span></label>
+      <label for="ob-networth">Current net worth <span style="color:var(--text-muted);font-weight:400">(optional)</span></label>
       <input type="number" id="ob-networth" placeholder="0" style="width:100%;padding:12px 14px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;font-family:var(--font);outline:none">
     </div>
 
     <div class="number-field" style="margin-bottom:24px">
-      <label>Liquid capital (cash available now) <span style="color:var(--text-muted);font-weight:400">(optional)</span></label>
+      <label for="ob-capital">Liquid capital (cash available now) <span style="color:var(--text-muted);font-weight:400">(optional)</span></label>
       <input type="number" id="ob-capital" placeholder="0" style="width:100%;padding:12px 14px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;font-family:var(--font);outline:none">
     </div>
 
@@ -340,7 +340,7 @@
 
   <div style="width:100%;max-width:320px">
     <div style="margin-bottom:16px">
-      <label style="font-size:12px;color:var(--text-secondary);letter-spacing:0.08em;text-transform:uppercase;display:block;margin-bottom:6px">Email</label>
+      <label for="reset-email" style="font-size:12px;color:var(--text-secondary);letter-spacing:0.08em;text-transform:uppercase;display:block;margin-bottom:6px">Email</label>
       <input id="reset-email" type="email" placeholder="your@email.com" style="width:100%;padding:14px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:15px;outline:none;font-family:var(--font)">
     </div>
 
@@ -363,12 +363,12 @@
 
   <div style="width:100%;max-width:320px">
     <div style="margin-bottom:16px">
-      <label style="font-size:12px;color:var(--text-secondary);letter-spacing:0.08em;text-transform:uppercase;display:block;margin-bottom:6px">New Password</label>
+      <label for="reset-new-password" style="font-size:12px;color:var(--text-secondary);letter-spacing:0.08em;text-transform:uppercase;display:block;margin-bottom:6px">New Password</label>
       <input id="reset-new-password" type="password" placeholder="Min 8 characters, 1 symbol" style="width:100%;padding:14px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:15px;outline:none;font-family:var(--font)">
     </div>
 
     <div style="margin-bottom:16px">
-      <label style="font-size:12px;color:var(--text-secondary);letter-spacing:0.08em;text-transform:uppercase;display:block;margin-bottom:6px">Confirm Password</label>
+      <label for="reset-confirm-password" style="font-size:12px;color:var(--text-secondary);letter-spacing:0.08em;text-transform:uppercase;display:block;margin-bottom:6px">Confirm Password</label>
       <input id="reset-confirm-password" type="password" placeholder="Confirm new password" style="width:100%;padding:14px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:15px;outline:none;font-family:var(--font)">
     </div>
 
@@ -570,7 +570,7 @@
     </div>
 
     <div class="text-field">
-      <label>Uncomfortable moments today</label>
+      <label for="inp-uncomfortable">Uncomfortable moments today</label>
       <textarea id="inp-uncomfortable" placeholder="What made you uneasy and how did you react?"></textarea>
     </div>
   </div>
@@ -580,22 +580,22 @@
     <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:1rem">Finance</div>
 
     <div class="number-field">
-      <label>Daily Income <span style="color:var(--text-muted)">(${currentUser?.currency || 'KES'})</span></label>
+      <label for="inp-income">Daily Income <span style="color:var(--text-muted)">(${currentUser?.currency || 'KES'})</span></label>
       <input type="number" id="inp-income" placeholder="0" min="0">
     </div>
 
     <div class="number-field">
-      <label>Expenses</label>
+      <label for="inp-expenses">Expenses</label>
       <input type="number" id="inp-expenses" placeholder="0" min="0">
     </div>
 
     <div class="number-field">
-      <label>Saved / Invested</label>
+      <label for="inp-savings">Saved / Invested</label>
       <input type="number" id="inp-savings" placeholder="0" min="0">
     </div>
 
     <div class="text-field">
-      <label>Any emergency? <span style="color:var(--text-muted)">(optional)</span></label>
+      <label for="inp-emergency">Any emergency? <span style="color:var(--text-muted)">(optional)</span></label>
       <input type="text" id="inp-emergency" placeholder="Unexpected expense — describe it">
     </div>
   </div>
@@ -605,7 +605,7 @@
     <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:1rem">Goals & Decisions</div>
 
     <div class="text-field">
-      <label>Tomorrow's main goal</label>
+      <label for="inp-tomorrow">Tomorrow's main goal</label>
       <input type="text" id="inp-tomorrow" placeholder="The one thing you must do tomorrow">
     </div>
 
@@ -618,17 +618,17 @@
     </div>
 
     <div class="text-field">
-      <label>Best decision today</label>
+      <label for="inp-best">Best decision today</label>
       <input type="text" id="inp-best" placeholder="Best call you made">
     </div>
 
     <div class="text-field">
-      <label>Worst decision today</label>
+      <label for="inp-worst">Worst decision today</label>
       <input type="text" id="inp-worst" placeholder="Biggest mistake or regret">
     </div>
 
     <div class="text-field">
-      <label>What did you avoid and why?</label>
+      <label for="inp-avoided">What did you avoid and why?</label>
       <textarea id="inp-avoided" placeholder="Tasks you dodged + plan to do them"></textarea>
     </div>
   </div>
@@ -651,12 +651,12 @@
     </div>
 
     <div class="number-field">
-      <label>Screen Time (hours)</label>
+      <label for="inp-screen">Screen Time (hours)</label>
       <input type="number" id="inp-screen" placeholder="0" min="0" max="24" step="0.5">
     </div>
 
     <div class="text-field">
-      <label>Diet / how body felt</label>
+      <label for="inp-diet">Diet / how body felt</label>
       <textarea id="inp-diet" placeholder="What you ate + how your body felt"></textarea>
     </div>
   </div>
@@ -666,22 +666,22 @@
     <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:1rem">Learning & Growth</div>
 
     <div class="text-field">
-      <label>Skills learned today</label>
+      <label for="inp-skills">Skills learned today</label>
       <textarea id="inp-skills" placeholder="New knowledge or skill gained"></textarea>
     </div>
 
     <div class="text-field">
-      <label>New ideas / thoughts</label>
+      <label for="inp-ideas">New ideas / thoughts</label>
       <textarea id="inp-ideas" placeholder="Capture ideas before they disappear"></textarea>
     </div>
 
     <div class="text-field">
-      <label>Gratitude line</label>
+      <label for="inp-gratitude">Gratitude line</label>
       <input type="text" id="inp-gratitude" placeholder="One thing you're grateful for">
     </div>
 
     <div class="text-field">
-      <label>Funny line 😄</label>
+      <label for="inp-funny">Funny line 😄</label>
       <input type="text" id="inp-funny" placeholder="Something that made you laugh">
     </div>
   </div>
@@ -709,7 +709,7 @@
     </div>
 
     <div class="text-field">
-      <label>Focus hours on specific task</label>
+      <label for="inp-oppcost">Focus hours on specific task</label>
       <input type="number" id="inp-oppcost" placeholder="Hours on low value tasks" min="0" step="0.5">
     </div>
   </div>
@@ -749,17 +749,17 @@
   <!-- Weekly Questions -->
   <div id="weekly-questions-form" style="display:flex;flex-direction:column;gap:1.5rem">
     <div class="text-field">
-      <label>What was your biggest win this week?</label>
+      <label for="wq-win">What was your biggest win this week?</label>
       <textarea id="wq-win" placeholder="Describe your biggest achievement or breakthrough..." style="min-height:80px"></textarea>
     </div>
 
     <div class="text-field">
-      <label>What's holding you back right now?</label>
+      <label for="wq-blocker">What's holding you back right now?</label>
       <textarea id="wq-blocker" placeholder="Any obstacles, distractions, or challenges..." style="min-height:80px"></textarea>
     </div>
 
     <div class="text-field">
-      <label>What will you focus on next week?</label>
+      <label for="wq-focus">What will you focus on next week?</label>
       <textarea id="wq-focus" placeholder="Your main priority for the upcoming week..." style="min-height:80px"></textarea>
     </div>
 
@@ -776,17 +776,17 @@
   <!-- Monthly Questions (hidden by default) -->
   <div id="monthly-questions-form" style="display:none;flex-direction:column;gap:1.5rem">
     <div class="text-field">
-      <label>What's your main goal for this month?</label>
+      <label for="mq-goal">What's your main goal for this month?</label>
       <textarea id="mq-goal" placeholder="Your primary objective for the month..." style="min-height:80px"></textarea>
     </div>
 
     <div class="text-field">
-      <label>What habits do you want to build this month?</label>
+      <label for="mq-habits">What habits do you want to build this month?</label>
       <textarea id="mq-habits" placeholder="List 1-3 habits you want to develop..." style="min-height:80px"></textarea>
     </div>
 
     <div class="text-field">
-      <label>What will make this month successful?</label>
+      <label for="mq-success">What will make this month successful?</label>
       <textarea id="mq-success" placeholder="Define what success looks like..." style="min-height:80px"></textarea>
     </div>
 
@@ -915,12 +915,12 @@
     </div>
     
     <div style="margin-bottom:12px">
-      <label style="font-size:12px;color:var(--text-muted);margin-bottom:6px;display:block">Custom message</label>
+      <label for="share-message" style="font-size:12px;color:var(--text-muted);margin-bottom:6px;display:block">Custom message</label>
       <textarea id="share-message" placeholder="Add a personal message..." style="width:100%;padding:10px 12px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:13px;font-family:var(--font);outline:none;resize:vertical;min-height:60px"></textarea>
     </div>
     
     <div style="margin-bottom:12px">
-      <label style="font-size:12px;color:var(--text-muted);margin-bottom:6px;display:block">Theme</label>
+      <label for="share-theme" style="font-size:12px;color:var(--text-muted);margin-bottom:6px;display:block">Theme</label>
       <select id="share-theme" onchange="updateShareSettings()" style="width:100%;padding:10px 12px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:13px;font-family:var(--font);outline:none">
         <option value="dark">Dark</option>
         <option value="light">Light</option>
@@ -929,7 +929,7 @@
     </div>
     
     <div id="share-link-container" style="display:none;margin-bottom:12px">
-      <label style="font-size:12px;color:var(--text-muted);margin-bottom:6px;display:block">Share link</label>
+      <label for="share-link" style="font-size:12px;color:var(--text-muted);margin-bottom:6px;display:block">Share link</label>
       <div style="display:flex;gap:8px">
         <input id="share-link" type="text" readonly style="flex:1;padding:10px 12px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:12px;font-family:var(--font);outline:none">
         <button onclick="copyShareLink()" style="padding:10px 16px;background:var(--accent);border:none;border-radius:var(--radius-sm);color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font)">Copy</button>
@@ -1039,22 +1039,22 @@
     
     <!-- Body Metrics -->
     <div style="margin-bottom:16px">
-      <label style="font-size:12px;color:var(--text-muted);margin-bottom:6px;display:block">Weight (kg)</label>
+      <label for="profile-weight" style="font-size:12px;color:var(--text-muted);margin-bottom:6px;display:block">Weight (kg)</label>
       <input type="number" id="profile-weight" placeholder="70" min="30" max="300" style="width:100%;padding:10px 12px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;font-family:var(--font);outline:none">
     </div>
     
     <div style="margin-bottom:16px">
-      <label style="font-size:12px;color:var(--text-muted);margin-bottom:6px;display:block">Height (cm)</label>
+      <label for="profile-height" style="font-size:12px;color:var(--text-muted);margin-bottom:6px;display:block">Height (cm)</label>
       <input type="number" id="profile-height" placeholder="175" min="100" max="250" style="width:100%;padding:10px 12px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;font-family:var(--font);outline:none">
     </div>
     
     <div style="margin-bottom:16px">
-      <label style="font-size:12px;color:var(--text-muted);margin-bottom:6px;display:block">Date of Birth <span style="color:var(--accent);font-weight:400">(locked - contact support to change)</span></label>
+      <label for="profile-dob" style="font-size:12px;color:var(--text-muted);margin-bottom:6px;display:block">Date of Birth <span style="color:var(--accent);font-weight:400">(locked - contact support to change)</span></label>
       <input type="date" id="profile-dob" style="width:100%;padding:10px 12px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-muted);font-size:14px;font-family:var(--font);outline:none;cursor:default">
     </div>
     
     <div style="margin-bottom:16px">
-      <label style="font-size:12px;color:var(--text-muted);margin-bottom:6px;display:block">Gender</label>
+      <label for="profile-gender" style="font-size:12px;color:var(--text-muted);margin-bottom:6px;display:block">Gender</label>
       <select id="profile-gender" style="width:100%;padding:10px 12px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;font-family:var(--font);outline:none">
         <option value="">Select gender</option>
         <option value="male">Male</option>
@@ -1066,17 +1066,17 @@
     
     <!-- Metric Thresholds -->
     <div style="margin-bottom:16px">
-      <label style="font-size:12px;color:var(--text-muted);margin-bottom:6px;display:block">Target VEKTRA Score</label>
+      <label for="target-score" style="font-size:12px;color:var(--text-muted);margin-bottom:6px;display:block">Target VEKTRA Score</label>
       <input type="number" id="target-score" value="80" min="0" max="100" style="width:100%;padding:10px 12px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;font-family:var(--font);outline:none">
     </div>
     
     <div style="margin-bottom:16px">
-      <label style="font-size:12px;color:var(--text-muted);margin-bottom:6px;display:block">Minimum Sleep Hours</label>
+      <label for="min-sleep" style="font-size:12px;color:var(--text-muted);margin-bottom:6px;display:block">Minimum Sleep Hours</label>
       <input type="number" id="min-sleep" value="7" min="0" max="12" step="0.5" style="width:100%;padding:10px 12px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;font-family:var(--font);outline:none">
     </div>
     
     <div style="margin-bottom:16px">
-      <label style="font-size:12px;color:var(--text-muted);margin-bottom:6px;display:block">Target Focus Hours</label>
+      <label for="target-focus" style="font-size:12px;color:var(--text-muted);margin-bottom:6px;display:block">Target Focus Hours</label>
       <input type="number" id="target-focus" value="4" min="0" max="16" step="0.5" style="width:100%;padding:10px 12px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;font-family:var(--font);outline:none">
     </div>
     
@@ -1194,7 +1194,7 @@
       <button id="notification-toggle" onclick="toggleNotifications()" style="padding:8px 16px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;font-size:13px;font-family:var(--font)">Enable</button>
     </div>
     <div id="reminder-time-container" style="display:none">
-      <label style="font-size:12px;color:var(--text-muted);margin-bottom:6px;display:block">Reminder time</label>
+      <label for="reminder-time" style="font-size:12px;color:var(--text-muted);margin-bottom:6px;display:block">Reminder time</label>
       <input type="time" id="reminder-time" value="20:00" style="width:100%;padding:10px 12px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;font-family:var(--font);outline:none">
     </div>
     <div id="notification-status" style="font-size:12px;color:var(--text-muted);margin-top:8px">Notifications not enabled</div>
@@ -1335,21 +1335,21 @@
   <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
     <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">Add New Milestone</div>
     <div class="text-field" style="margin-bottom:12px">
-      <label>Milestone Title</label>
+      <label for="goal-title">Milestone Title</label>
       <input type="text" id="goal-title" placeholder="e.g. Launch MVP product" style="width:100%;padding:12px 14px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;font-family:var(--font);outline:none">
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
       <div class="number-field">
-        <label>Intensity (1-10)</label>
+        <label for="goal-intensity">Intensity (1-10)</label>
         <input type="number" id="goal-intensity" placeholder="5" min="1" max="10" style="width:100%;padding:12px 14px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;font-family:var(--font);outline:none">
       </div>
       <div class="number-field">
-        <label>Effort (1-10)</label>
+        <label for="goal-effort">Effort (1-10)</label>
         <input type="number" id="goal-effort" placeholder="5" min="1" max="10" style="width:100%;padding:12px 14px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;font-family:var(--font);outline:none">
       </div>
     </div>
     <div class="text-field" style="margin-bottom:12px">
-      <label>Target Date</label>
+      <label for="goal-deadline">Target Date</label>
       <input type="date" id="goal-deadline" style="width:100%;padding:12px 14px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;font-family:var(--font);outline:none">
     </div>
     <div id="goal-error" style="display:none;color:var(--danger);font-size:13px;margin-bottom:8px;text-align:center"></div>
@@ -1510,7 +1510,7 @@
     <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
       <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">Email Address</div>
       <div class="text-field">
-        <label>New Email</label>
+        <label for="settings-email">New Email</label>
         <input type="email" id="settings-email" placeholder="your@email.com">
       </div>
       <div id="settings-email-success" style="display:none;color:var(--success);font-size:13px;margin-bottom:8px">✓ Email updated</div>
@@ -1521,15 +1521,15 @@
     <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
       <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">Password</div>
       <div class="text-field">
-        <label>Current Password</label>
+        <label for="settings-current-password">Current Password</label>
         <input type="password" id="settings-current-password" placeholder="Current password">
       </div>
       <div class="text-field">
-        <label>New Password</label>
+        <label for="settings-new-password">New Password</label>
         <input type="password" id="settings-new-password" placeholder="Min 8 chars + symbol">
       </div>
       <div class="text-field">
-        <label>Confirm New Password</label>
+        <label for="settings-confirm-password">Confirm New Password</label>
         <input type="password" id="settings-confirm-password" placeholder="Repeat new password">
       </div>
       <div id="settings-password-error" style="display:none;color:var(--danger);font-size:13px;margin-bottom:8px"></div>
@@ -1541,7 +1541,7 @@
     <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
       <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">Daily Reminder</div>
       <div class="text-field">
-        <label>Reminder Time</label>
+        <label for="settings-reminder">Reminder Time</label>
         <input type="time" id="settings-reminder" style="width:100%;padding:12px 14px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;font-family:var(--font);outline:none">
       </div>
       <div id="settings-reminder-success" style="display:none;color:var(--success);font-size:13px;margin-bottom:8px">✓ Reminder updated</div>
@@ -1658,16 +1658,16 @@
 
       <!-- Stripe Form -->
       <div id="stripe-form" style="display:none">
-        <label style="font-size:12px;color:var(--text-muted);margin-bottom:6px;display:block">Card Number</label>
+        <label for="stripe-card" style="font-size:12px;color:var(--text-muted);margin-bottom:6px;display:block">Card Number</label>
         <input type="text" id="stripe-card" placeholder="4242 4242 4242 4242" style="width:100%;padding:10px 12px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;font-family:var(--font);outline:none;margin-bottom:12px">
         
         <div style="display:flex;gap:8px;margin-bottom:12px">
           <div style="flex:1">
-            <label style="font-size:12px;color:var(--text-muted);margin-bottom:6px;display:block">Expiry</label>
+            <label for="stripe-expiry" style="font-size:12px;color:var(--text-muted);margin-bottom:6px;display:block">Expiry</label>
             <input type="text" id="stripe-expiry" placeholder="MM/YY" style="width:100%;padding:10px 12px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;font-family:var(--font);outline:none">
           </div>
           <div style="flex:1">
-            <label style="font-size:12px;color:var(--text-muted);margin-bottom:6px;display:block">CVC</label>
+            <label for="stripe-cvc" style="font-size:12px;color:var(--text-muted);margin-bottom:6px;display:block">CVC</label>
             <input type="text" id="stripe-cvc" placeholder="123" style="width:100%;padding:10px 12px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;font-family:var(--font);outline:none">
           </div>
         </div>
@@ -1675,13 +1675,13 @@
 
       <!-- Paystack Form -->
       <div id="paystack-form" style="display:none">
-        <label style="font-size:12px;color:var(--text-muted);margin-bottom:6px;display:block">Email</label>
+        <label for="paystack-email" style="font-size:12px;color:var(--text-muted);margin-bottom:6px;display:block">Email</label>
         <input type="email" id="paystack-email" placeholder="you@domain.com" style="width:100%;padding:10px 12px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;font-family:var(--font);outline:none;margin-bottom:12px">
       </div>
 
       <!-- M-Pesa Form -->
       <div id="mpesa-form" style="display:none">
-        <label style="font-size:12px;color:var(--text-muted);margin-bottom:6px;display:block">Phone Number</label>
+        <label for="mpesa-phone" style="font-size:12px;color:var(--text-muted);margin-bottom:6px;display:block">Phone Number</label>
         <input type="tel" id="mpesa-phone" placeholder="+254700000000" style="width:100%;padding:10px 12px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;font-family:var(--font);outline:none;margin-bottom:12px">
       </div>
 
@@ -1996,12 +1996,12 @@
       </div>
 
       <div class="text-field" style="margin-bottom:12px">
-        <label>Username</label>
+        <label for="forgot-username">Username</label>
         <input type="text" id="forgot-username" placeholder="Your username" style="width:100%;padding:12px 14px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;font-family:var(--font);outline:none">
       </div>
 
       <div class="text-field" style="margin-bottom:20px">
-        <label>Email</label>
+        <label for="forgot-email">Email</label>
         <input type="email" id="forgot-email" placeholder="your@email.com" style="width:100%;padding:12px 14px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;font-family:var(--font);outline:none">
       </div>
 
