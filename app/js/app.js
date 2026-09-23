@@ -4432,6 +4432,26 @@ function clearCache() {
   }
 }
 
+function renderAdminBarList(containerId, rows, emptyText) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  if (!rows || rows.length === 0) {
+    el.innerHTML = `<span style="color:var(--text-muted);font-size:13px">${emptyText}</span>`;
+    return;
+  }
+  const max = Math.max(...rows.map(r => r.count), 1);
+  el.innerHTML = rows.map(row => `
+    <div style="margin-bottom:6px">
+      <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-secondary);margin-bottom:2px">
+        <span>${row.label}</span><span style="font-weight:700;color:var(--text-primary)">${row.count}</span>
+      </div>
+      <div style="background:var(--bg-secondary);border-radius:4px;height:6px;overflow:hidden">
+        <div style="width:${Math.round(row.count / max * 100)}%;height:100%;background:var(--accent);border-radius:4px"></div>
+      </div>
+    </div>
+  `).join('');
+}
+
 async function openAdminAnalytics() {
   goTo('admin');
   if (!currentUser || !authToken) return;
@@ -4461,6 +4481,28 @@ async function openAdminAnalytics() {
         </div>
       `).join('');
     }
+
+    const dayEl = document.getElementById('admin-clicks-by-day');
+    if (dayEl) {
+      if (!data.by_day || data.by_day.length === 0) {
+        dayEl.innerHTML = '<span style="color:var(--text-muted);font-size:13px">No clicks in the last 30 days.</span>';
+      } else {
+        const maxDay = Math.max(...data.by_day.map(d => d.count), 1);
+        dayEl.innerHTML = data.by_day.map(d => `
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+            <div style="font-size:11px;color:var(--text-muted);width:64px;flex-shrink:0">${d.date}</div>
+            <div style="flex:1;background:var(--bg-secondary);border-radius:4px;height:12px;overflow:hidden">
+              <div style="width:${Math.round(d.count / maxDay * 100)}%;height:100%;background:linear-gradient(90deg,#6c63ff,#ec4899);border-radius:4px"></div>
+            </div>
+            <div style="font-size:12px;color:var(--text-primary);width:20px;text-align:right;flex-shrink:0">${d.count}</div>
+          </div>
+        `).join('');
+      }
+    }
+
+    renderAdminBarList('admin-clicks-by-device', data.by_device, 'No device data yet.');
+    renderAdminBarList('admin-clicks-by-os', data.by_os, 'No OS data yet.');
+    renderAdminBarList('admin-clicks-by-country', data.by_country, 'No location data yet.');
   } catch (e) {
     console.error('Admin analytics load error:', e);
     breakdownEl.textContent = 'Connection error. Try again.';

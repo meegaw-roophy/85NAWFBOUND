@@ -1267,12 +1267,32 @@
     </div>
   </div>
 
-  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem">
+  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
     <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">By Link (Last 24H)</div>
     <div id="admin-clicks-breakdown" style="display:flex;flex-direction:column;gap:8px;font-size:13px;color:var(--text-secondary)">Loading…</div>
   </div>
 
-  <button class="btn-secondary" style="margin-top:1rem" onclick="openAdminAnalytics()">↺ Refresh</button>
+  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
+    <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">Clicks by Day (30D)</div>
+    <div id="admin-clicks-by-day"></div>
+  </div>
+
+  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
+    <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">Device (30D)</div>
+    <div id="admin-clicks-by-device"></div>
+  </div>
+
+  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
+    <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">OS (30D)</div>
+    <div id="admin-clicks-by-os"></div>
+  </div>
+
+  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
+    <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">Country (30D)</div>
+    <div id="admin-clicks-by-country"></div>
+  </div>
+
+  <button class="btn-secondary" style="margin-top:1rem;margin-bottom:2rem" onclick="openAdminAnalytics()">↺ Refresh</button>
 
 </div>
 

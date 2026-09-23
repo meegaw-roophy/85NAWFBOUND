@@ -137,6 +137,26 @@ async function loadAdminStats() {
   }
 }
 
+function renderBarList(containerId, rows, labelKey, emptyText) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  if (!rows || rows.length === 0) {
+    el.innerHTML = `<div style="font-size:12px;color:var(--text-muted)">${emptyText}</div>`;
+    return;
+  }
+  const max = Math.max(...rows.map(r => r.count), 1);
+  el.innerHTML = rows.map(row => `
+    <div style="margin-bottom:6px">
+      <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-secondary);margin-bottom:2px">
+        <span>${row[labelKey]}</span><span style="font-weight:700;color:var(--text-primary)">${row.count}</span>
+      </div>
+      <div style="background:var(--bg-secondary);border-radius:4px;height:6px;overflow:hidden">
+        <div style="width:${Math.round(row.count / max * 100)}%;height:100%;background:var(--accent);border-radius:4px"></div>
+      </div>
+    </div>
+  `).join('');
+}
+
 async function loadLandingClickStats() {
   try {
     const res = await fetch(`${API}/api/v1/analytics/landing-clicks`, {
@@ -154,6 +174,31 @@ async function loadLandingClickStats() {
           <div style="font-size:14px;font-weight:700;color:var(--accent)">${row.count}</div>
         </div>
       `).join('');
+
+      // Daily trend (last 30 days) - rendered as a horizontal bar list since
+      // there's no charting library loaded here.
+      const dayEl = document.getElementById('admin-clicks-by-day');
+      if (dayEl) {
+        if (!stats.by_day || stats.by_day.length === 0) {
+          dayEl.innerHTML = '<div style="font-size:12px;color:var(--text-muted)">No clicks in the last 30 days.</div>';
+        } else {
+          const maxDay = Math.max(...stats.by_day.map(d => d.count), 1);
+          dayEl.innerHTML = stats.by_day.map(d => `
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+              <div style="font-size:11px;color:var(--text-muted);width:70px;flex-shrink:0">${d.date}</div>
+              <div style="flex:1;background:var(--bg-secondary);border-radius:4px;height:14px;overflow:hidden">
+                <div style="width:${Math.round(d.count / maxDay * 100)}%;height:100%;background:linear-gradient(90deg,#6c63ff,#ec4899);border-radius:4px"></div>
+              </div>
+              <div style="font-size:12px;color:var(--text-primary);width:24px;text-align:right;flex-shrink:0">${d.count}</div>
+            </div>
+          `).join('');
+        }
+      }
+
+      renderBarList('admin-clicks-by-device', stats.by_device, 'label', 'No device data yet.');
+      renderBarList('admin-clicks-by-os', stats.by_os, 'label', 'No OS data yet.');
+      renderBarList('admin-clicks-by-browser', stats.by_browser, 'label', 'No browser data yet.');
+      renderBarList('admin-clicks-by-country', stats.by_country, 'label', 'No location data yet.');
     }
   } catch (e) {
     console.error('Failed to load landing click stats:', e);

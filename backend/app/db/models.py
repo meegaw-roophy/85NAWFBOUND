@@ -438,6 +438,12 @@ class LandingClick(Base):
     utm_medium      = Column(String(100), nullable=True)
     utm_campaign    = Column(String(100), nullable=True)
 
+    device_type     = Column(String(20),  nullable=True)   # Mobile / Tablet / Desktop
+    os              = Column(String(30),  nullable=True)   # Windows / macOS / Android / iOS / Linux
+    browser         = Column(String(30),  nullable=True)   # Chrome / Safari / Firefox / Edge / etc
+    country         = Column(String(60),  nullable=True)   # resolved lazily, see resolve_country()
+    ip_prefix       = Column(String(20),  nullable=True)   # /24-truncated IP - privacy-preserving cache key, never the full IP
+
 
 # ─────────────────────────────────────────────
 #  ACHIEVEMENT

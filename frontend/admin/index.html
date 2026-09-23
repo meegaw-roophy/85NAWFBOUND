@@ -72,6 +72,32 @@
 
   <div id="admin-landing-clicks-breakdown" style="display:flex;flex-direction:column;gap:6px;margin-top:1rem"></div>
 
+  <!-- Daily Click Trend -->
+  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-top:1rem">
+    <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">Clicks by Day (Last 30 Days)</div>
+    <div id="admin-clicks-by-day"></div>
+  </div>
+
+  <!-- Device / OS / Browser / Country breakdowns -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1rem">
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem">
+      <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">Device (30D)</div>
+      <div id="admin-clicks-by-device"></div>
+    </div>
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem">
+      <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">OS (30D)</div>
+      <div id="admin-clicks-by-os"></div>
+    </div>
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem">
+      <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">Browser (30D)</div>
+      <div id="admin-clicks-by-browser"></div>
+    </div>
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem">
+      <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">Country (30D)</div>
+      <div id="admin-clicks-by-country"></div>
+    </div>
+  </div>
+
   <!-- Two Column Layout -->
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.5rem">
     
