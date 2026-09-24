@@ -7,6 +7,20 @@
 <meta name="theme-color" content="#6c63ff">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 
+<!-- TikTok Pixel Code Start -->
+<script>
+!function (w, d, t) {
+  w.TiktokAnalyticsObject=t;var ttq=w[t]=w[t]||[];ttq.methods=["page","track","identify","instances","debug","on","off","once","ready","alias","group","enableCookie","disableCookie","holdConsent","revokeConsent","grantConsent"],ttq.setAndDefer=function(t,e){t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}};for(var i=0;i<ttq.methods.length;i++)ttq.setAndDefer(ttq,ttq.methods[i]);ttq.instance=function(t){for(
+var e=ttq._i[t]||[],n=0;n<ttq.methods.length;n++)ttq.setAndDefer(e,ttq.methods[n]);return e},ttq.load=function(e,n){var r="https://analytics.tiktok.com/i18n/pixel/events.js",o=n&&n.partner;ttq._i=ttq._i||{},ttq._i[e]=[],ttq._i[e]._u=r,ttq._t=ttq._t||{},ttq._t[e]=+new Date,ttq._o=ttq._o||{},ttq._o[e]=n||{};n=document.createElement("script")
+;n.type="text/javascript",n.async=!0,n.src=r+"?sdkid="+e+"&lib="+t;e=document.getElementsByTagName("script")[0];e.parentNode.insertBefore(n,e)};
+
+
+  ttq.load('DAQI2UJC77U17TEHSA10');
+  ttq.page();
+}(window, document, 'ttq');
+</script>
+<!-- TikTok Pixel Code End -->
+
 <!-- Toast container -->
 <div id="toast-container"></div>
 
@@ -2374,7 +2388,7 @@
         <p style="margin-bottom:1rem">Your data is stored on our hosted database infrastructure and transmitted over encrypted HTTPS connections. We use standard security practices, but no system is 100% secure.</p>
 
         <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">4. Third Parties We Use</h2>
-        <p style="margin-bottom:1rem">Anthropic (AI report generation), Stripe and Paystack (payment processing — we never see or store your full card/M-Pesa details), Google (Sign-In authentication and web fonts), Cloudflare (content delivery for a library used to generate shareable images), and our hosting providers. We do not sell your personal data to advertisers or data brokers.</p>
+        <p style="margin-bottom:1rem">Anthropic (AI report generation), Stripe and Paystack (payment processing — we never see or store your full card/M-Pesa details), Google (Sign-In authentication and web fonts), Cloudflare (content delivery for a library used to generate shareable images), and our hosting providers. If you arrived via a TikTok ad, TikTok's advertising pixel receives limited browser/device signals for ad measurement — see our <span style="color:var(--accent);cursor:pointer;text-decoration:underline" onclick="goTo('cookies')">Cookie Policy</span> for detail. We do not sell your personal data to data brokers.</p>
 
         <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">5. Your Rights</h2>
         <p style="margin-bottom:1rem">You can export your logged data as CSV/JSON, or permanently delete your account and all associated data, at any time from Settings within the app. You can also request correction or deletion by emailing <a href="mailto:vektraapp@gmail.com" style="color:var(--accent)">vektraapp@gmail.com</a> if you're unable to access the app.</p>
@@ -2405,14 +2419,15 @@
       <div style="font-size:13px;color:var(--text-secondary);line-height:1.6">
         <p style="margin-bottom:1rem"><strong>Last Updated:</strong> September 2026</p>
 
-        <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">1. We Don't Use Tracking Cookies</h2>
-        <p style="margin-bottom:1rem">VEKTRA does not use advertising cookies, analytics cookies, or any third-party tracking cookies. We don't run Google Analytics, Meta Pixel, or similar tools.</p>
+        <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">1. Advertising Cookies</h2>
+        <p style="margin-bottom:1rem">We run a TikTok advertising pixel on our marketing pages to measure ad performance (e.g. whether a TikTok ad led to a visit or signup). This sets cookies and shares limited browser/device data with TikTok under <a href="https://www.tiktok.com/legal/privacy-policy" target="_blank" rel="noopener" style="color:var(--accent)">TikTok's own privacy policy</a>. We do not run Google Analytics, Meta Pixel, or other advertising/analytics tools beyond this.</p>
 
-        <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">2. What We Actually Use: Local Storage</h2>
+        <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">2. What We Actually Use for the App Itself: Local Storage</h2>
         <p style="margin-bottom:1rem">Instead of cookies, the VEKTRA app uses your browser's local storage to keep you logged in, remember your preferences (like theme), and save unsaved drafts. This data stays on your device, is not readable by other websites, and is considered "strictly necessary" for the app to function — it doesn't require consent under most privacy laws.</p>
 
         <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">3. Cookies Set by Third-Party Services</h2>
         <p style="margin-bottom:1rem">A few features load scripts from other companies, and those companies may set their own cookies under their own privacy policies, independent of VEKTRA:</p>
+        <p style="margin-bottom:0.5rem">→ <strong>TikTok Pixel</strong> — advertising measurement, see above.</p>
         <p style="margin-bottom:0.5rem">→ <strong>Google Sign-In</strong> — when you choose to sign in with Google.</p>
         <p style="margin-bottom:0.5rem">→ <strong>Google Fonts</strong> — used to load our typeface.</p>
         <p style="margin-bottom:1rem">→ <strong>Cloudflare (cdnjs)</strong> — used only when you generate a shareable report image.</p>
