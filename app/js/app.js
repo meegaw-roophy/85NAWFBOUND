@@ -1664,7 +1664,8 @@ async function loadReport(reportType = 'weekly') {
   console.log('Navigating to reports screen');
   goTo('reports');
   console.log('Current screen after goTo:', currentScreen);
-  
+  updateReportTabLocks();
+
   showLoader('Generating your report...');
   
   const narrativeEl = document.getElementById('report-narrative');
@@ -1720,8 +1721,8 @@ async function loadReport(reportType = 'weekly') {
     
     console.log('Rendering report data...');
     const content = report.content || {};
-    currentReportData = (reportType === 'weekly' || reportType === 'monthly') ? { report, content } : currentReportData;
-    const periodDays = reportType === 'monthly' ? 30 : 7;
+    currentReportData = (reportType === 'weekly' || reportType === 'monthly' || reportType === 'quarterly') ? { report, content } : currentReportData;
+    const periodDays = reportType === 'quarterly' ? 90 : reportType === 'monthly' ? 30 : 7;
     const uniqueDays = content.unique_days_logged ?? content.days_logged ?? 0;
     const reportCountdown = content.report_countdown ?? Math.max(0, periodDays - uniqueDays);
     const signalScores = content.signal_scores || {};
@@ -1738,7 +1739,8 @@ async function loadReport(reportType = 'weekly') {
     if (scoreEl) scoreEl.textContent = report.vektra_score ? report.vektra_score.toFixed(0) : '—';
     const eyebrowEl = document.getElementById('report-eyebrow');
     if (eyebrowEl) {
-      eyebrowEl.textContent = reportType === 'monthly' ? 'Monthly Report'
+      eyebrowEl.textContent = reportType === 'quarterly' ? 'Quarterly Report'
+        : reportType === 'monthly' ? 'Monthly Report'
         : reportType === 'daily' ? 'Daily Report'
         : reportType === 'birthday' ? 'Birthday Report'
         : 'Weekly Report';
@@ -1746,6 +1748,8 @@ async function loadReport(reportType = 'weekly') {
     if (periodEl) {
       if (reportType === 'daily') {
         periodEl.textContent = 'Daily Report';
+      } else if (reportType === 'quarterly') {
+        periodEl.textContent = 'Quarterly Report';
       } else if (reportType === 'monthly') {
         periodEl.textContent = 'Monthly Report';
       } else if (reportType === 'birthday') {
@@ -1821,12 +1825,32 @@ async function loadReport(reportType = 'weekly') {
   }
 }
 
+const REPORT_TIER_REQUIREMENT = { monthly: ['tier2', 'tier3'], quarterly: ['tier2', 'tier3'] };
+
+function updateReportTabLocks() {
+  const tier = currentUser?.tier || 'free';
+  Object.entries(REPORT_TIER_REQUIREMENT).forEach(([type, allowedTiers]) => {
+    const btn = document.getElementById(`rpt-btn-${type}`);
+    if (!btn) return;
+    const locked = !allowedTiers.includes(tier);
+    const label = type.charAt(0).toUpperCase() + type.slice(1);
+    btn.textContent = locked ? `🔒 ${label}` : label;
+  });
+}
+
 function switchReport(type) {
+  const required = REPORT_TIER_REQUIREMENT[type];
+  if (required && !required.includes(currentUser?.tier)) {
+    showToast(`${type.charAt(0).toUpperCase() + type.slice(1)} reports require the Apex tier or above.`, 'info');
+    openUpgrade();
+    return;
+  }
+
   // Update button styles for all types
-  ['daily', 'weekly', 'monthly'].forEach(t => {
+  ['daily', 'weekly', 'monthly', 'quarterly'].forEach(t => {
     const btn = document.getElementById(`rpt-btn-${t}`);
     if (!btn) return;
-    
+
     const isActive = t === type;
     btn.style.border = isActive ? '2px solid var(--accent)' : '1px solid var(--border)';
     btn.style.background = isActive ? 'rgba(108,99,255,0.15)' : 'transparent';

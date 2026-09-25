@@ -76,13 +76,16 @@ class AIClient:
         user_data: dict,
         daily_snapshot: dict,
         feedback_tone: str = "Balanced",
+        force_mock: bool = False,
     ) -> str:
         """
         Generate a short, personalized daily VEKTRA narrative for paid tiers.
-        Free tier never calls this — it renders buildDailySummaryText() client-side
-        from the raw snapshot instead, at zero AI cost.
+        force_mock lets the caller enforce the free-tier limit server-side
+        (report_service.py passes this for tier=='free') without a second
+        code path - free tier gets the exact same zero-cost text this
+        already falls back to when Claude itself is unavailable.
         """
-        if not self.client:
+        if force_mock or not self.client:
             return self._mock_daily_report(daily_snapshot)
 
         prompt = self._build_daily_prompt(user_data, daily_snapshot, feedback_tone)

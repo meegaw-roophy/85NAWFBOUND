@@ -34,7 +34,18 @@ async def generate_report(user_id: int, payload: Optional[ReportCreate] = None, 
     period_start = payload.period_start if payload else None
     period_end = payload.period_end if payload else None
     report_type = payload.report_type if payload else 'weekly'
-    rpt = await generate_and_store_report(db, user_id, report_type=report_type, period_start=period_start, period_end=period_end)
+    user_tier = current_user.tier or 'free'
+
+    # Monthly/quarterly are Apex-and-above per the pricing page - reject
+    # outright rather than silently downgrading, since "you don't have this"
+    # deserves a clear answer, unlike daily/weekly which downgrade gracefully.
+    if report_type in ('monthly', 'quarterly') and user_tier not in ('tier2', 'tier3'):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"{report_type.capitalize()} reports require the Apex tier or above.",
+        )
+
+    rpt = await generate_and_store_report(db, user_id, report_type=report_type, period_start=period_start, period_end=period_end, user_tier=user_tier)
     return rpt
 
 

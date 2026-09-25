@@ -90,13 +90,13 @@ async def build_weekly_summary(snapshots: List[Snapshot], period_days: int = 7) 
         s.timestamp.date() for s in snapshots if getattr(s, 'timestamp', None) is not None
     }
     unique_days_logged = len(snapshot_dates) or len(snapshots)
-    # 3 days is enough to say something meaningful about a week; a month
-    # deserves more data before claiming to summarize it.
-    minimum_days_for_report = 3 if period_days <= 7 else 7
+    # 3 days is enough to say something meaningful about a week; longer
+    # periods deserve more data before claiming to summarize them.
+    minimum_days_for_report = 3 if period_days <= 7 else 7 if period_days <= 30 else 14
     report_ready = unique_days_logged >= minimum_days_for_report
     report_countdown = max(0, period_days - unique_days_logged)
     days_needed = max(0, minimum_days_for_report - unique_days_logged)
-    period_label = 'week' if period_days <= 7 else 'month'
+    period_label = 'week' if period_days <= 7 else 'quarter' if period_days > 60 else 'month'
     report_readiness_message = (
         f'Enough data for a meaningful {period_label}ly report.'
         if report_ready
@@ -185,7 +185,7 @@ async def generate_period_report(
     6. Store report in database
     7. Return report object
     """
-    period_label = 'week' if period_days <= 7 else 'month'
+    period_label = 'week' if period_days <= 7 else 'quarter' if period_days > 60 else 'month'
 
     # ── Default to the last period_days ──────
     if not period_end:
@@ -288,10 +288,77 @@ async def generate_monthly_report(
     return await generate_period_report(db, user_id, 'monthly', 30, period_start, period_end)
 
 
-async def generate_daily_report(db: AsyncSession, user_id: int) -> object:
+async def generate_quarterly_report(
+    db: AsyncSession,
+    user_id: int,
+    period_start: Optional[datetime.datetime] = None,
+    period_end: Optional[datetime.datetime] = None,
+) -> object:
+    return await generate_period_report(db, user_id, 'quarterly', 90, period_start, period_end)
+
+
+async def generate_weekly_preview(
+    db: AsyncSession,
+    user_id: int,
+    period_start: Optional[datetime.datetime] = None,
+    period_end: Optional[datetime.datetime] = None,
+) -> object:
     """
-    Short AI-personalized narrative for today's single snapshot. Paid tiers only —
-    free tier renders buildDailySummaryText() client-side instead, at zero AI cost.
+    Free-tier weekly report: the real computed scores (that's the core
+    "know your trajectory" hook, not something to paywall), but no AI
+    narrative - just an upgrade teaser instead of the wins/killers/
+    directive breakdown. Zero AI cost, matches the pricing page's actual
+    promise of "one weekly preview report" for Free.
+    """
+    period_days = 7
+    if not period_end:
+        period_end = datetime.datetime.utcnow()
+    if not period_start:
+        period_start = period_end - datetime.timedelta(days=period_days)
+
+    result = await db.execute(
+        select(Snapshot)
+        .where(Snapshot.user_id == user_id)
+        .where(Snapshot.timestamp >= period_start)
+        .where(Snapshot.timestamp <= period_end)
+        .order_by(Snapshot.timestamp.desc())
+    )
+    snapshots = result.scalars().all()
+    summary = await build_weekly_summary(snapshots, period_days=period_days)
+
+    if summary.get('report_ready'):
+        teaser = (
+            "🔒 This is a preview. Your full weekly breakdown — wins, the one metric "
+            "quietly holding you back, and a direct action plan generated fresh from "
+            "your own data — unlocks on Vector and above."
+        )
+    else:
+        teaser = summary.get(
+            'report_readiness_message',
+            'Log a few more days to unlock your weekly preview.',
+        )
+
+    report_payload = {
+        'period_start':  period_start,
+        'period_end':    period_end,
+        'report_type':   'weekly',
+        'status':        'ready',
+        'summary_text':  teaser,
+        'vektra_score':  summary.get('report_score', summary.get('avg_vektra_score')),
+        'content':       summary,
+        'delivered':     False,
+        'opened':        False,
+    }
+    return await crud.create_report(db, user_id, report_payload)
+
+
+async def generate_daily_report(db: AsyncSession, user_id: int, user_tier: str = 'free') -> object:
+    """
+    Short AI-personalized narrative for today's single snapshot. Paid tiers get
+    the real AI call; free tier gets the same zero-cost mock text the AI client
+    already falls back to when Claude itself is unavailable - enforced here
+    server-side (not just hidden behind a frontend check) so a free user can't
+    get a paid AI call for free by hitting the endpoint directly.
     """
     result = await db.execute(
         select(Snapshot)
@@ -335,6 +402,7 @@ async def generate_daily_report(db: AsyncSession, user_id: int) -> object:
         user_data=user_data,
         daily_snapshot=daily_snapshot,
         feedback_tone=user_data.get('feedback_tone', 'Balanced'),
+        force_mock=(user_tier == 'free'),
     )
 
     report_payload = {
@@ -355,9 +423,25 @@ async def generate_and_store_report(
     report_type: str = 'weekly',
     period_start=None,
     period_end=None,
+    user_tier: str = 'free',
 ) -> object:
+    """
+    Tier matrix (matches the pricing page's advertised features exactly):
+      Free:  daily = template mock, weekly = preview (no AI), no monthly/quarterly
+      Vector (tier1): daily/weekly get the real AI call, no monthly/quarterly
+      Apex/Founder (tier2/tier3): everything Vector has, plus monthly/quarterly
+
+    Monthly/quarterly access is enforced by the caller (reports.py) with an
+    explicit 403 before this ever runs, since "you don't have this" deserves
+    a clear rejection rather than a silent downgrade. Daily/weekly downgrade
+    gracefully instead, since Free is meant to get *something* for both.
+    """
     if report_type == 'daily':
-        return await generate_daily_report(db, user_id)
+        return await generate_daily_report(db, user_id, user_tier=user_tier)
     if report_type == 'monthly':
         return await generate_monthly_report(db, user_id, period_start, period_end)
+    if report_type == 'quarterly':
+        return await generate_quarterly_report(db, user_id, period_start, period_end)
+    if user_tier == 'free':
+        return await generate_weekly_preview(db, user_id, period_start, period_end)
     return await generate_weekly_report(db, user_id, period_start, period_end)
