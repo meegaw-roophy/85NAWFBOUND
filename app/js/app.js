@@ -2048,7 +2048,12 @@ async function shareReportAsImage() {
     renderHost = document.createElement('div');
     renderHost.id = 'share-card-render';
     renderHost.style.position = 'fixed';
-    renderHost.style.left = '-99999px';
+    // -9999px, not further: some desktop browsers apply layout-culling
+    // optimizations to elements positioned extremely far off-screen, which
+    // can make html2canvas capture a blank/transparent canvas even though
+    // the element is technically still in the DOM. -9999px is the standard
+    // "visually hidden but still rendered" convention for exactly this reason.
+    renderHost.style.left = '-9999px';
     renderHost.style.top = '0';
     document.body.appendChild(renderHost);
   }
@@ -3501,13 +3506,22 @@ function renderGoalPrediction(prediction) {
   
   if (!prediction.has_prediction) {
     const reason = prediction.reason || 'Insufficient data';
+    // The backend's "reason" values mean genuinely different things - one is
+    // "we don't have enough data yet" (more logging fixes it), the other is
+    // "we have plenty of data but your trend isn't improving" (more logging
+    // alone won't fix it). A single blanket hint for both was actively
+    // misleading in the second case.
+    const isDataGap = reason.toLowerCase().includes('need at least') || reason.toLowerCase().includes('insufficient score');
+    const hint = isDataGap
+      ? 'Keep logging daily — this unlocks automatically once you hit 7 consecutive days.'
+      : 'This isn\'t about logging more: your average score hasn\'t improved across your recent history. Once your trend turns upward, a completion estimate appears here automatically.';
     container.innerHTML = `
       <div style="display:flex; flex-direction:column; gap:12px; padding: 4px 0;">
         <div style="display:flex; align-items:center; gap:10px;">
           <div class="radar-dot" style="width:10px; height:10px; border-radius:50%; background:var(--accent); animation: pulse 1.5s infinite;"></div>
-          <span style="font-size:13px; font-weight:600; color:var(--text-secondary)">Calibrating Goal Trajectory Engine...</span>
+          <span style="font-size:13px; font-weight:600; color:var(--text-secondary)">${isDataGap ? 'Calibrating Goal Trajectory Engine...' : 'Trajectory Flat'}</span>
         </div>
-        <p style="font-size:12px; color:var(--text-muted); margin:0;">${reason}. VEKTRA requires at least 5 consecutive logs to accurately project your completion velocity.</p>
+        <p style="font-size:12px; color:var(--text-muted); margin:0;">${reason}. ${hint}</p>
         ${prediction.current_score ? `<div style="font-size:11px; color:var(--text-muted); opacity:0.8;">Current base score: ${prediction.current_score.toFixed(1)}/100</div>` : ''}
       </div>
     `;
@@ -3859,14 +3873,21 @@ async function processPayment() {
 // ── ACHIEVEMENT SYSTEM ──
 async function loadAchievementsCount() {
   if (!currentUser || !authToken) return;
-  
+
   try {
-    const res = await fetch(`${API}/api/v1/achievements`, {
+    // /achievements only returns rows that already exist for this user (i.e.
+    // ones triggered/created so far), so a user with zero progress gets an
+    // empty array and the count reads "0/0" - misleading, since there are
+    // real achievement definitions to unlock. /achievements/available
+    // returns the full defined set with completion status, which is the
+    // correct denominator.
+    const res = await fetch(`${API}/api/v1/achievements/available`, {
       headers: { 'Authorization': `Bearer ${authToken}` }
     });
-    
+
     if (res.ok) {
-      const achievements = await res.json();
+      const data = await res.json();
+      const achievements = data.achievements || [];
       const countEl = document.getElementById('achievement-count');
       if (countEl) {
         const completedCount = achievements.filter(a => a.completed).length;
