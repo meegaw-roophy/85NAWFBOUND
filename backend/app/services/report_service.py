@@ -210,6 +210,7 @@ async def generate_period_report(
         'north_star': user.north_star if user else None,
         'primary_goal': user.primary_goal if user else None,
         'feedback_tone': user.preferred_feedback_tone if user else 'Balanced',
+        'language': user.language if user else None,
     }
 
     # ── Build period summary ─────────────────
@@ -381,6 +382,7 @@ async def generate_daily_report(db: AsyncSession, user_id: int, user_tier: str =
     user_data = {
         'north_star': user.north_star if user else None,
         'feedback_tone': user.preferred_feedback_tone if user else 'Balanced',
+        'language': user.language if user else None,
     }
 
     cashflow = None

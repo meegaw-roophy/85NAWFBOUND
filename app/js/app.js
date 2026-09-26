@@ -597,7 +597,8 @@ async function register() {
       password,
       current_location: locationData.location_string,
       country_code: locationData.country_code,
-      currency: locationData.currency
+      currency: locationData.currency,
+      language: locationData.language
     };
     if (referralCode) {
       bodyPayload.referral_code = referralCode;
@@ -757,7 +758,10 @@ async function loginWithCredentials(username, password, onSlow = null) {
     Cache.clear();
 
     // 2. Auto-detect and sync location if not set
-    if (currentUser && (!currentUser.current_location || !currentUser.country_code || !currentUser.currency)) {
+    // language defaults to the literal string 'English' in the DB (not
+    // null), so an unset-vs-detected check needs to catch that sentinel
+    // value too, not just falsy.
+    if (currentUser && (!currentUser.current_location || !currentUser.country_code || !currentUser.currency || !currentUser.language || currentUser.language === 'English')) {
       const locationData = await detectUserLocation();
       const patchRes = await fetch(`${API}/api/v1/users/me`, {
         method: 'PATCH',
@@ -768,7 +772,8 @@ async function loginWithCredentials(username, password, onSlow = null) {
         body: JSON.stringify({
           current_location: locationData.location_string || currentUser.current_location,
           country_code: locationData.country_code || currentUser.country_code,
-          currency: locationData.currency || currentUser.currency
+          currency: locationData.currency || currentUser.currency,
+          language: locationData.language || currentUser.language
         })
       });
       if (patchRes.ok) {
@@ -1807,6 +1812,18 @@ async function loadReport(reportType = 'weekly') {
       .trim();
     if (narrativeEl) narrativeEl.innerHTML = formatted.replace(/\n/g, '<br>');
 
+    const recapEl = document.getElementById('report-inputs-recap');
+    const recapBodyEl = document.getElementById('report-inputs-recap-body');
+    if (recapEl && recapBodyEl) {
+      const recapHtml = buildInputsRecap(content);
+      if (recapHtml && reportReady) {
+        recapBodyEl.innerHTML = recapHtml;
+        recapEl.style.display = 'block';
+      } else {
+        recapEl.style.display = 'none';
+      }
+    }
+
     renderEngineBar('bar-financial', 'Financial', signalScores.Financial ?? 0, '#22c55e', 100);
     renderEngineBar('bar-mental', 'Mental', signalScores.Mental ?? 0, '#6c63ff', 100);
     renderEngineBar('bar-execution', 'Execution', signalScores.Execution ?? 0, '#ec4899', 100);
@@ -1865,6 +1882,43 @@ function switchReport(type) {
   }
 }
 
+
+// ── Plain-language recap of what the user actually logged, shown before the
+// AI verdict so the analysis is traceable to real numbers instead of feeling
+// like a black box. Built purely from already-fetched report content, no
+// extra request. ──
+function buildInputsRecap(content) {
+  const rows = [];
+
+  if (content.unique_days_logged !== undefined && content.unique_days_logged !== null) {
+    rows.push(`You logged <strong>${content.unique_days_logged}</strong> day${content.unique_days_logged === 1 ? '' : 's'} this period.`);
+  }
+  if (content.avg_mood != null || content.avg_energy != null) {
+    const parts = [];
+    if (content.avg_mood != null) parts.push(`mood averaged <strong>${content.avg_mood}/10</strong>`);
+    if (content.avg_energy != null) parts.push(`energy averaged <strong>${content.avg_energy}/10</strong>`);
+    rows.push(`Your ${parts.join(' and ')}.`);
+  }
+  if (content.avg_sleep != null) {
+    rows.push(`You slept <strong>${content.avg_sleep}h</strong> a night on average.`);
+  }
+  if (content.total_income != null && content.total_expenses != null) {
+    const flow = content.net_cash_flow ?? (content.total_income - content.total_expenses);
+    rows.push(`You logged <strong>${content.total_income}</strong> income and <strong>${content.total_expenses}</strong> expenses — net ${flow >= 0 ? '+' : ''}${flow}.`);
+  }
+  if (content.goals_set) {
+    rows.push(`You set <strong>${content.goals_set}</strong> goal${content.goals_set === 1 ? '' : 's'} and hit <strong>${content.goals_hit || 0}</strong> of them.`);
+  }
+  if (content.best_decisions && content.best_decisions.length > 0) {
+    rows.push(`Best decision you logged: "${content.best_decisions[0]}"`);
+  }
+  if (content.procrastination_days) {
+    rows.push(`Procrastination flagged on <strong>${content.procrastination_days}</strong> day${content.procrastination_days === 1 ? '' : 's'}.`);
+  }
+
+  if (rows.length === 0) return '';
+  return rows.map(r => `<div style="margin-bottom:6px">→ ${r}</div>`).join('');
+}
 
 // ── Shareable weekly report image ──
 function buildRadarSVG(scores, size = 440) {

@@ -26,6 +26,22 @@ Tone: Direct. Human. Like a coach who believes in you too much to sugarcoat anyt
 Format: Clean sections with emojis as headers. Conversational but precise."""
 
 
+def _language_instruction(language: Optional[str]) -> str:
+    """
+    Build a prompt line telling Claude to respond in the user's detected
+    language instead of English. Only affects the real AI call - the mock
+    fallback (used when Claude is unavailable, or forced for free tier) is
+    a static English template and can't translate itself, so this is a
+    paid-tier-with-working-AI-connection feature, not a universal one.
+    """
+    if not language or language.lower().startswith('en'):
+        return ""
+    return (
+        f"\nRespond entirely in the language indicated by this code: '{language}'. "
+        f"Do not respond in English unless that code is unrecognizable.\n"
+    )
+
+
 class AIClient:
     def __init__(self):
         # Gracefully instantiates if API key exists; ensures safe fallback protocols
@@ -127,7 +143,7 @@ TODAY'S DATA:
 - Hit yesterday's goal: {snap.get('goal_hit', 'N/A')}
 - Best decision: {snap.get('best_decision', 'N/A')}
 - Tomorrow's goal: {snap.get('tomorrow_goal', 'N/A')}
-
+{_language_instruction(user_data.get('language'))}
 Write 2-3 short sentences reacting to today specifically (reference at least one real number above), then one specific action directive for tomorrow. Under 80 words total. No headers, no bullet points — just plain prose."""
 
     def _mock_daily_report(self, snap: dict) -> str:
@@ -215,6 +231,7 @@ QUALITATIVE SENTIMENT LOGS:
 - Elements Actively Bypassed (Avoided): {summary.get('avoided_items', [])}
 - Core Psychological Signals (Humor/Lines): {summary.get('funny_lines', [])}
 {historical_section}
+{_language_instruction(user_data.get('language'))}
 Construct the output text matching these exact layout keys:
 1. TRAJECTORY STATUS (Max 3 concise sentences. Explicitly state if vector is ascending, stalling, or declining)
 2. TARGETED VECTOR WINS (Bullet points of data-validated tactical achievements)

@@ -888,6 +888,12 @@ var e=ttq._i[t]||[],n=0;n<ttq.methods.length;n++)ttq.setAndDefer(e,ttq.methods[n
 
   <div id="report-readiness" style="display:block;background:rgba(236,72,153,0.08);border:1px solid rgba(236,72,153,0.3);border-radius:var(--radius-sm);padding:.85rem;margin-bottom:1rem;font-size:13px;color:var(--text-secondary)">Your weekly report arrives after at least 3 logged days. Keep tracking daily to unlock a meaningful trajectory analysis.</div>
 
+  <!-- Inputs Recap - shown before the AI verdict so the analysis is traceable to real data, not a black box -->
+  <div id="report-inputs-recap" style="display:none;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
+    <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">Here's What You Logged</div>
+    <div id="report-inputs-recap-body" style="font-size:13px;color:var(--text-secondary);line-height:1.7"></div>
+  </div>
+
   <!-- AI Narrative -->
   <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
     <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">VEKTRA Analysis</div>
