@@ -180,6 +180,8 @@ class SubscriptionOut(BaseModel):
     starts_at: Optional[datetime] = None
     expires_at: Optional[datetime] = None
     created_at: Optional[datetime]
+    days_remaining: Optional[int] = None
+    auto_renew: Optional[bool] = None
     model_config = ConfigDict(from_attributes=True)
 
 

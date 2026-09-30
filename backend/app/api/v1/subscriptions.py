@@ -38,27 +38,27 @@ async def get_current_subscription(
         .order_by(Subscription.created_at.desc())
     )
     subscription = result.scalars().first()
-    
+
     if not subscription:
-        return {
-            "id": 0,
-            "plan": "free",
-            "active": True,
-            "expires_at": None,
-            "days_remaining": None
-        }
-    
-    days_remaining = None
+        # Transient, never-persisted object purely so from_attributes=True
+        # serializes it the same way as a real one - hand-building a dict
+        # here is exactly how this endpoint ended up missing SubscriptionOut's
+        # required user_id/provider fields and 500ing for every free user.
+        subscription = Subscription(
+            id=0,
+            user_id=current_user.id,
+            provider="none",
+            plan="free",
+            active=True,
+        )
+        subscription.days_remaining = None
+        return subscription
+
+    subscription.days_remaining = None
     if subscription.expires_at:
-        days_remaining = (subscription.expires_at - datetime.utcnow()).days
-    
-    return {
-        "id": subscription.id,
-        "plan": subscription.plan or "free",
-        "active": subscription.active,
-        "expires_at": subscription.expires_at,
-        "days_remaining": days_remaining
-    }
+        subscription.days_remaining = (subscription.expires_at - datetime.utcnow()).days
+
+    return subscription
 
 
 @router.post("/create", response_model=SubscriptionOut)
@@ -127,13 +127,14 @@ async def create_subscription(
     await db.commit()
     await db.refresh(subscription)
 
-    return {
-        "id": subscription.id,
-        "plan": subscription.plan,
-        "active": subscription.active,
-        "expires_at": subscription.expires_at,
-        "days_remaining": duration_days
-    }
+    # Same fix as /current: return the real ORM object (from_attributes=True
+    # picks up every column automatically) instead of a hand-built dict that
+    # can silently miss required schema fields. This endpoint fires right
+    # after a real payment clears - it was 500ing here even though the
+    # subscription/tier had already been saved correctly, meaning a paying
+    # customer would see an error immediately after a successful payment.
+    subscription.days_remaining = duration_days
+    return subscription
 
 
 @router.get("/plans")

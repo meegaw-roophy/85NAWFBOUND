@@ -619,7 +619,12 @@ def calculate_vektra_score(
         savings_investments=snapshot.get('savings_investments'),
         current_net_worth=snapshot.get('current_net_worth'),
         previous_net_worth=prev.get('current_net_worth'),
-        current_capital=snapshot.get('current_capital'),
+        # The daily log form only ever collects current_capital once, at
+        # onboarding - every day after that, snapshot.get('current_capital')
+        # is None, which made survival_runway silently compute to 0.0 (and
+        # raise ZERO_RUNWAY) for every user's every day after their first.
+        # Carry the last known value forward, same pattern as net worth above.
+        current_capital=snapshot.get('current_capital') if snapshot.get('current_capital') is not None else prev.get('current_capital'),
         emergency_amount=snapshot.get('emergency_amount'),
         any_emergency=snapshot.get('any_emergency'),
         user_tier=user_tier,

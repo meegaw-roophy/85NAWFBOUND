@@ -14,7 +14,6 @@ let authToken = null; // Ensure this is not declared as a 'const' anywhere!
 let currentUser = {};
 let currentScreen = 'welcome';
 let pendingReferralCode = null;
-const quickMoneyOfferRequested = new URLSearchParams(window.location.search).get('offer') === 'quick-money';
 
 // ── Performance Utilities ──
 
@@ -221,11 +220,6 @@ function goTo(screen) {
   }
   
   currentScreen = screen;
-  
-  // Initialize offer countdown if navigating to upgrade screen
-  if (screen === 'upgrade') {
-    initOfferCountdown();
-  }
   
   // Load news if navigating to news screen
   if (screen === 'news') {
@@ -2329,23 +2323,31 @@ async function loadSubscriptionInfo() {
   }
 }
 
-function renderSubscriptionData(subscriptions) {
-  if (subscriptions && subscriptions.length > 0) {
-    const sub = subscriptions[0];
-    document.getElementById('sub-plan').textContent = sub.tier || 'Free';
-    document.getElementById('sub-status').textContent = sub.status || 'Active';
-    
-    if (sub.expires_at) {
-      const expires = new Date(sub.expires_at);
-      document.getElementById('sub-expires').textContent = expires.toLocaleDateString('en-US', {day:'numeric', month:'short', year:'numeric'});
-    }
-    
-    // Auto-renew checkbox
-    const autoRenewCheckbox = document.getElementById('auto-renew');
-    if (autoRenewCheckbox) {
-      autoRenewCheckbox.checked = sub.auto_renew || false;
-      autoRenewCheckbox.addEventListener('change', () => toggleAutoRenew(autoRenewCheckbox.checked, sub.id));
-    }
+function renderSubscriptionData(sub) {
+  // /subscriptions/current returns one object (even for free users - a
+  // synthetic "plan: free" one, not an empty list), not an array. This used
+  // to check subscriptions.length/subscriptions[0] and read fields (tier,
+  // status, auto_renew at the top level) that don't exist in the real
+  // response shape, so this silently never populated for anyone.
+  if (!sub) return;
+
+  const planEl = document.getElementById('sub-plan');
+  if (planEl) planEl.textContent = sub.plan ? sub.plan.charAt(0).toUpperCase() + sub.plan.slice(1) : 'Free';
+
+  const statusEl = document.getElementById('sub-status');
+  if (statusEl) statusEl.textContent = sub.active ? 'Active' : 'Inactive';
+
+  const expiresEl = document.getElementById('sub-expires');
+  if (expiresEl) {
+    expiresEl.textContent = sub.expires_at
+      ? new Date(sub.expires_at).toLocaleDateString('en-US', {day:'numeric', month:'short', year:'numeric'})
+      : '—';
+  }
+
+  const autoRenewCheckbox = document.getElementById('auto-renew');
+  if (autoRenewCheckbox) {
+    autoRenewCheckbox.checked = sub.auto_renew || false;
+    autoRenewCheckbox.onchange = () => toggleAutoRenew(autoRenewCheckbox.checked, sub.id);
   }
 }
 
@@ -5162,7 +5164,6 @@ let priceLockSeconds = 900; // 15 minutes
 
 async function openUpgrade() {
   goTo('upgrade');
-  initOfferCountdown();
   await loadPricingReferenceData();
   selectedTierUpgrade = 'tier1';
   document.getElementById('days-slider').value = 30;
@@ -5171,8 +5172,6 @@ async function openUpgrade() {
   document.getElementById('price-content').style.display = 'none';
   document.getElementById('price-loading').style.display = 'block';
   document.getElementById('milestone-badge').style.display = 'none';
-  const offerBanner = document.getElementById('quick-money-offer-banner');
-  if (offerBanner) offerBanner.style.display = quickMoneyOfferRequested ? 'block' : 'none';
   updateTierButtonLabels();
   updateAmountConstraints();
   await onSliderChange(30);
@@ -5328,8 +5327,7 @@ async function calculatePrice(days) {
     const body = {
       tier: selectedTierUpgrade,
       currency: currentUser.currency || 'USD',
-      country_code: currentUser.country_code || 'DEFAULT',
-      special_offer: specialOfferActive
+      country_code: currentUser.country_code || 'DEFAULT'
     };
     
     // Send amount if user is using amount input, otherwise send days
@@ -5338,7 +5336,6 @@ async function calculatePrice(days) {
     } else {
       body.days = days;
     }
-    body.special_offer = quickMoneyOfferRequested || specialOfferActive;
 
     const res = await fetch(`${API}/api/v1/pricing/calculate`, {
       method: 'POST',
@@ -5480,7 +5477,6 @@ async function proceedToCheckout() {
       amount: currentPriceData.total,
       currency: currentPriceData.currency || 'KES',
       tier: selectedTierUpgrade,
-      special_offer: quickMoneyOfferRequested || specialOfferActive,
       callback_url: window.location.origin + window.location.pathname + '?payment_success=true&tier=' + selectedTierUpgrade
     };
     
@@ -6100,95 +6096,6 @@ function checkPaymentReturn() {
 }
 window.checkPaymentReturn = checkPaymentReturn;
 
-// ── Special Offer Functions ──
-let specialOfferActive = false;
-const SPECIAL_OFFER_DEADLINE = new Date("2026-09-20T23:59:59+03:00").getTime();
-const SPECIAL_OFFER_DAYS = 120; // 4 months (3 paid + 1 free)
-
-function updateOfferCountdown() {
-  const countdownEl = document.getElementById('offer-countdown');
-  if (!countdownEl) return;
-  
-  const now = new Date().getTime();
-  const difference = SPECIAL_OFFER_DEADLINE - now;
-  
-  if (difference <= 0) {
-    countdownEl.textContent = "Offer ended";
-    const banner = document.getElementById('special-offer-banner');
-    if (banner) banner.style.display = 'none';
-    return;
-  }
-  
-  const days = Math.floor(difference / (1000 * 60 * 60 * 24));
-  const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-  const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
-  
-  countdownEl.textContent = `${days}d ${hours}h ${minutes}m remaining`;
-}
-
-function activateSpecialOffer() {
-  if (!currentUser || !authToken) return;
-  
-  // Calculate offer price: 3 months × PPP factor
-  // We'll call pricing API with days=90 but override display
-  specialOfferActive = true;
-  
-  // Show special offer price card
-  document.getElementById('price-loading').style.display = 'none';
-  document.getElementById('price-content').style.display = 'block';
-  
-  // Set expiry to Jan 3rd 2027
-  const expires = new Date('2027-01-03T23:59:59');
-  
-  // Calculate 3-month price based on tier and currency
-  const currency = currentUser.currency || 'USD';
-  const sym = getCurrencySymbol(currency);
-  
-  // Base monthly prices after PPP (approximated from pricing engine)
-  const monthlyPrices = {
-    'tier1': { 'KES': 1424.50, 'USD': 26.67, 'NGN': 12000, 'GHS': 160, 'ZAR': 490 },
-    'tier2': { 'tier2_KES': 3561.25, 'tier2_USD': 66.67, 'tier2_NGN': 30000, 'tier2_GHS': 400, 'tier2_ZAR': 1225 }
-  };
-  
-  const tierPrices = selectedTierUpgrade === 'tier2' ? 
-    { 'KES': 3561.25, 'USD': 66.67, 'NGN': 30000, 'GHS': 400, 'ZAR': 1225, 'DEFAULT': 66.67 } :
-    { 'KES': 1424.50, 'USD': 26.67, 'NGN': 12000, 'GHS': 160, 'ZAR': 490, 'DEFAULT': 26.67 };
-  
-  const monthly = tierPrices[currency] || tierPrices['DEFAULT'];
-  const offerTotal = monthly * 3;
-  const fullPrice = monthly * 4; // What 4 months would normally cost
-  const saved = fullPrice - offerTotal;
-  
-  // Update price card
-  document.getElementById('price-total').textContent = `${sym} ${offerTotal.toLocaleString()}`;
-  document.getElementById('price-monthly-eq').textContent = `Access until Jan 3rd, 2027`;
-  
-  document.getElementById('savings-card').style.display = 'block';
-  document.getElementById('price-saved').textContent = `${sym} ${saved.toLocaleString()}`;
-  document.getElementById('price-bonus-days').textContent = '1 month FREE — Launch offer';
-  
-  document.getElementById('total-days-display').textContent = '~120 days';
-  document.getElementById('price-final').textContent = `${sym} ${offerTotal.toLocaleString()}`;
-  document.getElementById('price-expires').textContent = 'January 3rd, 2027';
-  
-  // Store offer price for checkout
-  currentPriceData = {
-    total: offerTotal,
-    currency: currency,
-    symbol: sym,
-    days: 120,
-    is_special_offer: true,
-    expires_at: expires.toISOString()
-  };
-  
-  // Update checkout button
-  const btn = document.getElementById('checkout-btn');
-  btn.disabled = false;
-  btn.textContent = `🔥 Claim Offer — ${sym} ${offerTotal.toLocaleString()} →`;
-  
-  showToast('Launch offer activated! 25% off applied. 🔥', 'success', 3000);
-}
-
 function getCurrencySymbol(currency) {
   const symbols = {
     'KES': 'KES', 'USD': '$', 'NGN': '₦', 'GHS': '₵',
@@ -6196,24 +6103,6 @@ function getCurrencySymbol(currency) {
   };
   return symbols[currency] || '$';
 }
-
-// Initialize countdown when upgrade screen loads
-function initOfferCountdown() {
-  const deadline = new Date('2026-09-09T23:59:59+03:00');
-  const now = new Date();
-  
-  if (now > deadline) {
-    const banner = document.getElementById('special-offer-banner');
-    if (banner) banner.style.display = 'none';
-    return;
-  }
-  
-  updateOfferCountdown();
-  setInterval(updateOfferCountdown, 60000);
-}
-
-window.activateSpecialOffer = activateSpecialOffer;
-window.initOfferCountdown = initOfferCountdown;
 
 // ── News / Updates Functions ──
 async function loadNews() {

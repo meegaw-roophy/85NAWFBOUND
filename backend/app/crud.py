@@ -54,6 +54,14 @@ async def create_snapshot(db: AsyncSession, user_id: int, snapshot_data: dict) -
             'expenses': previous.expenses,
             'current_capital': previous.current_capital,
         }
+        # current_capital is only ever collected once, at onboarding - the
+        # daily log form never resends it. Carry the last known value
+        # forward into the row actually being saved (not just into this
+        # request's score calculation), so it keeps chaining correctly on
+        # day 3, day 30, etc., instead of reverting to None the moment the
+        # one snapshot that had a real value scrolls out of the lookback.
+        if snapshot_data.get('current_capital') is None:
+            snapshot_data['current_capital'] = previous.current_capital
 
         # ── Calculate current streak to pass to score engine ──
     # Check current streak up to today
