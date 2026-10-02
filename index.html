@@ -1345,42 +1345,6 @@
     </div>
 
 
-    <!-- Launch Offer -->
-
-    <div class="launch-offer">
-      <div class="launch-offer-inner">
-
-        <div class="offer-label">
-          🔥 Founding Launch Offer — 25% OFF
-        </div>
-
-        <div class="offer-title">
-          Buy 3 months. Get the 4th month free.
-        </div>
-
-        <div class="offer-desc">
-          Pay only 3× your normal monthly price and get 4 months of access.
-          Available until September 20, 2026 at 23:59.
-          <i>(Offer may end before deadline arrives, so purchase early)</i>
-          Regional pricing may apply.
-        </div>
-
-        <a
-          href="https://vektraapp.online/app/?offer=quick-money"
-          class="primary-btn"
-          data-track="offer-cta"
-        >
-          Claim Quick Money Offer →
-        </a>
-
-        <div class="offer-countdown" id="offer-countdown">
-          Loading...
-        </div>
-
-      </div>
-    </div>
-
-
     <!-- Waitlist -->
 
     <div class="waitlist-block">
@@ -2046,21 +2010,6 @@
         </ul>
 
 
-        <div class="launch-price">
-
-          <div class="launch-price-label">
-            Founding launch offer
-          </div>
-
-          <div class="launch-price-text">
-            Buy 3 months, get 4 months of access
-          </div>
-
-          <div class="launch-price-sub">
-            Available until September 20, 2026.
-          </div>
-
-        </div>
 
       </div>
 
@@ -2114,21 +2063,6 @@
         </ul>
 
 
-        <div class="launch-price">
-
-          <div class="launch-price-label">
-            Founding launch offer
-          </div>
-
-          <div class="launch-price-text">
-            Buy 3 months, get 4 months of access
-          </div>
-
-          <div class="launch-price-sub">
-            Available until September 20, 2026.
-          </div>
-
-        </div>
 
       </div>
 
@@ -2427,69 +2361,6 @@
       }
 
     });
-
-
-    /* =========================
-       COUNTDOWN
-    ========================== */
-
-    function updateCountdown() {
-
-      const countdownElement =
-        document.getElementById("offer-countdown");
-
-      /*
-        Launch offer ends:
-        September 20, 2026 at 23:59:59.
-      */
-
-      const deadline =
-        new Date("2026-09-20T23:59:59+03:00").getTime();
-
-      const now =
-        new Date().getTime();
-
-      const difference =
-        deadline - now;
-
-
-      if (difference <= 0) {
-
-        countdownElement.textContent =
-          "Launch offer ended";
-
-        return;
-
-      }
-
-
-      const days =
-        Math.floor(
-          difference / (1000 * 60 * 60 * 24)
-        );
-
-      const hours =
-        Math.floor(
-          (difference % (1000 * 60 * 60 * 24))
-          / (1000 * 60 * 60)
-        );
-
-      const minutes =
-        Math.floor(
-          (difference % (1000 * 60 * 60))
-          / (1000 * 60)
-        );
-
-
-      countdownElement.textContent =
-        `${days}d ${hours}h ${minutes}m remaining`;
-
-    }
-
-
-    updateCountdown();
-
-    setInterval(updateCountdown, 60000);
 
 
     /* =========================
