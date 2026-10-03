@@ -378,7 +378,8 @@ class Payment(Base):
     provider_payment_id     = Column(String(255), nullable=True)
     amount                  = Column(Float,       nullable=True)
     currency                = Column(String(10),  nullable=True, default='USD')
-    status                  = Column(String(50),  nullable=False, default='pending')  # pending/succeeded/failed
+    status                  = Column(String(50),  nullable=False, default='pending')  # pending/succeeded/failed/refunded
+    succeeded_at            = Column(DateTime, nullable=True)  # set when the webhook actually confirms payment, not when the pending row was created - the real clock start for refund windows and commission holds
     external_response       = Column(JSON,        nullable=True)
 
     user = relationship('User')
@@ -421,6 +422,85 @@ class Referral(Base):
     credits_awarded = Column(Integer,  default=0)                   # credits given to referrer
 
     referrer        = relationship('User', foreign_keys=[referrer_id], back_populates='referrals_made')
+
+
+# ─────────────────────────────────────────────
+#  WITHDRAWAL REQUEST  (referral cash payouts — manual admin processing for v1)
+# ─────────────────────────────────────────────
+class WithdrawalRequest(Base):
+    __tablename__ = 'withdrawal_requests'
+
+    id                      = Column(Integer,  primary_key=True, index=True)
+    user_id                 = Column(Integer,  ForeignKey('users.id', ondelete='CASCADE'), nullable=False, index=True)
+    requested_at            = Column(DateTime, default=datetime.datetime.utcnow)
+
+    amount                  = Column(Float,    nullable=False)
+    currency                = Column(String(10), nullable=False, default='USD')
+    status                  = Column(String(20), nullable=False, default='requested', index=True)  # requested/approved/paid/rejected
+    payout_destination      = Column(Text,     nullable=True)  # free-text bank/mobile-money details supplied at request time - no structured payout-method model exists yet
+
+    processed_at            = Column(DateTime, nullable=True)
+    admin_notes             = Column(Text,     nullable=True)
+    processed_by_admin_id   = Column(Integer,  ForeignKey('users.id'), nullable=True)
+
+    user = relationship('User', foreign_keys=[user_id])
+
+
+# ─────────────────────────────────────────────
+#  REFUND REQUEST  (real 10-day refund window — manual admin processing for v1)
+# ─────────────────────────────────────────────
+class RefundRequest(Base):
+    __tablename__ = 'refund_requests'
+
+    id                      = Column(Integer,  primary_key=True, index=True)
+    user_id                 = Column(Integer,  ForeignKey('users.id', ondelete='CASCADE'), nullable=False, index=True)
+    payment_id              = Column(Integer,  ForeignKey('payments.id', ondelete='CASCADE'), nullable=False, index=True)
+    requested_at            = Column(DateTime, default=datetime.datetime.utcnow)
+
+    reason                  = Column(Text,     nullable=True)
+    status                  = Column(String(20), nullable=False, default='requested', index=True)  # requested/approved/refunded/rejected
+
+    processed_at            = Column(DateTime, nullable=True)
+    admin_notes             = Column(Text,     nullable=True)
+    processed_by_admin_id   = Column(Integer,  ForeignKey('users.id'), nullable=True)
+
+    user    = relationship('User', foreign_keys=[user_id])
+    payment = relationship('Payment')
+
+
+# ─────────────────────────────────────────────
+#  REFERRAL COMMISSION  (real-money affiliate earnings)
+#  Declining % of a referred user's own 1st-4th payment: 22/16.5/11/5.5%, then 0.
+#  "available" is deliberately not a stored status - it's computed at read time
+#  as: status='pending' AND available_at <= now() AND not claimed AND the
+#  triggering payment has no open refund request. See referral_commission_service.py.
+# ─────────────────────────────────────────────
+class ReferralCommission(Base):
+    __tablename__ = 'referral_commissions'
+
+    id                      = Column(Integer,  primary_key=True, index=True)
+    created_at              = Column(DateTime, default=datetime.datetime.utcnow, index=True)
+
+    referral_id             = Column(Integer,  ForeignKey('referrals.id', ondelete='CASCADE'), nullable=False, index=True)
+    referrer_id             = Column(Integer,  ForeignKey('users.id', ondelete='CASCADE'), nullable=False, index=True)
+    referred_user_id        = Column(Integer,  ForeignKey('users.id', ondelete='CASCADE'), nullable=False, index=True)
+    payment_id              = Column(Integer,  ForeignKey('payments.id', ondelete='CASCADE'), nullable=False, unique=True, index=True)  # one commission per triggering payment - doubles as a webhook-retry idempotency guard
+
+    sequence_number         = Column(Integer,  nullable=False)  # which of the referred user's own payments this is (1-4; 5+ never gets a row)
+    commission_rate         = Column(Float,    nullable=False)  # 0.22 / 0.165 / 0.11 / 0.055
+    commission_amount       = Column(Float,    nullable=False)
+    currency                = Column(String(10), nullable=False, default='USD')  # native currency of the triggering payment, never converted
+
+    status                  = Column(String(20), nullable=False, default='pending', index=True)  # pending/paid/voided
+    available_at            = Column(DateTime, nullable=False)  # succeeded_at + REFERRAL_COMMISSION_HOLD_DAYS
+    voided_at               = Column(DateTime, nullable=True)
+    voided_reason           = Column(String(255), nullable=True)
+    paid_at                 = Column(DateTime, nullable=True)
+    withdrawal_request_id   = Column(Integer,  ForeignKey('withdrawal_requests.id', ondelete='SET NULL'), nullable=True, index=True)  # claimed-by marker
+
+    referrer                = relationship('User', foreign_keys=[referrer_id])
+    referred_user           = relationship('User', foreign_keys=[referred_user_id])
+    payment                 = relationship('Payment')
 
 
 # ─────────────────────────────────────────────

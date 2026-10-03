@@ -1,3 +1,4 @@
+import datetime
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi import status as http_status
 from typing import List
@@ -10,12 +11,15 @@ from app.schemas import (
     PaystackPaymentRequest,
     PaymentOut,
     PaymentUpdate,
+    RefundRequestCreate,
+    RefundRequestOut,
 )
 from app.db.session import get_session
 from sqlalchemy.ext.asyncio import AsyncSession
 from app import crud
 from app.core.deps import get_current_user
-from app.db.models import Payment
+from app.core.config import settings
+from app.db.models import Payment, RefundRequest
 from app.services.payment_service import create_stripe_subscription, initiate_mpesa_payment
 from app.services.paystack_service import initialize_payment as initialize_paystack_payment
 
@@ -203,3 +207,69 @@ async def verify_paystack(
         return {"status": "success", "tier": tier, "payment_id": payment.id}
 
     return {"status": "pending"}
+
+
+@router.post("/{payment_id}/refund-request", response_model=RefundRequestOut)
+async def create_refund_request(
+    user_id: int,
+    payment_id: int,
+    payload: RefundRequestCreate,
+    db: AsyncSession = Depends(get_session),
+    current_user=Depends(get_current_user),
+):
+    """
+    Customer-initiated refund request. VEKTRA's actual refund window - 10
+    days from when the payment actually succeeded (not when the checkout
+    row was created). Processed manually by an admin for v1 - no live
+    Paystack refund API call happens here, this just opens the request.
+    """
+    if current_user.id != user_id:
+        raise HTTPException(status_code=http_status.HTTP_403_FORBIDDEN, detail="Not allowed")
+
+    payment_result = await db.execute(
+        select(Payment).where(Payment.id == payment_id, Payment.user_id == user_id)
+    )
+    payment = payment_result.scalar_one_or_none()
+    if not payment:
+        raise HTTPException(status_code=http_status.HTTP_404_NOT_FOUND, detail="Payment not found")
+    if payment.status != "succeeded":
+        raise HTTPException(status_code=http_status.HTTP_400_BAD_REQUEST, detail="Only succeeded payments can be refunded")
+
+    window_start = payment.succeeded_at or payment.created_at
+    window_end = window_start + datetime.timedelta(days=settings.REFUND_WINDOW_DAYS)
+    if datetime.datetime.utcnow() > window_end:
+        raise HTTPException(
+            status_code=http_status.HTTP_400_BAD_REQUEST,
+            detail=f"The {settings.REFUND_WINDOW_DAYS}-day refund window for this payment has closed.",
+        )
+
+    existing_result = await db.execute(
+        select(RefundRequest)
+        .where(RefundRequest.payment_id == payment_id)
+        .where(RefundRequest.status.in_(["requested", "approved"]))
+    )
+    if existing_result.scalar_one_or_none():
+        raise HTTPException(status_code=http_status.HTTP_400_BAD_REQUEST, detail="A refund request is already open for this payment.")
+
+    refund_request = RefundRequest(
+        user_id=user_id,
+        payment_id=payment_id,
+        reason=payload.reason,
+        status="requested",
+    )
+    db.add(refund_request)
+    await db.commit()
+    await db.refresh(refund_request)
+    return refund_request
+
+
+@router.get("/refund-requests", response_model=List[RefundRequestOut])
+async def list_my_refund_requests(
+    user_id: int,
+    db: AsyncSession = Depends(get_session),
+    current_user=Depends(get_current_user),
+):
+    if current_user.id != user_id:
+        raise HTTPException(status_code=http_status.HTTP_403_FORBIDDEN, detail="Not allowed")
+    result = await db.execute(select(RefundRequest).where(RefundRequest.user_id == user_id).order_by(RefundRequest.requested_at.desc()))
+    return result.scalars().all()

@@ -5,6 +5,7 @@ from app.db.session import get_session
 from app.db.models import User, Subscription, Payment
 from app.services.payment_service import verify_stripe_webhook
 from app.services.paystack_service import verify_webhook_signature
+from app.services import referral_commission_service
 from app import crud
 from datetime import datetime, timedelta
 from app.core.config import settings
@@ -40,6 +41,13 @@ async def stripe_webhook(
     elif event_type == "customer.subscription.created":
         status_value = "created"
 
+    # NOTE: referral commissions are intentionally NOT created from this
+    # Stripe path. This handler never updates User.tier/Subscription the way
+    # the Paystack handler does (pre-existing asymmetry), and STRIPE_API_KEY
+    # isn't live in config.py - wiring a cash-commission trigger onto a
+    # payment path that doesn't even grant the product yet is a real risk.
+    # Add referral_commission_service.create_commission_for_payment(db, payment)
+    # here once Stripe's tier/Subscription handling is fixed to match Paystack's.
     payment = await crud.update_payment_status(
         db,
         int(local_payment_id),
@@ -99,10 +107,19 @@ async def paystack_webhook(
             )
             payment = payment_result.scalar_one_or_none()
             if payment:
+                # Captured before mutation: guards against a Paystack webhook
+                # retry of an already-succeeded event re-triggering commission
+                # creation (a gap that existed regardless of this feature -
+                # this handler never previously guarded against retries at all).
+                already_succeeded = payment.status == "succeeded"
                 payment.status = "succeeded"
+                payment.succeeded_at = payment.succeeded_at or datetime.utcnow()
                 payment.external_response = payload
                 db.add(payment)
                 await db.commit()
+                await db.refresh(payment)
+                if not already_succeeded:
+                    await referral_commission_service.create_commission_for_payment(db, payment)
 
         if user_id:
             user_result = await db.execute(select(User).where(User.id == int(user_id)))

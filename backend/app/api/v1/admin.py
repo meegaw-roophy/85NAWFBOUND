@@ -5,7 +5,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_
 from app.db.session import get_session
 from app.api.v1.auth import get_current_user
-from app.db.models import User, Snapshot, Report, Subscription, Payment, Achievement
+from app.db.models import User, Snapshot, Report, Subscription, Payment, Achievement, WithdrawalRequest, RefundRequest, ReferralCommission
+from app.schemas import WithdrawalRequestOut, RefundRequestOut, AdminActionNote
 from app import crud
 import random
 
@@ -18,7 +19,7 @@ async def require_admin(current_user: User = Depends(get_current_user)):
     return current_user
 
 
-@router.get("/admin/stats")
+@router.get("/stats")
 async def get_admin_stats(
     db: AsyncSession = Depends(get_session),
     admin_user: User = Depends(require_admin)
@@ -76,7 +77,7 @@ async def get_admin_stats(
     }
 
 
-@router.get("/admin/users")
+@router.get("/users")
 async def list_users(
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
@@ -143,7 +144,7 @@ async def list_users(
     }
 
 
-@router.get("/admin/users/{user_id}")
+@router.get("/users/{user_id}")
 async def get_user_details(
     user_id: int,
     db: AsyncSession = Depends(get_session),
@@ -224,7 +225,7 @@ async def get_user_details(
     }
 
 
-@router.put("/admin/users/{user_id}/tier")
+@router.put("/users/{user_id}/tier")
 async def update_user_tier(
     user_id: int,
     tier: str = Query(..., pattern="^(free|tier1|tier2|tier3)$"),
@@ -246,7 +247,7 @@ async def update_user_tier(
     return {"message": f"User tier updated to {tier}"}
 
 
-@router.delete("/admin/users/{user_id}")
+@router.delete("/users/{user_id}")
 async def delete_user(
     user_id: int,
     db: AsyncSession = Depends(get_session),
@@ -269,7 +270,7 @@ async def delete_user(
     return {"message": "User deleted successfully"}
 
 
-@router.get("/admin/recent-activity")
+@router.get("/recent-activity")
 async def get_recent_activity(
     limit: int = Query(20, ge=1, le=100),
     db: AsyncSession = Depends(get_session),
@@ -319,7 +320,7 @@ async def get_recent_activity(
     return all_activity[:limit]
 
 
-@router.post("/admin/seed-data")
+@router.post("/seed-data")
 async def seed_data(
     db: AsyncSession = Depends(get_session), 
     current_user: User = Depends(get_current_user)
@@ -344,7 +345,223 @@ async def seed_data(
             "target_hit_bool": random.choice([True, False])
         }
         await crud.create_snapshot(db, current_user.id, snapshot_data)
-    
+
     return {"message": "30 days of data seeded successfully"}
+
+
+# ── Referral withdrawals (manual approval for v1 - no live Paystack Transfer
+# integration exists in this codebase) ──
+@router.get("/withdrawals", response_model=List[WithdrawalRequestOut])
+async def list_withdrawal_requests(
+    status: str = Query(None),
+    db: AsyncSession = Depends(get_session),
+    admin_user: User = Depends(require_admin),
+):
+    query = select(WithdrawalRequest).order_by(WithdrawalRequest.requested_at.desc())
+    if status:
+        query = query.where(WithdrawalRequest.status == status)
+    result = await db.execute(query)
+    return result.scalars().all()
+
+
+@router.post("/withdrawals/{withdrawal_id}/approve", response_model=WithdrawalRequestOut)
+async def approve_withdrawal_request(
+    withdrawal_id: int,
+    payload: AdminActionNote,
+    db: AsyncSession = Depends(get_session),
+    admin_user: User = Depends(require_admin),
+):
+    withdrawal = (await db.execute(select(WithdrawalRequest).where(WithdrawalRequest.id == withdrawal_id))).scalar_one_or_none()
+    if not withdrawal:
+        raise HTTPException(status_code=404, detail="Withdrawal request not found")
+    if withdrawal.status != "requested":
+        raise HTTPException(status_code=400, detail=f"Cannot approve a withdrawal in status '{withdrawal.status}'")
+    withdrawal.status = "approved"
+    withdrawal.admin_notes = payload.admin_notes
+    withdrawal.processed_by_admin_id = admin_user.id
+    db.add(withdrawal)
+    await db.commit()
+    await db.refresh(withdrawal)
+    return withdrawal
+
+
+@router.post("/withdrawals/{withdrawal_id}/reject", response_model=WithdrawalRequestOut)
+async def reject_withdrawal_request(
+    withdrawal_id: int,
+    payload: AdminActionNote,
+    db: AsyncSession = Depends(get_session),
+    admin_user: User = Depends(require_admin),
+):
+    withdrawal = (await db.execute(select(WithdrawalRequest).where(WithdrawalRequest.id == withdrawal_id))).scalar_one_or_none()
+    if not withdrawal:
+        raise HTTPException(status_code=404, detail="Withdrawal request not found")
+    if withdrawal.status not in ("requested", "approved"):
+        raise HTTPException(status_code=400, detail=f"Cannot reject a withdrawal in status '{withdrawal.status}'")
+
+    # Free the claimed commissions back into the available pool.
+    claimed = (await db.execute(select(ReferralCommission).where(ReferralCommission.withdrawal_request_id == withdrawal_id))).scalars().all()
+    for c in claimed:
+        c.withdrawal_request_id = None
+        db.add(c)
+
+    withdrawal.status = "rejected"
+    withdrawal.admin_notes = payload.admin_notes
+    withdrawal.processed_by_admin_id = admin_user.id
+    withdrawal.processed_at = datetime.utcnow()
+    db.add(withdrawal)
+    await db.commit()
+    await db.refresh(withdrawal)
+    return withdrawal
+
+
+@router.post("/withdrawals/{withdrawal_id}/mark-paid", response_model=WithdrawalRequestOut)
+async def mark_withdrawal_paid(
+    withdrawal_id: int,
+    payload: AdminActionNote,
+    db: AsyncSession = Depends(get_session),
+    admin_user: User = Depends(require_admin),
+):
+    """Admin has manually sent the money outside the app (M-Pesa/bank) - this just records it."""
+    withdrawal = (await db.execute(select(WithdrawalRequest).where(WithdrawalRequest.id == withdrawal_id))).scalar_one_or_none()
+    if not withdrawal:
+        raise HTTPException(status_code=404, detail="Withdrawal request not found")
+    if withdrawal.status != "approved":
+        raise HTTPException(status_code=400, detail=f"Cannot mark paid a withdrawal in status '{withdrawal.status}'")
+
+    claimed = (await db.execute(select(ReferralCommission).where(ReferralCommission.withdrawal_request_id == withdrawal_id))).scalars().all()
+
+    # Defensive re-check: time may have passed since approval - don't pay out
+    # a commission whose payment picked up an open refund request in the meantime.
+    open_refund_payment_ids = {
+        row[0] for row in (await db.execute(
+            select(RefundRequest.payment_id).where(RefundRequest.status.in_(["requested", "approved"]))
+        )).all()
+    }
+    blocked = [c for c in claimed if c.payment_id in open_refund_payment_ids]
+    if blocked:
+        raise HTTPException(
+            status_code=400,
+            detail=f"{len(blocked)} claimed commission(s) now have an open refund request - resolve those first.",
+        )
+
+    now = datetime.utcnow()
+    for c in claimed:
+        c.status = "paid"
+        c.paid_at = now
+        db.add(c)
+
+    withdrawal.status = "paid"
+    withdrawal.admin_notes = payload.admin_notes or withdrawal.admin_notes
+    withdrawal.processed_by_admin_id = admin_user.id
+    withdrawal.processed_at = now
+    db.add(withdrawal)
+    await db.commit()
+    await db.refresh(withdrawal)
+    return withdrawal
+
+
+# ── Refund requests (manual processing for v1 - no live Paystack refund API
+# call happens here, same reasoning as withdrawals above) ──
+@router.get("/refund-requests", response_model=List[RefundRequestOut])
+async def list_refund_requests(
+    status: str = Query(None),
+    db: AsyncSession = Depends(get_session),
+    admin_user: User = Depends(require_admin),
+):
+    query = select(RefundRequest).order_by(RefundRequest.requested_at.desc())
+    if status:
+        query = query.where(RefundRequest.status == status)
+    result = await db.execute(query)
+    return result.scalars().all()
+
+
+@router.post("/refund-requests/{request_id}/approve", response_model=RefundRequestOut)
+async def approve_refund_request(
+    request_id: int,
+    payload: AdminActionNote,
+    db: AsyncSession = Depends(get_session),
+    admin_user: User = Depends(require_admin),
+):
+    """
+    Approval is the fraud-defense trigger point: voids the matching
+    referral commission IMMEDIATELY (not at mark-refunded), regardless of
+    whether its hold period has already elapsed, since approval is the
+    moment the platform has committed to giving the money back.
+    """
+    refund_request = (await db.execute(select(RefundRequest).where(RefundRequest.id == request_id))).scalar_one_or_none()
+    if not refund_request:
+        raise HTTPException(status_code=404, detail="Refund request not found")
+    if refund_request.status != "requested":
+        raise HTTPException(status_code=400, detail=f"Cannot approve a refund request in status '{refund_request.status}'")
+
+    commission = (await db.execute(
+        select(ReferralCommission).where(ReferralCommission.payment_id == refund_request.payment_id)
+    )).scalar_one_or_none()
+    if commission and commission.status == "pending":
+        commission.status = "voided"
+        commission.voided_at = datetime.utcnow()
+        commission.voided_reason = "refund_approved"
+        db.add(commission)
+
+    refund_request.status = "approved"
+    refund_request.admin_notes = payload.admin_notes
+    refund_request.processed_by_admin_id = admin_user.id
+    db.add(refund_request)
+    await db.commit()
+    await db.refresh(refund_request)
+    return refund_request
+
+
+@router.post("/refund-requests/{request_id}/mark-refunded", response_model=RefundRequestOut)
+async def mark_refund_refunded(
+    request_id: int,
+    payload: AdminActionNote,
+    db: AsyncSession = Depends(get_session),
+    admin_user: User = Depends(require_admin),
+):
+    """Admin has manually processed the refund via Paystack's dashboard/bank - this just records it."""
+    refund_request = (await db.execute(select(RefundRequest).where(RefundRequest.id == request_id))).scalar_one_or_none()
+    if not refund_request:
+        raise HTTPException(status_code=404, detail="Refund request not found")
+    if refund_request.status != "approved":
+        raise HTTPException(status_code=400, detail=f"Cannot mark refunded a request in status '{refund_request.status}'")
+
+    payment = (await db.execute(select(Payment).where(Payment.id == refund_request.payment_id))).scalar_one_or_none()
+    if payment:
+        payment.status = "refunded"
+        db.add(payment)
+
+    now = datetime.utcnow()
+    refund_request.status = "refunded"
+    refund_request.admin_notes = payload.admin_notes or refund_request.admin_notes
+    refund_request.processed_by_admin_id = admin_user.id
+    refund_request.processed_at = now
+    db.add(refund_request)
+    await db.commit()
+    await db.refresh(refund_request)
+    return refund_request
+
+
+@router.post("/refund-requests/{request_id}/reject", response_model=RefundRequestOut)
+async def reject_refund_request(
+    request_id: int,
+    payload: AdminActionNote,
+    db: AsyncSession = Depends(get_session),
+    admin_user: User = Depends(require_admin),
+):
+    refund_request = (await db.execute(select(RefundRequest).where(RefundRequest.id == request_id))).scalar_one_or_none()
+    if not refund_request:
+        raise HTTPException(status_code=404, detail="Refund request not found")
+    if refund_request.status != "requested":
+        raise HTTPException(status_code=400, detail=f"Cannot reject a refund request in status '{refund_request.status}'")
+
+    refund_request.status = "rejected"
+    refund_request.admin_notes = payload.admin_notes
+    refund_request.processed_by_admin_id = admin_user.id
+    refund_request.processed_at = datetime.utcnow()
+    db.add(refund_request)
+    await db.commit()
+    await db.refresh(refund_request)
+    return refund_request
 
 

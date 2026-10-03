@@ -28,6 +28,7 @@ from .pricing import router as pricing_router
 from .questions import router as questions_router
 from .news import router as news_router
 from .analytics import router as analytics_router
+from .referrals import router as referrals_router
 
 router = APIRouter()
 
@@ -66,3 +67,4 @@ router.include_router(pricing_router)
 router.include_router(questions_router, prefix="/questions", tags=["questions"])
 router.include_router(news_router)
 router.include_router(analytics_router, prefix="/analytics", tags=["analytics"])
+router.include_router(referrals_router, prefix="/users/{user_id}/referral")

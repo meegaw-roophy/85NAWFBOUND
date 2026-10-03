@@ -175,6 +175,134 @@ async def get_user_referral_count(db: AsyncSession, user_id: int) -> int:
     return result.scalar_one() or 0
 
 
+# ── REFERRAL COMMISSIONS / WITHDRAWALS / REFUNDS ──
+# "available" is never a stored status - a commission whose triggering
+# payment has an OPEN refund request stays out of "available" even past its
+# own available_at, closing the race where admin review takes longer than
+# the few hours left before a commission's hold would otherwise clear. This
+# is what actually makes the equal 10-day windows (hold == refund window)
+# into a real fraud defense rather than just two numbers that happen to match.
+async def get_referral_wallet_balances(db: AsyncSession, user_id: int) -> dict:
+    from app.db.models import ReferralCommission, RefundRequest
+
+    now = datetime.utcnow()
+
+    result = await db.execute(
+        select(ReferralCommission).where(ReferralCommission.referrer_id == user_id)
+    )
+    commissions = result.scalars().all()
+
+    open_refund_result = await db.execute(
+        select(RefundRequest.payment_id).where(RefundRequest.status.in_(['requested', 'approved']))
+    )
+    open_refund_payment_ids = {row[0] for row in open_refund_result.all()}
+
+    balances: dict = {}
+    for c in commissions:
+        bucket = balances.setdefault(c.currency, {'pending': 0.0, 'available': 0.0, 'paid': 0.0})
+        if c.status == 'paid':
+            bucket['paid'] += c.commission_amount
+        elif c.status == 'pending':
+            is_available = (
+                c.available_at <= now
+                and c.withdrawal_request_id is None
+                and c.payment_id not in open_refund_payment_ids
+            )
+            bucket['available' if is_available else 'pending'] += c.commission_amount
+        # voided commissions are excluded entirely - not shown in any bucket
+
+    return balances
+
+
+async def get_referral_stats(db: AsyncSession, user_id: int) -> dict:
+    from app.db.models import ReferralCommission
+
+    referral_count = await get_user_referral_count(db, user_id)
+
+    lifetime_result = await db.execute(
+        select(func.coalesce(func.sum(ReferralCommission.commission_amount), 0.0))
+        .where(ReferralCommission.referrer_id == user_id)
+        .where(ReferralCommission.status.in_(['pending', 'paid']))
+    )
+    lifetime_earned = lifetime_result.scalar_one() or 0.0
+
+    # Rank by lifetime commission earned among everyone who's earned at least
+    # one commission - a simple COUNT of strictly-greater totals, grouped per
+    # referrer. Fine at this scale; revisit if the referrer base gets large
+    # enough that this per-request aggregate becomes expensive.
+    totals_result = await db.execute(
+        select(
+            ReferralCommission.referrer_id,
+            func.sum(ReferralCommission.commission_amount).label('total'),
+        )
+        .where(ReferralCommission.status.in_(['pending', 'paid']))
+        .group_by(ReferralCommission.referrer_id)
+    )
+    totals = [row.total or 0.0 for row in totals_result.all()]
+    rank = sum(1 for t in totals if t > lifetime_earned) + 1 if totals else None
+
+    return {
+        'referral_count': referral_count,
+        'lifetime_earned': round(lifetime_earned, 2),
+        'rank': rank,
+    }
+
+
+async def claim_available_commissions_for_withdrawal(
+    db: AsyncSession, user_id: int, currency: str
+) -> Optional['WithdrawalRequest']:
+    """
+    Atomically claims every currently-available commission in one currency
+    into a new WithdrawalRequest. Returns None if nothing is available.
+    Caller (the endpoint) is responsible for the minimum-amount check before
+    calling this, since that check needs an FX-converted comparison this
+    function deliberately doesn't do (it never touches currency conversion).
+    """
+    from app.db.models import ReferralCommission, RefundRequest, WithdrawalRequest
+
+    now = datetime.utcnow()
+    open_refund_result = await db.execute(
+        select(RefundRequest.payment_id).where(RefundRequest.status.in_(['requested', 'approved']))
+    )
+    open_refund_payment_ids = {row[0] for row in open_refund_result.all()}
+
+    result = await db.execute(
+        select(ReferralCommission)
+        .where(ReferralCommission.referrer_id == user_id)
+        .where(ReferralCommission.currency == currency)
+        .where(ReferralCommission.status == 'pending')
+        .where(ReferralCommission.available_at <= now)
+        .where(ReferralCommission.withdrawal_request_id.is_(None))
+    )
+    claimable = [c for c in result.scalars().all() if c.payment_id not in open_refund_payment_ids]
+    if not claimable:
+        return None
+
+    total = round(sum(c.commission_amount for c in claimable), 2)
+    withdrawal = WithdrawalRequest(user_id=user_id, amount=total, currency=currency, status='requested')
+    db.add(withdrawal)
+    await db.flush()  # need withdrawal.id before stamping commissions
+
+    for c in claimable:
+        c.withdrawal_request_id = withdrawal.id
+        db.add(c)
+
+    await db.commit()
+    await db.refresh(withdrawal)
+    return withdrawal
+
+
+async def list_withdrawal_requests_for_user(db: AsyncSession, user_id: int) -> list:
+    from app.db.models import WithdrawalRequest
+
+    result = await db.execute(
+        select(WithdrawalRequest)
+        .where(WithdrawalRequest.user_id == user_id)
+        .order_by(WithdrawalRequest.requested_at.desc())
+    )
+    return result.scalars().all()
+
+
 async def get_user_by_email(db: AsyncSession, email: str) -> Optional[User]:
     result = await db.execute(select(User).where(User.email == email))
     return result.scalars().first()

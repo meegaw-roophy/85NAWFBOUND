@@ -1,5 +1,5 @@
 from pydantic import BaseModel, EmailStr, ConfigDict, Field
-from typing import Optional, Any
+from typing import Optional, Any, List
 from datetime import datetime, date, time
 
 
@@ -211,7 +211,65 @@ class PaymentOut(BaseModel):
     status: str
     external_response: Optional[Any]
     created_at: Optional[datetime]
+    succeeded_at: Optional[datetime] = None
     model_config = ConfigDict(from_attributes=True)
+
+
+# ── Referral commissions / withdrawals / refunds ──
+class WalletBalance(BaseModel):
+    currency: str
+    pending: float
+    available: float
+    paid: float
+
+
+class ReferralWalletOut(BaseModel):
+    balances: List[WalletBalance]
+    min_withdrawal_usd_equivalent: float
+
+
+class ReferralStatsOut(BaseModel):
+    referral_count: int
+    lifetime_earned: float
+    rank: Optional[int] = None
+
+
+class WithdrawalRequestCreate(BaseModel):
+    currency: str
+    payout_destination: Optional[str] = None
+
+
+class WithdrawalRequestOut(BaseModel):
+    id: int
+    user_id: int
+    amount: float
+    currency: str
+    status: str
+    payout_destination: Optional[str] = None
+    requested_at: Optional[datetime] = None
+    processed_at: Optional[datetime] = None
+    admin_notes: Optional[str] = None
+    model_config = ConfigDict(from_attributes=True)
+
+
+class RefundRequestCreate(BaseModel):
+    reason: Optional[str] = None
+
+
+class RefundRequestOut(BaseModel):
+    id: int
+    user_id: int
+    payment_id: int
+    reason: Optional[str] = None
+    status: str
+    requested_at: Optional[datetime] = None
+    processed_at: Optional[datetime] = None
+    admin_notes: Optional[str] = None
+    model_config = ConfigDict(from_attributes=True)
+
+
+class AdminActionNote(BaseModel):
+    admin_notes: Optional[str] = None
 
 
 class StripePaymentRequest(BaseModel):

@@ -907,6 +907,7 @@ async function loadDashboard() {
     const invited = currentUser.referral_count ?? 0;
     referralStatsEl.textContent = `${credits} credits · ${invited} invited`;
   }
+  loadReferralStats();
 
   try {
     const res = await fetch(
@@ -2614,6 +2615,365 @@ function shareReferral(e) {
     });
   }
 }
+
+// ── Referral wallet & withdrawals ──
+async function openReferralWallet() {
+  goTo('referral-wallet');
+  if (!currentUser || !authToken) return;
+  await Promise.all([loadReferralStats(), loadReferralWallet(), loadWithdrawalHistory()]);
+}
+window.openReferralWallet = openReferralWallet;
+
+async function loadReferralStats() {
+  try {
+    const res = await fetch(`${API}/api/v1/users/${currentUser.id}/referral/stats`, {
+      headers: { 'Authorization': `Bearer ${authToken}` }
+    });
+    if (!res.ok) return;
+    const data = await res.json();
+    const countEl = document.getElementById('rw-referral-count');
+    const earnedEl = document.getElementById('rw-lifetime-earned');
+    const rankEl = document.getElementById('rw-rank');
+    if (countEl) countEl.textContent = data.referral_count ?? 0;
+    if (earnedEl) earnedEl.textContent = `$${(data.lifetime_earned ?? 0).toFixed(2)}`;
+    if (rankEl) rankEl.textContent = data.rank ? `#${data.rank}` : '—';
+    const dashEarningsEl = document.querySelector('#dash-referral-earnings span');
+    if (dashEarningsEl) dashEarningsEl.textContent = `$${(data.lifetime_earned ?? 0).toFixed(2)}`;
+  } catch (e) {
+    console.error('Referral stats load error:', e);
+  }
+}
+
+let _referralWalletBalances = [];
+
+async function loadReferralWallet() {
+  const el = document.getElementById('rw-balances');
+  if (!el) return;
+  try {
+    const res = await fetch(`${API}/api/v1/users/${currentUser.id}/referral/wallet`, {
+      headers: { 'Authorization': `Bearer ${authToken}` }
+    });
+    if (!res.ok) {
+      el.innerHTML = '<span style="color:var(--text-muted)">Could not load wallet.</span>';
+      return;
+    }
+    const data = await res.json();
+    _referralWalletBalances = data.balances || [];
+    const minEl = document.getElementById('rw-min-withdrawal');
+    if (minEl) minEl.textContent = `$${(data.min_withdrawal_usd_equivalent ?? 10).toFixed(2)}`;
+
+    if (_referralWalletBalances.length === 0) {
+      el.innerHTML = '<span style="color:var(--text-muted)">No commissions yet — share your link to start earning.</span>';
+    } else {
+      el.innerHTML = _referralWalletBalances.map(b => `
+        <div style="border-bottom:1px solid var(--border);padding-bottom:10px">
+          <div style="font-size:12px;font-weight:700;color:var(--text-primary);margin-bottom:6px">${b.currency.toUpperCase()}</div>
+          <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-muted)">
+            <span>Pending (in hold)</span><span>${b.pending.toFixed(2)}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--success);font-weight:600">
+            <span>Available</span><span>${b.available.toFixed(2)}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-muted)">
+            <span>Paid out</span><span>${b.paid.toFixed(2)}</span>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    const select = document.getElementById('rw-withdraw-currency');
+    if (select) {
+      const withdrawable = _referralWalletBalances.filter(b => b.available > 0);
+      if (withdrawable.length === 0) {
+        select.innerHTML = '<option value="">No funds available yet</option>';
+      } else {
+        select.innerHTML = withdrawable.map(b => `<option value="${b.currency}">${b.currency.toUpperCase()} — ${b.available.toFixed(2)} available</option>`).join('');
+      }
+    }
+  } catch (e) {
+    console.error('Referral wallet load error:', e);
+    el.innerHTML = '<span style="color:var(--text-muted)">Connection error.</span>';
+  }
+}
+
+async function loadWithdrawalHistory() {
+  const el = document.getElementById('rw-history');
+  if (!el) return;
+  try {
+    const res = await fetch(`${API}/api/v1/users/${currentUser.id}/referral/withdrawals`, {
+      headers: { 'Authorization': `Bearer ${authToken}` }
+    });
+    if (!res.ok) { el.innerHTML = '<span style="color:var(--text-muted)">Could not load history.</span>'; return; }
+    const rows = await res.json();
+    if (!rows || rows.length === 0) {
+      el.innerHTML = '<span style="color:var(--text-muted)">No withdrawal requests yet.</span>';
+      return;
+    }
+    const statusColor = { requested: 'var(--text-muted)', approved: 'var(--accent)', paid: 'var(--success)', rejected: 'var(--danger)' };
+    el.innerHTML = rows.map(r => `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
+        <div>
+          <div style="color:var(--text-primary)">${r.amount.toFixed(2)} ${r.currency.toUpperCase()}</div>
+          <div style="font-size:11px;color:var(--text-muted)">${new Date(r.requested_at).toLocaleDateString()}</div>
+        </div>
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:${statusColor[r.status] || 'var(--text-muted)'}">${r.status}</div>
+      </div>
+    `).join('');
+  } catch (e) {
+    console.error('Withdrawal history load error:', e);
+    el.innerHTML = '<span style="color:var(--text-muted)">Connection error.</span>';
+  }
+}
+
+async function submitWithdrawal() {
+  const currency = document.getElementById('rw-withdraw-currency')?.value;
+  const payoutDestination = document.getElementById('rw-payout-destination')?.value.trim();
+  if (!currency) {
+    showToast('No available balance to withdraw yet.', 'warning');
+    return;
+  }
+  if (!payoutDestination) {
+    showToast('Please tell us where to send your payout.', 'warning');
+    return;
+  }
+  try {
+    const res = await fetch(`${API}/api/v1/users/${currentUser.id}/referral/withdraw`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+      body: JSON.stringify({ currency, payout_destination: payoutDestination })
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      showToast(data.detail || 'Withdrawal request failed.', 'error');
+      return;
+    }
+    showToast('Withdrawal requested! We review and pay out manually.', 'success', 5000);
+    const destEl = document.getElementById('rw-payout-destination');
+    if (destEl) destEl.value = '';
+    await Promise.all([loadReferralWallet(), loadWithdrawalHistory()]);
+  } catch (e) {
+    console.error('Withdrawal request error:', e);
+    showToast('Connection error. Try again.', 'error');
+  }
+}
+window.submitWithdrawal = submitWithdrawal;
+
+// ── Billing & refunds ──
+async function openBilling() {
+  goTo('billing');
+  if (!currentUser || !authToken) return;
+  await loadBilling();
+}
+window.openBilling = openBilling;
+
+async function loadBilling() {
+  const el = document.getElementById('billing-list');
+  if (!el) return;
+  el.innerHTML = 'Loading…';
+  try {
+    const [paymentsRes, refundsRes] = await Promise.all([
+      fetch(`${API}/api/v1/users/${currentUser.id}/payments`, { headers: { 'Authorization': `Bearer ${authToken}` } }),
+      fetch(`${API}/api/v1/users/${currentUser.id}/payments/refund-requests`, { headers: { 'Authorization': `Bearer ${authToken}` } }),
+    ]);
+    if (!paymentsRes.ok) {
+      el.innerHTML = '<span style="color:var(--text-muted)">Could not load payment history.</span>';
+      return;
+    }
+    const payments = await paymentsRes.json();
+    const refundRequests = refundsRes.ok ? await refundsRes.json() : [];
+    const refundByPayment = {};
+    refundRequests.forEach(r => { refundByPayment[r.payment_id] = r; });
+
+    const relevant = payments.filter(p => p.status === 'succeeded' || p.status === 'refunded');
+    if (relevant.length === 0) {
+      el.innerHTML = '<span style="color:var(--text-muted)">No payments yet.</span>';
+      return;
+    }
+
+    const REFUND_WINDOW_MS = 10 * 24 * 60 * 60 * 1000;
+    el.innerHTML = relevant.map(p => {
+      const existingRequest = refundByPayment[p.id];
+      const succeededAt = p.succeeded_at ? new Date(p.succeeded_at) : (p.created_at ? new Date(p.created_at) : null);
+      const windowOpen = succeededAt ? (Date.now() - succeededAt.getTime()) <= REFUND_WINDOW_MS : false;
+
+      let actionHtml;
+      if (p.status === 'refunded') {
+        actionHtml = `<span style="font-size:11px;color:var(--text-muted)">Refunded</span>`;
+      } else if (existingRequest) {
+        actionHtml = `<span style="font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase">${existingRequest.status}</span>`;
+      } else if (windowOpen) {
+        actionHtml = `<button class="btn-secondary" style="padding:6px 12px;font-size:12px" onclick="requestRefund(${p.id})">Request refund</button>`;
+      } else {
+        actionHtml = `<span style="font-size:11px;color:var(--text-muted)">Window closed</span>`;
+      }
+
+      return `
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div style="color:var(--text-primary);font-weight:600">${(p.amount ?? 0).toFixed(2)} ${(p.currency || '').toUpperCase()}</div>
+            <div style="font-size:11px;color:var(--text-muted)">${succeededAt ? succeededAt.toLocaleDateString() : '—'} · ${p.provider}</div>
+          </div>
+          ${actionHtml}
+        </div>
+      `;
+    }).join('');
+  } catch (e) {
+    console.error('Billing load error:', e);
+    el.innerHTML = '<span style="color:var(--text-muted)">Connection error.</span>';
+  }
+}
+
+async function requestRefund(paymentId) {
+  const reason = prompt('Why are you requesting a refund? (optional)') || '';
+  try {
+    const res = await fetch(`${API}/api/v1/users/${currentUser.id}/payments/${paymentId}/refund-request`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+      body: JSON.stringify({ reason })
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      showToast(data.detail || 'Could not submit refund request.', 'error');
+      return;
+    }
+    showToast('Refund request submitted — our team will review it shortly.', 'success', 5000);
+    await loadBilling();
+  } catch (e) {
+    console.error('Refund request error:', e);
+    showToast('Connection error. Try again.', 'error');
+  }
+}
+window.requestRefund = requestRefund;
+
+// ── Admin: withdrawal & refund review ──
+async function loadAdminWithdrawals() {
+  const el = document.getElementById('admin-withdrawals-list');
+  if (!el) return;
+  el.innerHTML = 'Loading…';
+  try {
+    const res = await fetch(`${API}/api/v1/admin/withdrawals`, {
+      headers: { 'Authorization': `Bearer ${authToken}` }
+    });
+    if (!res.ok) {
+      el.innerHTML = res.status === 403 ? 'Admin access required.' : 'Could not load withdrawals.';
+      return;
+    }
+    const rows = (await res.json()).filter(r => r.status === 'requested' || r.status === 'approved');
+    if (rows.length === 0) {
+      el.innerHTML = '<span style="color:var(--text-muted)">No open withdrawal requests.</span>';
+      return;
+    }
+    el.innerHTML = rows.map(r => `
+      <div style="border-bottom:1px solid var(--border);padding-bottom:10px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+          <span style="font-weight:700;color:var(--text-primary)">${r.amount.toFixed(2)} ${r.currency.toUpperCase()}</span>
+          <span style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--accent)">${r.status}</span>
+        </div>
+        <div style="font-size:11px;color:var(--text-muted)">User #${r.user_id}</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px">${r.payout_destination || 'No payout destination given'}</div>
+        <div style="display:flex;gap:6px">
+          ${r.status === 'requested' ? `
+            <button class="btn-secondary" style="flex:1;padding:6px;font-size:12px" onclick="adminWithdrawalAction(${r.id},'approve')">Approve</button>
+            <button class="btn-secondary" style="flex:1;padding:6px;font-size:12px;color:var(--danger)" onclick="adminWithdrawalAction(${r.id},'reject')">Reject</button>
+          ` : `
+            <button class="btn-secondary" style="flex:1;padding:6px;font-size:12px" onclick="adminWithdrawalAction(${r.id},'mark-paid')">Mark Paid</button>
+            <button class="btn-secondary" style="flex:1;padding:6px;font-size:12px;color:var(--danger)" onclick="adminWithdrawalAction(${r.id},'reject')">Reject</button>
+          `}
+        </div>
+      </div>
+    `).join('');
+  } catch (e) {
+    console.error('Admin withdrawals load error:', e);
+    el.innerHTML = 'Connection error.';
+  }
+}
+window.loadAdminWithdrawals = loadAdminWithdrawals;
+
+async function adminWithdrawalAction(id, action) {
+  if (action === 'reject' && !confirm('Reject this withdrawal? Any claimed commissions become available again.')) return;
+  try {
+    const res = await fetch(`${API}/api/v1/admin/withdrawals/${id}/${action}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+      body: JSON.stringify({})
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      showToast(data.detail || `Could not ${action} withdrawal.`, 'error');
+      return;
+    }
+    showToast(`Withdrawal: ${action.replace('-', ' ')} done.`, 'success');
+    await loadAdminWithdrawals();
+  } catch (e) {
+    console.error(`Admin withdrawal ${action} error:`, e);
+    showToast('Connection error.', 'error');
+  }
+}
+window.adminWithdrawalAction = adminWithdrawalAction;
+
+async function loadAdminRefundRequests() {
+  const el = document.getElementById('admin-refunds-list');
+  if (!el) return;
+  el.innerHTML = 'Loading…';
+  try {
+    const res = await fetch(`${API}/api/v1/admin/refund-requests`, {
+      headers: { 'Authorization': `Bearer ${authToken}` }
+    });
+    if (!res.ok) {
+      el.innerHTML = res.status === 403 ? 'Admin access required.' : 'Could not load refund requests.';
+      return;
+    }
+    const rows = (await res.json()).filter(r => r.status === 'requested' || r.status === 'approved');
+    if (rows.length === 0) {
+      el.innerHTML = '<span style="color:var(--text-muted)">No open refund requests.</span>';
+      return;
+    }
+    el.innerHTML = rows.map(r => `
+      <div style="border-bottom:1px solid var(--border);padding-bottom:10px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+          <span style="font-weight:700;color:var(--text-primary)">Payment #${r.payment_id}</span>
+          <span style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--accent)">${r.status}</span>
+        </div>
+        <div style="font-size:11px;color:var(--text-muted)">User #${r.user_id}</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px">${r.reason || 'No reason given'}</div>
+        <div style="display:flex;gap:6px">
+          ${r.status === 'requested' ? `
+            <button class="btn-secondary" style="flex:1;padding:6px;font-size:12px" onclick="adminRefundAction(${r.id},'approve')">Approve</button>
+            <button class="btn-secondary" style="flex:1;padding:6px;font-size:12px;color:var(--danger)" onclick="adminRefundAction(${r.id},'reject')">Reject</button>
+          ` : `
+            <button class="btn-secondary" style="flex:1;padding:6px;font-size:12px" onclick="adminRefundAction(${r.id},'mark-refunded')">Mark Refunded</button>
+          `}
+        </div>
+      </div>
+    `).join('');
+  } catch (e) {
+    console.error('Admin refund requests load error:', e);
+    el.innerHTML = 'Connection error.';
+  }
+}
+window.loadAdminRefundRequests = loadAdminRefundRequests;
+
+async function adminRefundAction(id, action) {
+  if (action === 'reject' && !confirm('Reject this refund request?')) return;
+  try {
+    const res = await fetch(`${API}/api/v1/admin/refund-requests/${id}/${action}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+      body: JSON.stringify({})
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      showToast(data.detail || `Could not ${action} refund request.`, 'error');
+      return;
+    }
+    showToast(`Refund request: ${action.replace('-', ' ')} done.`, 'success');
+    await loadAdminRefundRequests();
+  } catch (e) {
+    console.error(`Admin refund ${action} error:`, e);
+    showToast('Connection error.', 'error');
+  }
+}
+window.adminRefundAction = adminRefundAction;
 
 // ── Auto-save draft ──
 function saveDraft() {
@@ -4556,6 +4916,9 @@ function renderAdminBarList(containerId, rows, emptyText) {
 async function openAdminAnalytics() {
   goTo('admin');
   if (!currentUser || !authToken) return;
+
+  loadAdminWithdrawals();
+  loadAdminRefundRequests();
 
   const breakdownEl = document.getElementById('admin-clicks-breakdown');
   breakdownEl.textContent = 'Loading…';

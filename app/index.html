@@ -499,11 +499,12 @@ var e=ttq._i[t]||[],n=0;n<ttq.methods.length;n++)ttq.setAndDefer(e,ttq.methods[n
       <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em">Invite friends</div>
       <div id="dash-referral-stats" style="font-size:11px;color:var(--accent);font-weight:700">0 credits · 0 invited</div>
     </div>
-    <div style="font-size:13px;color:var(--text-secondary);margin-bottom:.75rem">Share VEKTRA — you both earn 10 credits when they join.</div>
-    <div style="display:flex;gap:8px">
+    <div style="font-size:13px;color:var(--text-secondary);margin-bottom:.75rem">Share VEKTRA — earn real cash commission when they pay (22% → 16.5% → 11% → 5.5% of their first 4 payments), plus bonus credits.</div>
+    <div style="display:flex;gap:8px;margin-bottom:.75rem">
       <input id="dash-referral-link" readonly style="flex:1;padding:10px 12px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:12px;font-family:var(--font)" onclick="this.select()">
       <button class="btn-secondary" style="padding:10px 16px;white-space:nowrap" onclick="shareReferral(event)">Share</button>
     </div>
+    <div id="dash-referral-earnings" style="font-size:12px;color:var(--text-muted);cursor:pointer" onclick="openReferralWallet()">💰 Earnings: <span style="color:var(--accent);font-weight:700">—</span> · View wallet →</div>
   </div>
 
   <!-- First Time Onboarding Prompt Banner -->
@@ -1052,6 +1053,28 @@ var e=ttq._i[t]||[],n=0;n<ttq.methods.length;n++)ttq.setAndDefer(e,ttq.methods[n
     </div>
   </div>
 
+  <!-- Billing Section -->
+  <div onclick="openBilling()" style="background:linear-gradient(135deg,rgba(108,99,255,0.12),rgba(236,72,153,0.12));border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem;cursor:pointer;transition:all 0.2s ease" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <div>
+        <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px">Billing</div>
+        <div style="font-size:14px;font-weight:600;color:var(--text-primary)">Payment History & Refunds</div>
+      </div>
+      <div style="font-size:20px">🧾</div>
+    </div>
+  </div>
+
+  <!-- Referral Wallet Section -->
+  <div onclick="openReferralWallet()" style="background:linear-gradient(135deg,rgba(108,99,255,0.12),rgba(236,72,153,0.12));border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem;cursor:pointer;transition:all 0.2s ease" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <div>
+        <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px">Referral Earnings</div>
+        <div style="font-size:14px;font-weight:600;color:var(--text-primary)">Wallet & Withdrawals</div>
+      </div>
+      <div style="font-size:20px">💰</div>
+    </div>
+  </div>
+
   <!-- Goal Prediction -->
   <div id="goal-prediction-card" style="background:linear-gradient(135deg,rgba(108,99,255,0.12),rgba(236,72,153,0.12));border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
     <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">Goal Prediction</div>
@@ -1317,7 +1340,91 @@ var e=ttq._i[t]||[],n=0;n<ttq.methods.length;n++)ttq.setAndDefer(e,ttq.methods[n
     <div id="admin-clicks-by-country"></div>
   </div>
 
-  <button class="btn-secondary" style="margin-top:1rem;margin-bottom:2rem" onclick="openAdminAnalytics()">↺ Refresh</button>
+  <button class="btn-secondary" style="margin-top:1rem" onclick="openAdminAnalytics()">↺ Refresh</button>
+
+  <!-- Withdrawal Requests -->
+  <div style="margin-top:2rem;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
+    <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">Withdrawal Requests</div>
+    <div id="admin-withdrawals-list" style="display:flex;flex-direction:column;gap:10px;font-size:13px">Loading…</div>
+    <button class="btn-secondary" style="margin-top:1rem" onclick="loadAdminWithdrawals()">↺ Refresh</button>
+  </div>
+
+  <!-- Refund Requests -->
+  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:2rem">
+    <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">Refund Requests</div>
+    <div id="admin-refunds-list" style="display:flex;flex-direction:column;gap:10px;font-size:13px">Loading…</div>
+    <button class="btn-secondary" style="margin-top:1rem" onclick="loadAdminRefundRequests()">↺ Refresh</button>
+  </div>
+
+</div>
+
+<!-- SCREEN: REFERRAL WALLET -->
+<div id="referral-wallet" style="display:none;flex-direction:column;min-height:100vh;padding:1.5rem;max-width:420px;margin:0 auto">
+
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;padding-top:1rem">
+    <div>
+      <div style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.1em">Referral</div>
+      <div style="font-size:18px;font-weight:700">Earnings & Wallet</div>
+    </div>
+    <div onclick="goTo('profile')" style="color:var(--text-muted);cursor:pointer;font-size:13px">← Back</div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:1rem">
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1rem;text-align:center">
+      <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px">Invited</div>
+      <div id="rw-referral-count" style="font-size:22px;font-weight:800">—</div>
+    </div>
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1rem;text-align:center">
+      <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px">Lifetime</div>
+      <div id="rw-lifetime-earned" style="font-size:22px;font-weight:800;color:var(--accent)">—</div>
+    </div>
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1rem;text-align:center">
+      <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px">Rank</div>
+      <div id="rw-rank" style="font-size:22px;font-weight:800">—</div>
+    </div>
+  </div>
+
+  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
+    <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">Balances by Currency</div>
+    <div id="rw-balances" style="display:flex;flex-direction:column;gap:12px">Loading…</div>
+    <div style="font-size:11px;color:var(--text-muted);margin-top:.75rem;line-height:1.5">Commissions clear 10 days after your referral's payment (matches our refund window, so refunded payments never pay out). Minimum withdrawal is <span id="rw-min-withdrawal">$10</span>-equivalent per currency.</div>
+  </div>
+
+  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:2rem">
+    <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">Request Withdrawal</div>
+    <div style="margin-bottom:12px">
+      <label for="rw-withdraw-currency" style="font-size:12px;color:var(--text-muted);margin-bottom:6px;display:block">Currency</label>
+      <select id="rw-withdraw-currency" style="width:100%;padding:10px 12px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;font-family:var(--font);outline:none"></select>
+    </div>
+    <div style="margin-bottom:12px">
+      <label for="rw-payout-destination" style="font-size:12px;color:var(--text-muted);margin-bottom:6px;display:block">Payout destination <span style="color:var(--text-muted);font-weight:400">(e.g. M-Pesa number, bank details, PayPal email)</span></label>
+      <textarea id="rw-payout-destination" style="width:100%;padding:10px 12px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;font-family:var(--font);outline:none;resize:vertical;min-height:60px" placeholder="Where should we send this payout?"></textarea>
+    </div>
+    <div style="font-size:11px;color:var(--text-muted);margin-bottom:12px">Withdrawals are reviewed and paid out manually by the VEKTRA team.</div>
+    <button class="btn-primary" style="width:100%" onclick="submitWithdrawal()">Request Withdrawal</button>
+  </div>
+
+  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:2rem">
+    <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">Withdrawal History</div>
+    <div id="rw-history" style="display:flex;flex-direction:column;gap:8px;font-size:13px">Loading…</div>
+  </div>
+
+</div>
+
+<!-- SCREEN: BILLING -->
+<div id="billing" style="display:none;flex-direction:column;min-height:100vh;padding:1.5rem;max-width:420px;margin:0 auto">
+
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;padding-top:1rem">
+    <div>
+      <div style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.1em">Billing</div>
+      <div style="font-size:18px;font-weight:700">Payment History</div>
+    </div>
+    <div onclick="goTo('profile')" style="color:var(--text-muted);cursor:pointer;font-size:13px">← Back</div>
+  </div>
+
+  <div style="font-size:12px;color:var(--text-muted);margin-bottom:1rem;line-height:1.5">Payments can be refunded within <span id="billing-refund-days">10</span> days of the charge. See our <span style="color:var(--accent);text-decoration:underline;cursor:pointer" onclick="goTo('refund')">Refund Policy</span> for details.</div>
+
+  <div id="billing-list" style="display:flex;flex-direction:column;gap:10px;margin-bottom:2rem">Loading…</div>
 
 </div>
 
@@ -1939,7 +2046,7 @@ var e=ttq._i[t]||[],n=0;n<ttq.methods.length;n++)ttq.setAndDefer(e,ttq.methods[n
     <div style="display:flex;align-items:start;gap:8px;margin-bottom:.75rem">
       <input type="checkbox" id="terms-checkbox" style="margin-top:3px;accent-color:var(--accent);cursor:pointer">
       <label for="terms-checkbox" style="font-size:12px;color:var(--text-muted);cursor:pointer;line-height:1.4">
-        I agree to the <span style="color:var(--accent);cursor:pointer;text-decoration:underline" onclick="goTo('terms')">Terms of Service</span>, <span style="color:var(--accent);cursor:pointer;text-decoration:underline" onclick="goTo('privacy')">Privacy Policy</span>, and <span style="color:var(--accent);cursor:pointer;text-decoration:underline" onclick="goTo('refund')">Refund Policy</span>. No refunds, upgrades are prorated, cancellation stops renewal at period end.
+        I agree to the <span style="color:var(--accent);cursor:pointer;text-decoration:underline" onclick="goTo('terms')">Terms of Service</span>, <span style="color:var(--accent);cursor:pointer;text-decoration:underline" onclick="goTo('privacy')">Privacy Policy</span>, and <span style="color:var(--accent);cursor:pointer;text-decoration:underline" onclick="goTo('refund')">Refund Policy</span>. Refundable within 10 days of charge, upgrades are prorated, cancellation stops renewal at period end.
       </label>
     </div>
 
@@ -2331,7 +2438,7 @@ var e=ttq._i[t]||[],n=0;n<ttq.methods.length;n++)ttq.setAndDefer(e,ttq.methods[n
         <p style="margin-bottom:1rem">Users are responsible for maintaining the confidentiality of their account credentials and for all activities that occur under their account. You agree to provide accurate and complete information and not to misuse the referral system or share fraudulent data.</p>
 
         <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">6. Subscription and Payment</h2>
-        <p style="margin-bottom:1rem">VEKTRA offers both free and paid subscription tiers, billed in advance for the selected duration via our payment processors. No refunds are provided for unused portions of a subscription period — see our <span style="color:var(--accent);cursor:pointer;text-decoration:underline" onclick="goTo('refund')">Refund Policy</span> for full details and exceptions.</p>
+        <p style="margin-bottom:1rem">VEKTRA offers both free and paid subscription tiers, billed in advance for the selected duration via our payment processors. Payments can be refunded within 10 days of the charge — see our <span style="color:var(--accent);cursor:pointer;text-decoration:underline" onclick="goTo('refund')">Refund Policy</span> for the full window and process.</p>
 
         <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">7. Cancellation</h2>
         <p style="margin-bottom:1rem">You may cancel your subscription at any time. Cancellation stops future renewal; you retain access until the current paid period ends.</p>
@@ -2437,27 +2544,33 @@ var e=ttq._i[t]||[],n=0;n<ttq.methods.length;n++)ttq.setAndDefer(e,ttq.methods[n
       <button onclick="goTo('dashboard')" style="background:transparent;border:none;color:var(--text-secondary);font-size:14px;cursor:pointer;margin-bottom:1rem">← Back</button>
       <h1 style="font-size:28px;font-weight:800;margin-bottom:1rem;color:var(--text-primary)">Refund Policy</h1>
       <div style="font-size:13px;color:var(--text-secondary);line-height:1.6">
-        <p style="margin-bottom:1rem"><strong>Last Updated:</strong> August 2026</p>
-        
-        <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">1. No Refunds</h2>
-        <p style="margin-bottom:1rem">All subscription purchases are final and non-refundable. Once a subscription is purchased, you will not be eligible for a refund of any unused portion.</p>
-        
-        <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">2. Prorated Upgrades</h2>
+        <p style="margin-bottom:1rem"><strong>Last Updated:</strong> October 2026</p>
+
+        <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">1. 10-Day Refund Window</h2>
+        <p style="margin-bottom:1rem">You may request a refund for any subscription payment within 10 days of the charge date, from the Billing section of the app. Requests are reviewed and processed manually by our team, usually within a few business days.</p>
+
+        <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">2. After the Window Closes</h2>
+        <p style="margin-bottom:1rem">Once 10 days have passed since a payment, that charge is no longer eligible for a refund.</p>
+
+        <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">3. Prorated Upgrades</h2>
         <p style="margin-bottom:1rem">When upgrading between tiers, the remaining value of your current subscription may be prorated and applied to the new tier at our discretion.</p>
-        
-        <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">3. Service Interruptions</h2>
+
+        <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">4. Service Interruptions</h2>
         <p style="margin-bottom:1rem">In the unlikely event of extended service outages (exceeding 48 hours), affected users may be eligible for account credit extensions at our sole discretion.</p>
-        
-        <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">4. Payment Processing Errors</h2>
+
+        <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">5. Payment Processing Errors</h2>
         <p style="margin-bottom:1rem">If you are charged in error due to a payment processing failure, please contact us within 30 days for resolution and potential refund.</p>
-        
-        <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">5. Cancellation Policy</h2>
-        <p style="margin-bottom:1rem">You can cancel your subscription at any time. Cancellation takes effect at the end of your current billing period. No refunds are provided for the remaining period.</p>
-        
-        <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">6. Exceptions</h2>
-        <p style="margin-bottom:1rem">Refund requests will only be considered in exceptional circumstances at our sole discretion. Each case is reviewed individually.</p>
-        
-        <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">7. Contact</h2>
+
+        <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">6. Cancellation Policy</h2>
+        <p style="margin-bottom:1rem">You can cancel your subscription at any time. Cancellation takes effect at the end of your current billing period and stops future renewal charges. It does not by itself refund the current period — to get your most recent charge back, submit a refund request within the 10-day window described in Section 1.</p>
+
+        <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">7. Referral Program & Refund Abuse</h2>
+        <p style="margin-bottom:1rem">Requesting a refund to exploit the referral program — for example, referring yourself or a friend, collecting the referral commission, then refunding the original payment — is prohibited. Abuse may result in refund denial, forfeiture of referral earnings, and account termination.</p>
+
+        <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">8. Exceptions</h2>
+        <p style="margin-bottom:1rem">Outside the standard window, refund requests will only be considered in exceptional circumstances at our sole discretion. Each case is reviewed individually.</p>
+
+        <h2 style="font-size:16px;font-weight:700;margin:1.5rem 0 0.5rem;color:var(--text-primary)">9. Contact</h2>
         <p style="margin-bottom:1rem">For refund-related inquiries, contact us through the app or via email with your transaction details.</p>
       </div>
     </div>
