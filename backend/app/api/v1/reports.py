@@ -6,7 +6,7 @@ from app.schemas import ReportCreate, ReportOut
 from app.db.session import get_session
 from sqlalchemy.ext.asyncio import AsyncSession
 from app import crud
-from app.core.deps import get_current_user
+from app.core.deps import get_current_user, get_effective_tier
 from app.services.report_service import generate_and_store_report
 
 router = APIRouter()
@@ -34,7 +34,7 @@ async def generate_report(user_id: int, payload: Optional[ReportCreate] = None, 
     period_start = payload.period_start if payload else None
     period_end = payload.period_end if payload else None
     report_type = payload.report_type if payload else 'weekly'
-    user_tier = current_user.tier or 'free'
+    user_tier = get_effective_tier(current_user)
 
     # Monthly/quarterly are Apex-and-above per the pricing page - reject
     # outright rather than silently downgrading, since "you don't have this"

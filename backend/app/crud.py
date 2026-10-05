@@ -2,7 +2,7 @@ from datetime import datetime, date, timedelta
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List, Optional
-from app.db.models import User, Snapshot, Report, Subscription, Payment, Goal
+from app.db.models import User, Snapshot, Report, Subscription, Payment, Goal, ReferralCommission, WithdrawalRequest, RefundRequest, Referral
 from collections.abc import Sequence
 import csv
 import json
@@ -130,7 +130,6 @@ async def get_user_by_username_case_insensitive(db: AsyncSession, username: str)
 
 
 async def create_referral(db: AsyncSession, referrer_id: int, referred_email: Optional[str] = None, referred_user_id: Optional[int] = None, credits_awarded: int = 0) -> 'Referral':
-    from app.db.models import Referral
     referral = Referral(
         referrer_id=referrer_id,
         referred_email=referred_email,
@@ -169,7 +168,6 @@ async def get_user_credits_balance(db: AsyncSession, user_id: int) -> int:
 
 
 async def get_user_referral_count(db: AsyncSession, user_id: int) -> int:
-    from app.db.models import Referral
     result = await db.execute(
         select(func.count(Referral.id)).where(Referral.referrer_id == user_id))
     return result.scalar_one() or 0
@@ -183,8 +181,6 @@ async def get_user_referral_count(db: AsyncSession, user_id: int) -> int:
 # is what actually makes the equal 10-day windows (hold == refund window)
 # into a real fraud defense rather than just two numbers that happen to match.
 async def get_referral_wallet_balances(db: AsyncSession, user_id: int) -> dict:
-    from app.db.models import ReferralCommission, RefundRequest
-
     now = datetime.utcnow()
 
     result = await db.execute(
@@ -215,8 +211,6 @@ async def get_referral_wallet_balances(db: AsyncSession, user_id: int) -> dict:
 
 
 async def get_referral_stats(db: AsyncSession, user_id: int) -> dict:
-    from app.db.models import ReferralCommission
-
     referral_count = await get_user_referral_count(db, user_id)
 
     lifetime_result = await db.execute(
@@ -258,8 +252,6 @@ async def claim_available_commissions_for_withdrawal(
     calling this, since that check needs an FX-converted comparison this
     function deliberately doesn't do (it never touches currency conversion).
     """
-    from app.db.models import ReferralCommission, RefundRequest, WithdrawalRequest
-
     now = datetime.utcnow()
     open_refund_result = await db.execute(
         select(RefundRequest.payment_id).where(RefundRequest.status.in_(['requested', 'approved']))
@@ -293,8 +285,6 @@ async def claim_available_commissions_for_withdrawal(
 
 
 async def list_withdrawal_requests_for_user(db: AsyncSession, user_id: int) -> list:
-    from app.db.models import WithdrawalRequest
-
     result = await db.execute(
         select(WithdrawalRequest)
         .where(WithdrawalRequest.user_id == user_id)
