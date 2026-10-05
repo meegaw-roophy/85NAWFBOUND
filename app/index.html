@@ -1390,6 +1390,11 @@ var e=ttq._i[t]||[],n=0;n<ttq.methods.length;n++)ttq.setAndDefer(e,ttq.methods[n
     <div style="font-size:11px;color:var(--text-muted);margin-top:.75rem;line-height:1.5">Commissions clear 10 days after your referral's payment (matches our refund window, so refunded payments never pay out). Minimum withdrawal is <span id="rw-min-withdrawal">$10</span>-equivalent per currency.</div>
   </div>
 
+  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
+    <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">Recent Commissions</div>
+    <div id="rw-commissions" style="display:flex;flex-direction:column;gap:10px;font-size:13px">Loading…</div>
+  </div>
+
   <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:2rem">
     <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">Request Withdrawal</div>
     <div style="margin-bottom:12px">
@@ -1401,7 +1406,7 @@ var e=ttq._i[t]||[],n=0;n<ttq.methods.length;n++)ttq.setAndDefer(e,ttq.methods[n
       <textarea id="rw-payout-destination" style="width:100%;padding:10px 12px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;font-family:var(--font);outline:none;resize:vertical;min-height:60px" placeholder="Where should we send this payout?"></textarea>
     </div>
     <div style="font-size:11px;color:var(--text-muted);margin-bottom:12px">Withdrawals are reviewed and paid out manually by the VEKTRA team.</div>
-    <button class="btn-primary" style="width:100%" onclick="submitWithdrawal()">Request Withdrawal</button>
+    <button id="rw-withdraw-btn" class="btn-primary" style="width:100%" onclick="submitWithdrawal()">Request Withdrawal</button>
   </div>
 
   <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:2rem">

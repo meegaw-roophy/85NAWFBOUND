@@ -2620,7 +2620,7 @@ function shareReferral(e) {
 async function openReferralWallet() {
   goTo('referral-wallet');
   if (!currentUser || !authToken) return;
-  await Promise.all([loadReferralStats(), loadReferralWallet(), loadWithdrawalHistory()]);
+  await Promise.all([loadReferralStats(), loadReferralWallet(), loadCommissionsLedger(), loadWithdrawalHistory()]);
 }
 window.openReferralWallet = openReferralWallet;
 
@@ -2636,11 +2636,52 @@ async function loadReferralStats() {
     const rankEl = document.getElementById('rw-rank');
     if (countEl) countEl.textContent = data.referral_count ?? 0;
     if (earnedEl) earnedEl.textContent = `$${(data.lifetime_earned ?? 0).toFixed(2)}`;
-    if (rankEl) rankEl.textContent = data.rank ? `#${data.rank}` : '—';
+    if (rankEl) rankEl.textContent = data.rank ? `#${data.rank}${data.total_ranked ? ' of ' + data.total_ranked : ''}` : '—';
     const dashEarningsEl = document.querySelector('#dash-referral-earnings span');
     if (dashEarningsEl) dashEarningsEl.textContent = `$${(data.lifetime_earned ?? 0).toFixed(2)}`;
   } catch (e) {
     console.error('Referral stats load error:', e);
+  }
+}
+
+async function loadCommissionsLedger() {
+  const el = document.getElementById('rw-commissions');
+  if (!el) return;
+  try {
+    const res = await fetch(`${API}/api/v1/users/${currentUser.id}/referral/commissions`, {
+      headers: { 'Authorization': `Bearer ${authToken}` }
+    });
+    if (!res.ok) { el.innerHTML = '<span style="color:var(--text-muted)">Could not load commissions.</span>'; return; }
+    const rows = await res.json();
+    if (!rows || rows.length === 0) {
+      el.innerHTML = '<span style="color:var(--text-muted)">No commissions yet — share your link to start earning.</span>';
+      return;
+    }
+    const statusStyle = {
+      pending: { label: 'In hold', color: 'var(--text-muted)' },
+      available: { label: 'Available', color: 'var(--success)' },
+      paid: { label: 'Paid', color: 'var(--accent)' },
+      voided: { label: 'Voided (refunded)', color: 'var(--danger)' },
+    };
+    el.innerHTML = rows.map(c => {
+      const st = statusStyle[c.status] || { label: c.status, color: 'var(--text-muted)' };
+      const ordinal = ['', '1st', '2nd', '3rd', '4th'][c.sequence_number] || `${c.sequence_number}th`;
+      const unlockNote = c.status === 'pending'
+        ? `Unlocks ${new Date(c.available_at).toLocaleDateString()}`
+        : new Date(c.created_at).toLocaleDateString();
+      return `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
+          <div>
+            <div style="color:var(--text-primary)">${c.commission_amount.toFixed(2)} ${c.currency.toUpperCase()} <span style="color:var(--text-muted);font-weight:400">· ${(c.commission_rate * 100).toFixed(1)}% of @${c.referred_username}'s ${ordinal} payment</span></div>
+            <div style="font-size:11px;color:var(--text-muted)">${unlockNote}</div>
+          </div>
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:${st.color};white-space:nowrap;margin-left:8px">${st.label}</div>
+        </div>
+      `;
+    }).join('');
+  } catch (e) {
+    console.error('Commissions ledger load error:', e);
+    el.innerHTML = '<span style="color:var(--text-muted)">Connection error.</span>';
   }
 }
 
@@ -2736,6 +2777,12 @@ async function submitWithdrawal() {
     showToast('Please tell us where to send your payout.', 'warning');
     return;
   }
+  const btnEl = document.getElementById('rw-withdraw-btn');
+  if (btnEl) {
+    if (btnEl.disabled) return; // already submitting - ignore a double-click/double-tap
+    btnEl.disabled = true;
+    btnEl.textContent = 'Requesting...';
+  }
   try {
     const res = await fetch(`${API}/api/v1/users/${currentUser.id}/referral/withdraw`, {
       method: 'POST',
@@ -2754,6 +2801,11 @@ async function submitWithdrawal() {
   } catch (e) {
     console.error('Withdrawal request error:', e);
     showToast('Connection error. Try again.', 'error');
+  } finally {
+    if (btnEl) {
+      btnEl.disabled = false;
+      btnEl.textContent = 'Request Withdrawal';
+    }
   }
 }
 window.submitWithdrawal = submitWithdrawal;

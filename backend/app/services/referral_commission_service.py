@@ -16,6 +16,7 @@ docstring there for the exact rule.
 import datetime
 from typing import Optional
 from sqlalchemy import select, func
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
@@ -90,7 +91,17 @@ async def create_commission_for_payment(db: AsyncSession, payment: Payment) -> O
         reason='referral-commission-bonus',
     )
 
-    await db.commit()
+    try:
+        await db.commit()
+    except IntegrityError:
+        # Two near-simultaneous webhook deliveries for the same payment both
+        # passed the idempotency check above before either committed - the
+        # unique constraint on payment_id is the real backstop. Whichever
+        # commits second loses the race; treat it the same as "already
+        # exists" rather than surfacing a 500 that makes Paystack retry.
+        await db.rollback()
+        return None
+
     await db.refresh(commission)
     return commission
 

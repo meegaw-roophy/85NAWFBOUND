@@ -180,6 +180,27 @@ async def get_user_referral_count(db: AsyncSession, user_id: int) -> int:
 # the few hours left before a commission's hold would otherwise clear. This
 # is what actually makes the equal 10-day windows (hold == refund window)
 # into a real fraud defense rather than just two numbers that happen to match.
+def _effective_commission_status(c: 'ReferralCommission', now: datetime, open_refund_payment_ids: set) -> str:
+    """pending/available/paid/voided - the single source of truth for what
+    a commission's real state is, shared by the wallet aggregate and the
+    per-commission ledger so they can never disagree with each other."""
+    if c.status in ('paid', 'voided'):
+        return c.status
+    is_available = (
+        c.available_at <= now
+        and c.withdrawal_request_id is None
+        and c.payment_id not in open_refund_payment_ids
+    )
+    return 'available' if is_available else 'pending'
+
+
+async def _open_refund_payment_ids(db: AsyncSession) -> set:
+    result = await db.execute(
+        select(RefundRequest.payment_id).where(RefundRequest.status.in_(['requested', 'approved']))
+    )
+    return {row[0] for row in result.all()}
+
+
 async def get_referral_wallet_balances(db: AsyncSession, user_id: int) -> dict:
     now = datetime.utcnow()
 
@@ -187,27 +208,53 @@ async def get_referral_wallet_balances(db: AsyncSession, user_id: int) -> dict:
         select(ReferralCommission).where(ReferralCommission.referrer_id == user_id)
     )
     commissions = result.scalars().all()
-
-    open_refund_result = await db.execute(
-        select(RefundRequest.payment_id).where(RefundRequest.status.in_(['requested', 'approved']))
-    )
-    open_refund_payment_ids = {row[0] for row in open_refund_result.all()}
+    open_refund_payment_ids = await _open_refund_payment_ids(db)
 
     balances: dict = {}
     for c in commissions:
+        effective = _effective_commission_status(c, now, open_refund_payment_ids)
+        if effective == 'voided':
+            continue  # excluded entirely - not shown in any bucket
         bucket = balances.setdefault(c.currency, {'pending': 0.0, 'available': 0.0, 'paid': 0.0})
-        if c.status == 'paid':
-            bucket['paid'] += c.commission_amount
-        elif c.status == 'pending':
-            is_available = (
-                c.available_at <= now
-                and c.withdrawal_request_id is None
-                and c.payment_id not in open_refund_payment_ids
-            )
-            bucket['available' if is_available else 'pending'] += c.commission_amount
-        # voided commissions are excluded entirely - not shown in any bucket
+        bucket[effective] += c.commission_amount
 
     return balances
+
+
+async def list_commissions_for_user(db: AsyncSession, user_id: int) -> list:
+    """Per-commission ledger for the wallet screen - the aggregate totals
+    alone don't tell a referrer WHY they earned what they did; this backs
+    a transaction-list view (who, which payment number, when it unlocks)."""
+    result = await db.execute(
+        select(ReferralCommission)
+        .where(ReferralCommission.referrer_id == user_id)
+        .order_by(ReferralCommission.created_at.desc())
+    )
+    commissions = result.scalars().all()
+    if not commissions:
+        return []
+
+    now = datetime.utcnow()
+    open_refund_payment_ids = await _open_refund_payment_ids(db)
+
+    referred_ids = {c.referred_user_id for c in commissions}
+    users_result = await db.execute(select(User).where(User.id.in_(referred_ids)))
+    username_by_id = {u.id: u.username for u in users_result.scalars().all()}
+
+    return [
+        {
+            'id': c.id,
+            'created_at': c.created_at,
+            'referred_username': username_by_id.get(c.referred_user_id, 'a referred user'),
+            'sequence_number': c.sequence_number,
+            'commission_rate': c.commission_rate,
+            'commission_amount': c.commission_amount,
+            'currency': c.currency,
+            'status': _effective_commission_status(c, now, open_refund_payment_ids),
+            'available_at': c.available_at,
+        }
+        for c in commissions
+    ]
 
 
 async def get_referral_stats(db: AsyncSession, user_id: int) -> dict:
@@ -234,11 +281,16 @@ async def get_referral_stats(db: AsyncSession, user_id: int) -> dict:
     )
     totals = [row.total or 0.0 for row in totals_result.all()]
     rank = sum(1 for t in totals if t > lifetime_earned) + 1 if totals else None
+    # Denominator for "#rank of total_ranked": the current user is already
+    # one of the grouped rows once they've earned anything, otherwise they'd
+    # slot in last, one past everyone who has.
+    total_ranked = len(totals) if lifetime_earned > 0 else len(totals) + 1 if totals else None
 
     return {
         'referral_count': referral_count,
         'lifetime_earned': round(lifetime_earned, 2),
         'rank': rank,
+        'total_ranked': total_ranked,
     }
 
 
@@ -282,6 +334,22 @@ async def claim_available_commissions_for_withdrawal(
     await db.commit()
     await db.refresh(withdrawal)
     return withdrawal
+
+
+async def has_open_withdrawal_request(db: AsyncSession, user_id: int, currency: str) -> bool:
+    """Closes a double-withdrawal race: without this, two withdrawal
+    requests submitted close together (double-click, or a genuine retry)
+    can both read the same unclaimed commissions before either commits,
+    claiming the same money into two separate requests an admin could then
+    both pay out. One open request per currency at a time removes the race
+    without needing row-level locking."""
+    result = await db.execute(
+        select(WithdrawalRequest)
+        .where(WithdrawalRequest.user_id == user_id)
+        .where(WithdrawalRequest.currency == currency)
+        .where(WithdrawalRequest.status.in_(['requested', 'approved']))
+    )
+    return result.scalars().first() is not None
 
 
 async def list_withdrawal_requests_for_user(db: AsyncSession, user_id: int) -> list:

@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.session import get_session
 from app.core.deps import get_current_user
 from app.core.config import settings
-from app.schemas import ReferralWalletOut, ReferralStatsOut, WalletBalance, WithdrawalRequestCreate, WithdrawalRequestOut
+from app.schemas import ReferralWalletOut, ReferralStatsOut, WalletBalance, WithdrawalRequestCreate, WithdrawalRequestOut, CommissionOut
 from app.services.referral_commission_service import usd_equivalent
 from app.api.v1.pricing import get_fx_rates
 from app import crud
@@ -50,6 +50,19 @@ async def get_referral_wallet(
     )
 
 
+@router.get("/commissions", response_model=list[CommissionOut])
+async def list_my_commissions(
+    user_id: int,
+    db: AsyncSession = Depends(get_session),
+    current_user=Depends(get_current_user),
+):
+    """Per-commission breakdown backing the wallet's transaction list - the
+    aggregate /wallet totals alone don't show a referrer WHY they earned
+    what they did or when a pending amount actually unlocks."""
+    _check_ownership(current_user, user_id)
+    return await crud.list_commissions_for_user(db, user_id)
+
+
 @router.get("/withdrawals", response_model=list[WithdrawalRequestOut])
 async def list_my_withdrawals(
     user_id: int,
@@ -68,6 +81,12 @@ async def request_withdrawal(
     current_user=Depends(get_current_user),
 ):
     _check_ownership(current_user, user_id)
+
+    if await crud.has_open_withdrawal_request(db, user_id, payload.currency):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"You already have a pending {payload.currency} withdrawal request. Wait for it to be processed before requesting another.",
+        )
 
     balances = await crud.get_referral_wallet_balances(db, user_id)
     bucket = balances.get(payload.currency)

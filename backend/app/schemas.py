@@ -232,6 +232,19 @@ class ReferralStatsOut(BaseModel):
     referral_count: int
     lifetime_earned: float
     rank: Optional[int] = None
+    total_ranked: Optional[int] = None
+
+
+class CommissionOut(BaseModel):
+    id: int
+    created_at: datetime
+    referred_username: str
+    sequence_number: int
+    commission_rate: float
+    commission_amount: float
+    currency: str
+    status: str  # pending/available/paid/voided
+    available_at: datetime
 
 
 class WithdrawalRequestCreate(BaseModel):
