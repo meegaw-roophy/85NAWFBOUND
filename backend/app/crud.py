@@ -144,6 +144,25 @@ async def create_referral(db: AsyncSession, referrer_id: int, referred_email: Op
     return referral
 
 
+async def apply_signup_referral(db: AsyncSession, new_user: User, referral_code: Optional[str]) -> bool:
+    """
+    Link a brand-new account to whoever invited it. Shared by email/password
+    signup and Google signup so both earn the referrer the same credits and,
+    later, the same cash commissions. Call it only for accounts created in
+    this request, never for returning users.
+    """
+    code = (referral_code or "").strip()
+    if not code:
+        return False
+    referrer = await get_user_by_username_case_insensitive(db, code)
+    if not referrer or referrer.id == new_user.id:
+        return False
+    await create_referral(db, referrer_id=referrer.id, referred_email=new_user.email, referred_user_id=new_user.id, credits_awarded=10)
+    await create_vek_credit(db, new_user.id, amount=10, reason='referral-welcome')
+    await create_vek_credit(db, referrer.id, amount=10, reason='referral')
+    return True
+
+
 async def create_vek_credit(db: AsyncSession, user_id: int, amount: int, reason: Optional[str] = None, redeemed: bool = False, redeemed_for: Optional[str] = None):
     from app.db.models import VekCredit
     credit = VekCredit(

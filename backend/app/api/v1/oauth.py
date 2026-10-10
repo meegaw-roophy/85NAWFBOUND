@@ -6,6 +6,7 @@ from app.db.models import User
 from app.core.security import create_access_token, get_password_hash
 from app.core.deps import get_current_user
 from app.core.config import settings
+from app import crud
 import secrets
 
 from google.oauth2 import id_token as google_id_token
@@ -54,6 +55,7 @@ async def google_oauth_login(
         select(User).where(User.oauth_provider == "google", User.oauth_id == google_id)
     )
     user = result.scalar_one_or_none()
+    is_new_account = False
 
     if not user:
         result = await db.execute(select(User).where(User.email == email))
@@ -84,9 +86,15 @@ async def google_oauth_login(
                 tier="free",
             )
             db.add(user)
+            is_new_account = True
 
         await db.commit()
         await db.refresh(user)
+
+        # Invite links must count for Google signups too, otherwise the
+        # referrer silently loses the credit and any future cash commission.
+        if is_new_account:
+            await crud.apply_signup_referral(db, user, payload.get("referral_code"))
 
     token = create_access_token(subject=str(user.id))
     return {

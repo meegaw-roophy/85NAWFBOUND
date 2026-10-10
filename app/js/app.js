@@ -332,6 +332,12 @@ window.addEventListener('DOMContentLoaded', async () => {
   } else {
     pendingReferralCode = localStorage.getItem('pendingReferralCode');
   }
+  // Show the invited friend whose link they came from, so the code is
+  // visible (and editable) on the signup form instead of applied silently.
+  const regReferralEl = document.getElementById('reg-referral');
+  if (pendingReferralCode && regReferralEl && !regReferralEl.value) {
+    regReferralEl.value = pendingReferralCode;
+  }
 
   // 3. Fetch locally stored authentication variables
   let savedToken = localStorage.getItem('vektra_token');
@@ -681,7 +687,11 @@ async function handleGoogleCredentialResponse(response) {
     const res = await wakeAwareFetch(`${API}/api/v1/auth/oauth/google`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ credential: response.credential })
+      body: JSON.stringify({
+        credential: response.credential,
+        // Only used by the server when this creates a brand-new account.
+        referral_code: pendingReferralCode || undefined
+      })
     });
     const data = await res.json();
 
@@ -689,6 +699,9 @@ async function handleGoogleCredentialResponse(response) {
       showToast(data.detail || 'Google sign-in failed', 'error');
       return;
     }
+
+    localStorage.removeItem('pendingReferralCode');
+    pendingReferralCode = null;
 
     authToken = data.access_token;
     localStorage.setItem('vektra_token', authToken);
