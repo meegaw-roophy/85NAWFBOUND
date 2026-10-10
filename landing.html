@@ -123,6 +123,7 @@
     }
 
     .nav-logo {
+      text-decoration: none;
       font-size: 21px;
       font-weight: 900;
       letter-spacing: .1em;
@@ -181,6 +182,7 @@
       max-width: 950px;
       margin: 0 auto;
       position: relative;
+      overflow-x: clip;
     }
 
     .hero::before {
@@ -954,6 +956,273 @@
     }
 
     /* =========================
+       EARN / REFERRALS
+    ========================= */
+
+    .earn-label {
+      color: #4ade80;
+    }
+
+    .gradient-money {
+      background: linear-gradient(135deg, #22c55e, #a3e635);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .earn-grid {
+      display: grid;
+      grid-template-columns: 1.15fr 1fr;
+      gap: 1rem;
+    }
+
+    .earn-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 1.6rem;
+      min-width: 0;
+    }
+
+    .earn-calc {
+      border-color: rgba(34,197,94,.35);
+      background: linear-gradient(180deg, rgba(34,197,94,.07), var(--card) 50%);
+      box-shadow: 0 15px 50px rgba(34,197,94,.06);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .earn-card-title {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .12em;
+      color: var(--muted);
+      font-weight: 800;
+      margin-bottom: 1rem;
+    }
+
+    .earn-plan-toggle {
+      display: inline-flex;
+      padding: 3px;
+      border-radius: 999px;
+      border: 1px solid var(--border-strong);
+      background: var(--bg-soft);
+      margin-bottom: 1.4rem;
+    }
+
+    .earn-plan-btn {
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      padding: .45rem .95rem;
+      border-radius: 999px;
+      cursor: pointer;
+    }
+
+    .earn-plan-btn.active {
+      background: var(--text);
+      color: var(--bg);
+    }
+
+    .earn-ladder {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: .6rem;
+      align-items: end;
+      height: 190px;
+      margin-bottom: 1.1rem;
+    }
+
+    .earn-rung {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-end;
+      height: 100%;
+      min-width: 0;
+    }
+
+    .earn-rung-amt {
+      font-size: 15px;
+      font-weight: 900;
+      color: #4ade80;
+      margin-bottom: .35rem;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .earn-rung-bar {
+      width: 100%;
+      height: var(--h);
+      border-radius: 10px 10px 4px 4px;
+      background: linear-gradient(180deg, rgba(34,197,94,.85), rgba(34,197,94,.18));
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding-top: .4rem;
+      font-size: 12px;
+      font-weight: 800;
+      color: #052e16;
+    }
+
+    .earn-rung-label {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: .45rem;
+      text-align: center;
+      line-height: 1.3;
+    }
+
+    .earn-card-foot {
+      font-size: 13px;
+      color: var(--muted);
+      border-top: 1px solid var(--border);
+      padding-top: .9rem;
+    }
+
+    .earn-card-foot strong {
+      color: var(--text);
+    }
+
+    .earn-slider-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: .6rem;
+    }
+
+    .earn-slider-label strong {
+      color: var(--text);
+      font-variant-numeric: tabular-nums;
+    }
+
+    #earn-friends {
+      width: 100%;
+      accent-color: #22c55e;
+      margin-bottom: 1.3rem;
+      cursor: pointer;
+    }
+
+    .earn-result-num {
+      font-size: clamp(2.4rem, 6vw, 3.2rem);
+      font-weight: 900;
+      letter-spacing: -.04em;
+      line-height: 1;
+      color: #4ade80;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .earn-result-sub {
+      font-size: 12px;
+      color: var(--muted);
+      margin: .35rem 0 1rem;
+    }
+
+    .earn-result-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      font-size: 13px;
+      color: var(--muted);
+      padding: .7rem 0;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 1.2rem;
+    }
+
+    .earn-result-row strong {
+      color: var(--text);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .earn-cta {
+      text-align: center;
+      margin-top: auto;
+    }
+
+    .earn-example-note {
+      font-size: 10.5px;
+      color: var(--muted-2);
+      margin-top: .8rem;
+      line-height: 1.5;
+    }
+
+    .earn-facts {
+      list-style: none;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    .earn-facts li {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.6;
+      padding: 1.1rem 1.2rem;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: var(--bg-soft);
+    }
+
+    .earn-facts li strong {
+      display: block;
+      color: var(--text);
+      font-size: 13px;
+      margin-bottom: .25rem;
+    }
+
+    .hero-earn {
+      display: inline-block;
+      margin: 1rem 0 .6rem;
+      padding: .45rem 1rem;
+      border-radius: 999px;
+      border: 1px solid rgba(34,197,94,.35);
+      background: rgba(34,197,94,.08);
+      color: #86efac;
+      font-size: 13px;
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    .hero-earn:hover {
+      background: rgba(34,197,94,.14);
+    }
+
+    @media (max-width: 850px) {
+      .earn-grid {
+        grid-template-columns: 1fr;
+        max-width: 560px;
+        margin: 0 auto;
+      }
+
+      .earn-facts {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 600px) {
+      .earn-card {
+        padding: 1.2rem;
+      }
+
+      .earn-ladder {
+        gap: .4rem;
+        height: 170px;
+      }
+
+      .earn-rung-amt {
+        font-size: 13px;
+      }
+
+      .earn-facts {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* =========================
        FOUNDER
     ========================= */
 
@@ -1265,6 +1534,7 @@
     </a>
 
     <div class="nav-actions">
+      <a href="#earn" class="nav-link">Earn Cash</a>
       <a href="#pricing" class="nav-link">Pricing</a>
       <a href="#how-it-works" class="nav-link">How it works</a>
       <a href="https://vektraapp.online/app/" class="nav-cta" data-track="nav-cta">
@@ -1283,7 +1553,7 @@
   <section class="hero">
 
     <div class="hero-badge">
-      🚀 Now live — founding pricing ends soon
+      🚀 Now live — start free today
     </div>
 
     <h1 class="hero-title">
@@ -1307,13 +1577,17 @@
       </a>
 
       <a href="#pricing" class="secondary-btn">
-        See Launch Pricing
+        See Pricing
       </a>
     </div>
 
     <div class="hero-note">
-      Start free. Build your data. Upgrade when you want deeper analysis.
+      Start free with 7 days of logging. Upgrade when you're ready to keep going.
     </div>
+
+    <a href="#earn" class="hero-earn">
+      💸 Invite friends, earn real cash →
+    </a>
 
 
     <!-- Hero visual: live score teaser -->
@@ -1361,13 +1635,13 @@
         >
 
         <button type="submit" class="waitlist-btn" id="waitlist-btn">
-          Get Launch Updates
+          Get Product Updates
         </button>
 
       </form>
 
       <div class="waitlist-note">
-        No spam. Just launch updates and early-access information.
+        No spam. Just product updates and new features.
       </div>
 
       <div class="waitlist-success" id="waitlist-success">
@@ -1703,7 +1977,7 @@
         </div>
 
         <div class="report-tag">
-          Fast feedback
+          All plans · AI on Vector+
         </div>
 
       </div>
@@ -1726,7 +2000,7 @@
         </div>
 
         <div class="report-tag">
-          Deeper analysis
+          Vector+ · Preview on Free
         </div>
 
       </div>
@@ -1749,7 +2023,7 @@
         </div>
 
         <div class="report-tag">
-          Long-term view
+          Apex
         </div>
 
       </div>
@@ -1916,13 +2190,12 @@
         </div>
 
         <div class="pricing-period">
-          forever
+          7-day free trial
         </div>
 
         <ul class="pricing-features">
-
           <li>
-            Basic daily tracking
+            7 days of daily logging
           </li>
 
           <li>
@@ -1930,19 +2203,11 @@
           </li>
 
           <li>
-            Basic non-AI daily summary
+            Basic daily summary
           </li>
 
           <li>
-            Limited history
-          </li>
-
-          <li>
-            One AI taste report
-          </li>
-
-          <li>
-            Ads supported
+            One weekly preview report
           </li>
 
         </ul>
@@ -1970,13 +2235,8 @@
         </div>
 
         <ul class="pricing-features">
-
           <li>
-            Ad-free experience
-          </li>
-
-          <li>
-            Unlimited logging
+            Unlimited daily logging
           </li>
 
           <li>
@@ -1984,11 +2244,7 @@
           </li>
 
           <li>
-            Weekly AI reports
-          </li>
-
-          <li>
-            Monthly reviews
+            Weekly AI harsh-truth reports
           </li>
 
           <li>
@@ -2000,11 +2256,15 @@
           </li>
 
           <li>
-            Smart AI insights
+            Streak tracking
           </li>
 
           <li>
-            Streak tracking
+            Log history
+          </li>
+
+          <li>
+            Birthday trajectory card
           </li>
 
         </ul>
@@ -2031,33 +2291,24 @@
         </div>
 
         <ul class="pricing-features">
-
           <li>
             Everything in Vector
           </li>
 
           <li>
-            Higher AI usage allowance
+            Monthly deep reports
           </li>
 
           <li>
-            Deeper internalized reports
+            Quarterly strategy report
           </li>
 
           <li>
-            Advanced trajectory analysis
+            Adaptive trajectory scoring
           </li>
 
           <li>
-            Quarterly strategy review
-          </li>
-
-          <li>
-            Priority support
-          </li>
-
-          <li>
-            More advanced AI insights
+            Early feature access
           </li>
 
         </ul>
@@ -2073,6 +2324,149 @@
       Final subscription price is shown at checkout and may reflect
       regional pricing, taxes, payment-provider charges or applicable offers.
     </div>
+
+  </section>
+
+
+  <!-- =========================
+       EARN / REFERRALS
+       Numbers mirror RATE_SCHEDULE in
+       backend/app/services/referral_commission_service.py and the
+       REFERRAL_* settings in backend/app/core/config.py.
+       Keep them in sync if the program terms change.
+  ========================== -->
+
+  <section class="section" id="earn">
+
+    <div class="section-label earn-label">
+      Referral Program · Real Cash
+    </div>
+
+    <h2 class="section-title">
+      Invite friends.<br>
+      <span class="gradient-money">Get paid real cash.</span>
+    </h2>
+
+    <p class="section-desc">
+      Every VEKTRA account, including Free, comes with a personal invite link.
+      When someone you invite pays for a plan, you earn a cash commission on
+      their first four payments. Not points. Money you can withdraw.
+    </p>
+
+    <div class="earn-grid">
+
+      <div class="earn-card">
+
+        <div class="earn-card-title">
+          What you earn from one friend
+        </div>
+
+        <div class="earn-plan-toggle" role="group" aria-label="Plan your friend picks">
+          <button type="button" class="earn-plan-btn active" data-price="20" aria-pressed="true">Vector · $20</button>
+          <button type="button" class="earn-plan-btn" data-price="50" aria-pressed="false">Apex · $50</button>
+        </div>
+
+        <div class="earn-ladder">
+          <div class="earn-rung">
+            <div class="earn-rung-amt" data-rate="0.22">$4.40</div>
+            <div class="earn-rung-bar" style="--h:100%">22%</div>
+            <div class="earn-rung-label">1st payment</div>
+          </div>
+
+          <div class="earn-rung">
+            <div class="earn-rung-amt" data-rate="0.165">$3.30</div>
+            <div class="earn-rung-bar" style="--h:75%">16.5%</div>
+            <div class="earn-rung-label">2nd payment</div>
+          </div>
+
+          <div class="earn-rung">
+            <div class="earn-rung-amt" data-rate="0.11">$2.20</div>
+            <div class="earn-rung-bar" style="--h:50%">11%</div>
+            <div class="earn-rung-label">3rd payment</div>
+          </div>
+
+          <div class="earn-rung">
+            <div class="earn-rung-amt" data-rate="0.055">$1.10</div>
+            <div class="earn-rung-bar" style="--h:25%">5.5%</div>
+            <div class="earn-rung-label">4th payment</div>
+          </div>
+        </div>
+
+        <div class="earn-card-foot">
+          Up to <strong id="earn-per-friend">$11.00</strong> per friend
+          at the base monthly price.
+        </div>
+
+      </div>
+
+
+      <div class="earn-card earn-calc">
+
+        <div class="earn-card-title">
+          Estimate your earnings
+        </div>
+
+        <label for="earn-friends" class="earn-slider-label">
+          <span>Friends who subscribe</span>
+          <strong id="earn-friends-val">10</strong>
+        </label>
+
+        <input type="range" id="earn-friends" min="1" max="100" value="10">
+
+        <div class="earn-result">
+          <div class="earn-result-num" id="earn-total">$110.00</div>
+          <div class="earn-result-sub">across their first four payments</div>
+        </div>
+
+        <div class="earn-result-row">
+          <span>From their first payment alone</span>
+          <strong id="earn-first">$44.00</strong>
+        </div>
+
+        <a
+          href="https://vektraapp.online/app/"
+          class="primary-btn earn-cta"
+          data-track="earn-cta"
+        >
+          Get My Invite Link →
+        </a>
+
+        <div class="earn-example-note">
+          Example only, using base monthly prices. Your commission is a
+          percentage of what each friend actually pays, which varies by
+          region and plan length.
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <ul class="earn-facts">
+
+      <li>
+        <strong>Free to start</strong>
+        Your invite link is on your dashboard the moment you sign up.
+      </li>
+
+      <li>
+        <strong>Clears in 10 days</strong>
+        Each commission becomes withdrawable 10 days after the payment
+        that earned it. Refunded payments don't count.
+      </li>
+
+      <li>
+        <strong>Withdraw from $10</strong>
+        Request a payout once your balance reaches $10 (USD equivalent),
+        paid in the currency your friend paid in.
+      </li>
+
+      <li>
+        <strong>Bonus credits</strong>
+        You also get 5 VekCredits with every commission you earn.
+      </li>
+
+    </ul>
 
   </section>
 
@@ -2190,7 +2584,7 @@
         href="#waitlist-form"
         class="secondary-btn"
       >
-        Get Launch Updates
+        Get Product Updates
       </a>
 
     </div>
@@ -2361,6 +2755,53 @@
       }
 
     });
+
+
+    /* =========================
+       EARN CALCULATOR
+       Rates mirror RATE_SCHEDULE in referral_commission_service.py.
+    ========================== */
+
+    (function () {
+      const RATES = [0.22, 0.165, 0.11, 0.055];
+      const RATE_SUM = RATES.reduce((a, b) => a + b, 0);
+      const slider = document.getElementById("earn-friends");
+      if (!slider) return;
+
+      const planBtns = document.querySelectorAll(".earn-plan-btn");
+      let price = 20;
+
+      const money = n => "$" + n.toLocaleString("en-US", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      });
+
+      function render() {
+        const friends = Number(slider.value);
+        document.getElementById("earn-friends-val").textContent = friends;
+        document.getElementById("earn-per-friend").textContent = money(price * RATE_SUM);
+        document.getElementById("earn-total").textContent = money(price * RATE_SUM * friends);
+        document.getElementById("earn-first").textContent = money(price * RATES[0] * friends);
+        document.querySelectorAll(".earn-rung-amt").forEach(el => {
+          el.textContent = money(price * Number(el.dataset.rate));
+        });
+      }
+
+      planBtns.forEach(btn => {
+        btn.addEventListener("click", () => {
+          price = Number(btn.dataset.price);
+          planBtns.forEach(b => {
+            const on = b === btn;
+            b.classList.toggle("active", on);
+            b.setAttribute("aria-pressed", on ? "true" : "false");
+          });
+          render();
+        });
+      });
+
+      slider.addEventListener("input", render);
+      render();
+    })();
 
 
     /* =========================
