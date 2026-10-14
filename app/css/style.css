@@ -1,5 +1,6 @@
 /* ── VEKTRA Design System ── */
 :root {
+  /* Dark mode (default) */
   --bg-primary: #0a0a0f;
   --bg-secondary: #111118;
   --bg-card: #16161f;
@@ -13,9 +14,34 @@
   --warning: #f59e0b;
   --danger: #da0e0e;
   --border: rgba(255,255,255,0.06);
+  --border-strong: rgba(255,255,255,0.12);
+  --pink: #ec4899;
+  --shadow: rgba(0,0,0,0.4);
+  --card-shadow: 0 4px 20px rgba(0,0,0,0.3);
   --font: 'Inter', -apple-system, sans-serif;
   --radius: 16px;
   --radius-sm: 8px;
+}
+
+/* Light mode */
+:root[data-theme="light"] {
+  --bg-primary: #f8f9fc;
+  --bg-secondary: #ffffff;
+  --bg-card: #ffffff;
+  --accent: #6c63ff;
+  --accent-glow: rgba(108, 99, 255, 0.15);
+  --gold: #f59e0b;
+  --text-primary: #1a1a2e;
+  --text-secondary: #5a5a7a;
+  --text-muted: #8888aa;
+  --success: #16a34a;
+  --warning: #d97706;
+  --danger: #dc2626;
+  --border: rgba(0,0,0,0.08);
+  --border-strong: rgba(0,0,0,0.12);
+  --pink: #db2777;
+  --shadow: rgba(0,0,0,0.1);
+  --card-shadow: 0 4px 20px rgba(0,0,0,0.08);
 }
 
 * {
@@ -31,6 +57,7 @@ body {
   min-height: 100vh;
   overflow-x: hidden;
   padding-bottom: 70px; /* Space for bottom nav */
+  transition: background 0.3s ease, color 0.3s ease;
 }
 
 /* ── SPLASH SCREEN ── */
@@ -160,34 +187,41 @@ body {
 .btn-primary {
   width: 100%;
   max-width: 320px;
-  padding: 16px;
+  padding: 16px 24px;
   background: linear-gradient(135deg, #6c63ff, #a855f7);
   color: #fff;
   border: none;
   border-radius: var(--radius);
   font-size: 16px;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
   margin-bottom: 12px;
   letter-spacing: 0.02em;
-  transition: opacity 0.2s, transform 0.2s;
+  transition: opacity 0.2s, transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 4px 15px rgba(108, 99, 255, 0.3);
 }
 
 .btn-primary:hover {
-  opacity: 0.9;
-  transform: translateY(-1px);
+  opacity: 0.95;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(108, 99, 255, 0.4);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 10px rgba(108, 99, 255, 0.3);
 }
 
 .btn-secondary {
   width: 100%;
   max-width: 320px;
-  padding: 16px;
+  padding: 16px 24px;
   background: transparent;
   color: var(--text-secondary);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   font-size: 16px;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
   letter-spacing: 0.02em;
   transition: all 0.2s;
@@ -196,6 +230,12 @@ body {
 .btn-secondary:hover {
   border-color: var(--accent);
   color: var(--text-primary);
+  background: rgba(108, 99, 255, 0.05);
+  transform: translateY(-1px);
+}
+
+.btn-secondary:active {
+  transform: translateY(0);
 }
 
 /* ── DAILY LOG ── */
@@ -203,20 +243,21 @@ body {
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 1.25rem;
-  margin-bottom: 1rem;
+  padding: 1.5rem;
+  margin-bottom: 1.25rem;
 }
 
 .slider-field {
-  margin-bottom: 1.25rem;
+  margin-bottom: 1.5rem;
 }
 
 .slider-label {
   display: flex;
   justify-content: space-between;
-  font-size: 13px;
+  font-size: 14px;
+  font-weight: 500;
   color: var(--text-secondary);
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
 
 .slider-label span:last-child {
@@ -228,62 +269,82 @@ input[type="range"] {
   width: 100%;
   accent-color: var(--accent);
   cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+input[type="range"]:hover {
+  transform: scaleY(1.1);
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+  box-shadow: 0 0 10px var(--accent-glow);
 }
 
 .text-field {
-  margin-bottom: 1rem;
+  margin-bottom: 1.25rem;
 }
 
 .text-field label {
   display: block;
-  font-size: 12px;
+  font-size: 13px;
+  font-weight: 600;
   color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
 
 .text-field input,
 .text-field textarea {
   width: 100%;
-  padding: 12px 14px;
+  padding: 14px 16px;
   background: var(--bg-secondary);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   color: var(--text-primary);
-  font-size: 14px;
+  font-size: 15px;
   font-family: var(--font);
   outline: none;
   resize: vertical;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .text-field textarea {
-  min-height: 80px;
+  min-height: 100px;
+  line-height: 1.6;
 }
 
 .number-field {
-  margin-bottom: 1rem;
+  margin-bottom: 1.25rem;
 }
 
 .number-field label {
   display: block;
-  font-size: 12px;
+  font-size: 13px;
+  font-weight: 600;
   color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
 
 .number-field input {
   width: 100%;
-  padding: 12px 14px;
+  padding: 14px 16px;
   background: var(--bg-secondary);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   color: var(--text-primary);
   font-size: 16px;
+  font-weight: 500;
   font-family: var(--font);
   outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 /* ── ENGINE BARS ── */
@@ -357,12 +418,27 @@ input[type="range"] {
 }
 
 #app > div[style*="display: flex"] {
-  animation: fadeIn .3s ease;
+  animation: fadeIn .4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(8px); }
+  from { opacity: 0; transform: translateY(12px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+/* Smooth transition for theme change */
+html {
+  transition: background 0.3s ease, color 0.3s ease;
+}
+
+/* All interactive elements should have smooth transitions */
+button,
+input,
+textarea,
+.log-group,
+[id^="chart-"],
+.card {
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 /* ── MOBILE LAYOUT FIX ── */
@@ -483,7 +559,9 @@ body,
 #global-loader {
   position: fixed;
   inset: 0;
-  background: rgba(10,10,15,0.8);
+  background: rgba(10,10,15,0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   display: none;
   align-items: center;
   justify-content: center;
@@ -503,6 +581,7 @@ body,
   border-top-color: var(--accent);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
+  box-shadow: 0 0 20px var(--accent-glow);
 }
 
 .spinner-sm {
@@ -519,6 +598,7 @@ body,
   color: var(--text-secondary);
   font-size: 14px;
   letter-spacing: 0.05em;
+  font-weight: 500;
 }
 
 @keyframes spin {
@@ -643,6 +723,32 @@ body,
 .feature-card {
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
+  background: var(--bg-card);
+  box-shadow: var(--card-shadow);
+  transition: box-shadow 0.3s ease, background 0.3s ease, transform 0.2s ease;
+  border: 1px solid var(--border);
+}
+
+/* Enhanced card styling for better visual hierarchy */
+.log-group {
+  position: relative;
+  overflow: hidden;
+}
+
+.log-group::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.log-group:hover::before {
+  opacity: 0.5;
 }
 
 /* Gradient border on score card */
@@ -668,13 +774,20 @@ body,
 
 /* Premium card hover effect */
 #history-list > div,
-.log-group {
-  transition: transform 0.2s ease, border-color 0.2s ease;
+.log-group,
+[id^="chart-"] {
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-#history-list > div:hover {
+#history-list > div:hover,
+.log-group:hover {
   transform: translateY(-2px);
   border-color: rgba(108, 99, 255, 0.4);
+  box-shadow: 0 8px 25px rgba(108, 99, 255, 0.15);
+}
+
+[id^="chart-"]:hover {
+  transform: translateY(-1px);
 }
 
 /* Premium gradient text for section labels */
@@ -696,12 +809,12 @@ body,
 /* Premium button glow on hover */
 .btn-primary:hover {
   box-shadow: 0 8px 25px rgba(108, 99, 255, 0.4);
-  transform: translateY(-1px);
+  transform: translateY(-2px);
 }
 
 .btn-primary:active {
   transform: translateY(0);
-  box-shadow: none;
+  box-shadow: 0 4px 15px rgba(108, 99, 255, 0.3);
 }
 
 /* Score reveal premium feel */
@@ -713,6 +826,7 @@ body,
 /* Streak fire glow */
 #dash-streak {
   text-shadow: 0 0 20px rgba(245, 158, 11, 0.4);
+  animation: pulse 2s ease-in-out infinite;
 }
 
 /* North star italic glow */
@@ -742,7 +856,9 @@ body,
 
 /* Toast premium shadow */
 .toast {
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255,255,255,0.05);
+  box-shadow: 0 8px 32px var(--shadow), 0 0 0 1px rgba(255,255,255,0.05);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
 /* Landing page score bars animation */
@@ -758,11 +874,12 @@ body,
 
 /* ── Force chart container vertical space ── */
 [id^="chart-"] {
-  height: 120px !important;
+  height: 140px !important;
   display: flex !important;
   align-items: flex-end !important;
-  gap: 4px; /* Reduced gap to fit more bars */
-  padding-bottom: 24px; /* Space for the value labels */
+  gap: 6px;
+  padding-bottom: 32px;
+  position: relative;
 }
 
 /* Ensure the wrapper of each bar is flexible */
@@ -777,9 +894,9 @@ body,
 
 /* This targets the actual bar element specifically */
 [id^="chart-"] > div > div[style*="background"] {
-  width: 80%;
-  min-height: 4px !important; /* Force visibility */
-  transition: height 0.3s ease;
+  width: 75%;
+  min-height: 4px !important;
+  transition: height 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 /* --- PREMIUM CARD FRAME & GLOW --- */
@@ -851,4 +968,65 @@ body,
     opacity: 1;
     transform: scale(1) translateY(0);
   }
+}
+
+/* Chart bar animations */
+@keyframes barGrow {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Stats card hover effects */
+[id^="stat-"] {
+  transition: transform 0.2s ease;
+}
+
+[id^="stat-"]:hover {
+  transform: scale(1.05);
+}
+
+/* Stats container cards */
+#reports > div[style*="grid-template-columns:repeat(2,1fr)"] > div {
+  cursor: pointer;
+}
+
+#reports > div[style*="grid-template-columns:repeat(2,1fr)"] > div:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 30px var(--shadow);
+}
+
+/* Navigation item interactions */
+.nav-item {
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.nav-item:hover {
+  transform: translateY(-2px);
+}
+
+.nav-item:active {
+  transform: scale(0.95);
+}
+
+.nav-item svg {
+  transition: transform 0.2s ease;
+}
+
+.nav-item:hover svg {
+  transform: scale(1.1);
 }

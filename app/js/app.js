@@ -312,6 +312,9 @@ window.updateNavActive = updateNavActive;
 window.addEventListener('DOMContentLoaded', async () => {
   console.log('DOM loaded - starting initialization');
 
+  // Initialize theme
+  initTheme();
+
   // 1. Force hide splash screen immediately
   const splash = document.getElementById('splash');
   if (splash) {
@@ -431,6 +434,288 @@ if ('serviceWorker' in navigator) {
       .catch(e => console.log('SW error', e));
   });
 }
+
+// ── Install app (PWA) ──
+// Each platform installs differently, so this picks the right path:
+//  - Chrome/Edge/Samsung (Android + desktop): real one-tap prompt via beforeinstallprompt
+//  - iOS Safari/Chrome: no prompt API exists, so we show Share → Add to Home Screen steps
+//  - In-app browsers (TikTok, Instagram, Facebook...): installing is impossible there,
+//    so we push the user out to their real browser first
+const INSTALL_DISMISS_KEY = 'vektra_install_dismissed_at';
+const INSTALL_DISMISS_DAYS = 7;
+let deferredInstallPrompt = null;
+let installBannerShown = false;
+
+function isRunningInstalled() {
+  return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+}
+
+function getInstallPlatform() {
+  const ua = navigator.userAgent || '';
+  if (/FBAN|FBAV|FB_IAB|Instagram|musical_ly|Bytedance|TikTok|Snapchat|LinkedInApp|Twitter|Line\//i.test(ua)) return 'in-app';
+  // iPadOS reports itself as a Mac, so check for touch too
+  if (/iPhone|iPad|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) return 'ios';
+  if (/Android/i.test(ua)) return 'android';
+  return 'desktop';
+}
+
+function installDismissedRecently() {
+  try {
+    const at = Number(localStorage.getItem(INSTALL_DISMISS_KEY));
+    return at && (Date.now() - at) < INSTALL_DISMISS_DAYS * 86400000;
+  } catch (e) { return false; }
+}
+
+function injectInstallStyles() {
+  if (document.getElementById('install-ui-styles')) return;
+  const style = document.createElement('style');
+  style.id = 'install-ui-styles';
+  style.textContent = `
+    #install-banner{position:fixed;left:12px;right:12px;bottom:84px;z-index:10001;max-width:520px;margin:0 auto;
+      background:var(--bg-card);border:1px solid rgba(108,99,255,0.35);border-radius:16px;padding:12px 12px 12px 14px;
+      display:flex;align-items:center;gap:12px;box-shadow:0 10px 30px rgba(0,0,0,0.5);animation:installUp .3s ease-out}
+    #install-banner img{width:40px;height:40px;border-radius:10px;flex-shrink:0}
+    #install-banner .ib-text{flex:1;min-width:0}
+    #install-banner .ib-title{font-weight:600;font-size:14px;color:var(--text-primary)}
+    #install-banner .ib-sub{font-size:12px;color:var(--text-secondary);margin-top:2px}
+    #install-banner .ib-go{background:var(--accent);color:#fff;border:none;border-radius:10px;padding:9px 14px;font-weight:600;font-size:13px;cursor:pointer;flex-shrink:0}
+    #install-banner .ib-x{background:none;border:none;color:var(--text-secondary);font-size:20px;line-height:1;padding:4px 6px;cursor:pointer;flex-shrink:0}
+    #install-sheet{position:fixed;inset:0;z-index:10002;background:rgba(0,0,0,0.7);display:flex;align-items:flex-end;justify-content:center}
+    #install-sheet .is-card{background:var(--bg-card);border:1px solid var(--border);border-radius:20px 20px 0 0;width:100%;max-width:520px;
+      padding:22px 20px 28px;color:var(--text-primary);animation:installUp .25s ease-out}
+    #install-sheet h3{margin:0 0 4px;font-size:18px}
+    #install-sheet .is-sub{color:var(--text-secondary);font-size:13px;margin-bottom:16px}
+    #install-sheet ol{margin:0;padding:0;list-style:none;counter-reset:step}
+    #install-sheet li{counter-increment:step;display:flex;align-items:center;gap:12px;padding:10px 0;font-size:14px;line-height:1.4}
+    #install-sheet li::before{content:counter(step);flex-shrink:0;width:26px;height:26px;border-radius:50%;background:rgba(108,99,255,0.18);
+      color:var(--accent);font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center}
+    #install-sheet .is-ico{display:inline-flex;vertical-align:middle;padding:2px 6px;border-radius:6px;background:rgba(255,255,255,0.08);margin:0 2px}
+    #install-sheet .is-actions{display:flex;flex-direction:column;gap:10px;margin-top:18px}
+    #install-sheet button{width:100%;padding:12px;border-radius:12px;font-weight:600;font-size:14px;cursor:pointer}
+    #install-sheet .is-primary{background:var(--accent);color:#fff;border:none}
+    #install-sheet .is-secondary{background:none;color:var(--text-secondary);border:1px solid var(--border)}
+    @keyframes installUp{from{transform:translateY(20px);opacity:0}to{transform:none;opacity:1}}
+  `;
+  document.head.appendChild(style);
+}
+
+const SHARE_ICON_SVG = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>';
+
+function closeInstallBanner(remember) {
+  document.getElementById('install-banner')?.remove();
+  if (remember) {
+    try { localStorage.setItem(INSTALL_DISMISS_KEY, String(Date.now())); } catch (e) {}
+  }
+}
+
+function closeInstallSheet() {
+  document.getElementById('install-sheet')?.remove();
+}
+
+async function triggerInstall() {
+  if (deferredInstallPrompt) {
+    closeInstallBanner(false);
+    closeInstallSheet();
+    try {
+      deferredInstallPrompt.prompt();
+      const { outcome } = await deferredInstallPrompt.userChoice;
+      deferredInstallPrompt = null;
+      if (outcome !== 'accepted') {
+        try { localStorage.setItem(INSTALL_DISMISS_KEY, String(Date.now())); } catch (e) {}
+      }
+    } catch (e) {
+      // prompt() can only be used once per event - fall back to manual steps
+      deferredInstallPrompt = null;
+      showInstallHelp();
+    }
+    return;
+  }
+  showInstallHelp();
+}
+
+function toggleTheme() {
+  const html = document.documentElement;
+  const currentTheme = html.getAttribute('data-theme');
+  const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+  
+  html.setAttribute('data-theme', newTheme);
+  localStorage.setItem('vektra-theme', newTheme);
+  
+  // Update button text
+  const btn = document.getElementById('theme-toggle');
+  if (btn) {
+    btn.textContent = newTheme === 'light' ? '🌙 Dark Mode' : '☀️ Light Mode';
+  }
+  
+  showToast(`Switched to ${newTheme} mode`, 'info');
+}
+
+// Initialize theme on load
+function initTheme() {
+  const savedTheme = localStorage.getItem('vektra-theme');
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const theme = savedTheme || (prefersDark ? 'dark' : 'light');
+  
+  document.documentElement.setAttribute('data-theme', theme);
+  
+  const btn = document.getElementById('theme-toggle');
+  if (btn) {
+    btn.textContent = theme === 'light' ? '🌙 Dark Mode' : '☀️ Light Mode';
+  }
+}
+
+// fromTap: true when called straight from a button click. Browsers only allow
+// the native install prompt inside a user tap, so automatic calls (e.g. arriving
+// via ?install=1) show an "Install now" button instead of prompting directly.
+function showInstallHelp(fromTap = true) {
+  if (isRunningInstalled()) {
+    showToast('VEKTRA is already installed on this device ✓', 'success');
+    return;
+  }
+  // Chrome/Edge gave us a real prompt - no instructions needed
+  if (deferredInstallPrompt && fromTap) { triggerInstall(); return; }
+
+  injectInstallStyles();
+  closeInstallSheet();
+  closeInstallBanner(false);
+
+  const platform = getInstallPlatform();
+  const appUrl = 'https://vektraapp.online/app/';
+  let title = 'Install VEKTRA';
+  let sub = 'Get VEKTRA on your home screen - opens full screen like a normal app.';
+  let steps = '';
+  let actions = '';
+
+  if (deferredInstallPrompt) {
+    steps = `
+      <li><span>Tap <b>Install now</b> below</span></li>
+      <li><span>Confirm in the popup - VEKTRA appears with your other apps</span></li>`;
+    actions = `<button class="is-primary" onclick="triggerInstall()">Install now</button>`;
+  } else if (platform === 'in-app') {
+    title = 'Open in your browser to install';
+    sub = "This app's built-in browser can't install apps. Open VEKTRA in your phone's browser first.";
+    const isAndroid = /Android/i.test(navigator.userAgent);
+    steps = `
+      <li><span>Tap the <span class="is-ico">•••</span> menu (top right corner)</span></li>
+      <li><span>Choose <b>"Open in browser"</b>${isAndroid ? '' : ' or <b>"Open in Safari"</b>'}</span></li>
+      <li><span>Then tap <b>Install VEKTRA</b> from your Profile page</span></li>`;
+    actions = (isAndroid
+      ? `<button class="is-primary" onclick="window.location.href='intent://vektraapp.online/app/#Intent;scheme=https;end'">Open in browser</button>`
+      : '') +
+      `<button class="${isAndroid ? 'is-secondary' : 'is-primary'}" onclick="copyInstallLink('${appUrl}')">Copy link</button>`;
+  } else if (platform === 'ios') {
+    steps = `
+      <li><span>Tap the <b>Share</b> button <span class="is-ico">${SHARE_ICON_SVG}</span> in your browser bar</span></li>
+      <li><span>Scroll down and tap <b>"Add to Home Screen"</b></span></li>
+      <li><span>Tap <b>"Add"</b> - VEKTRA appears on your home screen</span></li>`;
+  } else if (platform === 'android') {
+    steps = `
+      <li><span>Tap the <span class="is-ico">⋮</span> menu in your browser (top right)</span></li>
+      <li><span>Tap <b>"Install app"</b> or <b>"Add to Home screen"</b></span></li>
+      <li><span>Confirm - VEKTRA appears with your other apps</span></li>`;
+  } else {
+    steps = `
+      <li><span>Look for the install icon <span class="is-ico">⊕</span> at the right end of the address bar</span></li>
+      <li><span>Or open the browser menu and choose <b>"Install VEKTRA"</b></span></li>
+      <li><span>VEKTRA opens in its own window, like a desktop app</span></li>`;
+  }
+
+  const sheet = document.createElement('div');
+  sheet.id = 'install-sheet';
+  sheet.innerHTML = `
+    <div class="is-card" role="dialog" aria-modal="true" aria-labelledby="install-sheet-title">
+      <h3 id="install-sheet-title">${title}</h3>
+      <div class="is-sub">${sub}</div>
+      <ol>${steps}</ol>
+      <div class="is-actions">
+        ${actions}
+        <button class="is-secondary" onclick="closeInstallSheet()">Close</button>
+      </div>
+    </div>`;
+  sheet.addEventListener('click', e => { if (e.target === sheet) closeInstallSheet(); });
+  document.body.appendChild(sheet);
+}
+
+async function copyInstallLink(url) {
+  try {
+    await navigator.clipboard.writeText(url);
+    showToast('Link copied - paste it into Chrome or Safari', 'success');
+  } catch (e) {
+    showToast(url, 'info', 8000);
+  }
+}
+
+function maybeShowInstallBanner() {
+  if (installBannerShown || isRunningInstalled() || installDismissedRecently()) return;
+  const platform = getInstallPlatform();
+  // Desktop only gets the banner when the browser can actually prompt;
+  // phones always get it, since that's where people need the help
+  if (platform === 'desktop' && !deferredInstallPrompt) return;
+  // Only nag signed-in users - the login screen should stay focused on signing in
+  const nav = document.getElementById('bottom-nav');
+  if (!nav || nav.style.display === 'none') return;
+
+  installBannerShown = true;
+  injectInstallStyles();
+  const banner = document.createElement('div');
+  banner.id = 'install-banner';
+  const sub = platform === 'in-app'
+    ? 'Open in your browser to install'
+    : 'Faster, full screen, right on your home screen';
+  banner.innerHTML = `
+    <img src="/app/assets/icon-192.png" alt="">
+    <div class="ib-text">
+      <div class="ib-title">Get the VEKTRA app</div>
+      <div class="ib-sub">${sub}</div>
+    </div>
+    <button class="ib-go" onclick="triggerInstall()">${deferredInstallPrompt ? 'Install' : 'How?'}</button>
+    <button class="ib-x" aria-label="Dismiss" onclick="closeInstallBanner(true)">×</button>`;
+  document.body.appendChild(banner);
+}
+
+// app.js is a module, so the inline onclick handlers above need these on window
+window.showInstallHelp = showInstallHelp;
+window.toggleTheme = toggleTheme;
+window.triggerInstall = triggerInstall;
+window.closeInstallBanner = closeInstallBanner;
+window.closeInstallSheet = closeInstallSheet;
+window.copyInstallLink = copyInstallLink;
+
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  // Banner may already be up with a "How?" button - upgrade it to a real Install
+  const go = document.querySelector('#install-banner .ib-go');
+  if (go) go.textContent = 'Install';
+  maybeShowInstallBanner();
+});
+
+window.addEventListener('appinstalled', () => {
+  deferredInstallPrompt = null;
+  closeInstallBanner(false);
+  closeInstallSheet();
+  const btn = document.getElementById('profile-install-btn');
+  if (btn) btn.style.display = 'none';
+  showToast('VEKTRA installed - find it on your home screen 🎉', 'success', 5000);
+});
+
+window.addEventListener('load', () => {
+  if (isRunningInstalled()) {
+    const btn = document.getElementById('profile-install-btn');
+    if (btn) btn.style.display = 'none';
+    return;
+  }
+  // Wait until the user has signed in and settled before suggesting install
+  let checks = 0;
+  const timer = setInterval(() => {
+    maybeShowInstallBanner();
+    if (installBannerShown || ++checks > 40) clearInterval(timer);
+  }, 15000);
+  // Landing page "Install" links arrive with ?install=1 - show the steps right away
+  if (new URLSearchParams(window.location.search).get('install') === '1') {
+    setTimeout(() => showInstallHelp(false), 1200);
+  }
+});
 
 async function detectUserLocation() {
   const CACHE_KEY = 'user_location_data';
@@ -3394,12 +3679,25 @@ function renderAnalyticsCharts(data) {
     showNoDataMessage();
     return;
   }
-  
-  renderSimpleChart('chart-vektra', data, 'vektra_score', 0, 100, '#6c63ff');
-  renderSimpleChart('chart-networth', data, 'current_net_worth', null, null, '#22c55e');
-  renderSimpleChart('chart-sleep', data, 'sleep_hours', 0, 12, '#f59e0b');
-  renderSimpleChart('chart-mood', data, 'mood_score', 1, 10, '#ec4899');
-  renderSimpleChart('chart-focus', data, 'focus_hours', 0, 12, '#06b6d4');
+
+  // Get CSS variable colors
+  const computedStyle = getComputedStyle(document.documentElement);
+  const theme = document.documentElement.getAttribute('data-theme') || 'dark';
+
+  // Use vibrant colors that work in both themes
+  const colors = {
+    vektra: '#6c63ff',
+    networth: '#10b981',
+    sleep: '#f59e0b',
+    mood: '#ec4899',
+    focus: '#06b6d4'
+  };
+
+  renderSimpleChart('chart-vektra', data, 'vektra_score', 0, 100, colors.vektra);
+  renderSimpleChart('chart-networth', data, 'current_net_worth', null, null, colors.networth);
+  renderSimpleChart('chart-sleep', data, 'sleep_hours', 0, 12, colors.sleep);
+  renderSimpleChart('chart-mood', data, 'mood_score', 1, 10, colors.mood);
+  renderSimpleChart('chart-focus', data, 'focus_hours', 0, 12, colors.focus);
 }
 
 function renderAnalyticsStats(data) {
@@ -3451,43 +3749,71 @@ function showNoDataMessage() {
 function renderSimpleChart(containerId, data, valueKey, minVal, maxVal, color) {
   const container = document.getElementById(containerId);
   if (!container) return;
-  
+
   const values = data.map(d => d[valueKey]).filter(v => v !== null && v !== undefined);
-  
+
   if (values.length === 0) {
     container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-muted);font-size:13px">No data</div>';
     return;
   }
-  
+
   const actualMin = minVal !== null ? minVal : Math.min(...values);
   const actualMax = maxVal !== null ? maxVal : Math.max(...values);
   const range = actualMax - actualMin || 1;
-  
-  // Create simple bar chart
+
+  // Create gradient for bars
+  const gradientStyle = `background: linear-gradient(180deg, ${color}cc 0%, ${color} 100%);`;
+
+  // Create enhanced bar chart with gradients and animations
   const barsHtml = values.map((val, i) => {
     const normalized = (val - actualMin) / range;
     const height = Math.max(5, normalized * 100);
     const displayVal = val !== null && val !== undefined ? val.toFixed(1) : '—';
+    const delay = i * 50; // Staggered animation
     return `
       <div style="flex:1;display:flex;align-items:end;justify-content:center;position:relative">
-        <div style="width:80%;height:${height}%;background:${color};border-radius:4px 4px 0 0;min-height:4px;transition:height 0.3s ease"></div>
-        <div style="position:absolute;top:-20px;font-size:10px;color:var(--text-muted)">${displayVal}</div>
+        <div style="
+          width:80%;
+          height:${height}%;
+          ${gradientStyle}
+          border-radius:6px 6px 0 0;
+          min-height:4px;
+          transition:height 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+          box-shadow: 0 2px 8px ${color}40;
+          animation: barGrow 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) ${delay}ms forwards;
+          transform-origin: bottom;
+          transform: scaleY(0);
+        "></div>
+        <div style="
+          position:absolute;
+          top:-22px;
+          font-size:11px;
+          font-weight:600;
+          color:var(--text-primary);
+          background:var(--bg-card);
+          padding:2px 6px;
+          border-radius:4px;
+          border:1px solid var(--border);
+          box-shadow:0 2px 8px var(--shadow);
+          opacity:0;
+          animation: fadeIn 0.3s ease ${delay + 300}ms forwards;
+        ">${displayVal}</div>
       </div>
     `;
   }).join('');
-  
+
   // Date labels (show first, middle, last)
   const dateLabels = data.map(d => new Date(d.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
   const labelHtml = `
-    <div style="display:flex;justify-content:space-between;margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">
-      <span style="font-size:10px;color:var(--text-muted)">${dateLabels[0]}</span>
-      ${dateLabels.length > 2 ? `<span style="font-size:10px;color:var(--text-muted)">${dateLabels[Math.floor(dateLabels.length / 2)]}</span>` : ''}
-      <span style="font-size:10px;color:var(--text-muted)">${dateLabels[dateLabels.length - 1]}</span>
+    <div style="display:flex;justify-content:space-between;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
+      <span style="font-size:11px;font-weight:500;color:var(--text-secondary)">${dateLabels[0]}</span>
+      ${dateLabels.length > 2 ? `<span style="font-size:11px;font-weight:500;color:var(--text-secondary)">${dateLabels[Math.floor(dateLabels.length / 2)]}</span>` : ''}
+      <span style="font-size:11px;font-weight:500;color:var(--text-secondary)">${dateLabels[dateLabels.length - 1]}</span>
     </div>
   `;
-  
+
   container.innerHTML = `
-    <div style="display:flex;gap:4px;height:100%;align-items:end;padding-bottom:24px">
+    <div style="display:flex;gap:6px;height:100%;align-items:end;padding-bottom:24px">
       ${barsHtml}
     </div>
     ${labelHtml}

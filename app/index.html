@@ -1,11 +1,18 @@
 <meta charset="UTF-8">
 <title>VEKTRA</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name='probely-verification' content='b76c21b8-3479-44ef-8b10-ae1871e49824' />
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%236c63ff' width='100' height='100' rx='20'/><text x='50' y='65' font-size='50' font-family='Arial' font-weight='bold' fill='white' text-anchor='middle'>V</text></svg>">
 <link rel="stylesheet" href="css/style.css">
 <link rel="stylesheet" href="/app/assets/fonts/inter.css">
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#6c63ff">
+<meta name="theme-color" content="#0a0a0f">
+<!-- Home-screen install (iOS ignores the manifest icons/name, so it needs these) -->
+<link rel="apple-touch-icon" href="/app/assets/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="VEKTRA">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 
 <!-- TikTok Pixel Code Start -->
@@ -449,7 +456,7 @@ var e=ttq._i[t]||[],n=0;n<ttq.methods.length;n++)ttq.setAndDefer(e,ttq.methods[n
       <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em">Invite friends</div>
       <div id="dash-referral-stats" style="font-size:11px;color:var(--accent);font-weight:700">0 credits · 0 invited</div>
     </div>
-    <div style="font-size:13px;color:var(--text-secondary);margin-bottom:.75rem">Share VEKTRA — earn real cash commission when they pay (22% → 16.5% → 11% → 5.5% of their first 4 payments), plus bonus credits.</div>
+    <div style="font-size:13px;color:var(--text-secondary);margin-bottom:.75rem">Share VEKTRA — earn real cash commission when they pay (32% → 24% → 16% → 8% of their first 4 payments), plus bonus credits.</div>
     <div style="display:flex;gap:8px;margin-bottom:.75rem">
       <input id="dash-referral-link" readonly style="flex:1;padding:10px 12px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:12px;font-family:var(--font)" onclick="this.select()">
       <button class="btn-secondary" style="padding:10px 16px;white-space:nowrap" onclick="shareReferral(event)">Share</button>
@@ -847,9 +854,9 @@ var e=ttq._i[t]||[],n=0;n<ttq.methods.length;n++)ttq.setAndDefer(e,ttq.methods[n
   </div>
 
   <!-- AI Narrative -->
-  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
-    <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">VEKTRA Analysis</div>
-    <div id="report-narrative" style="font-size:14px;color:var(--text-secondary);line-height:1.8;white-space:pre-wrap">Your weekly trajectory summary appears once VEKTRA has enough data. Keep logging daily to unlock actionable insights, trend clarity, and a stronger momentum playbook.</div>
+  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem;margin-bottom:1rem;box-shadow:var(--card-shadow)">
+    <div style="font-size:12px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:1rem;font-weight:700">VEKTRA Analysis</div>
+    <div id="report-narrative" style="font-size:15px;color:var(--text-primary);line-height:1.9;white-space:pre-wrap;border-left:3px solid var(--accent);padding-left:16px">Your weekly trajectory summary appears once VEKTRA has enough data. Keep logging daily to unlock actionable insights, trend clarity, and a stronger momentum playbook.</div>
     <div id="report-empty" style="display:none;text-align:center;padding:2rem">
       <div style="font-size:48px;margin-bottom:1rem">📊</div>
       <div style="font-size:16px;font-weight:600;color:var(--text-primary);margin-bottom:8px">Not enough data yet</div>
@@ -1208,6 +1215,8 @@ var e=ttq._i[t]||[],n=0;n<ttq.methods.length;n++)ttq.setAndDefer(e,ttq.methods[n
 
 
   <!-- Settings + Sign Out buttons -->
+  <button class="btn-secondary" id="profile-install-btn" style="margin-top:12px;width:100%" onclick="showInstallHelp()">📲 Install VEKTRA app</button>
+  <button class="btn-secondary" id="theme-toggle" style="margin-top:12px;width:100%" onclick="toggleTheme()">🌙 Toggle Theme</button>
   <button class="btn-secondary" style="margin-top:12px;width:100%" onclick="openSettings()">⚙ Settings</button>
   <button class="btn-secondary" style="margin-top:12px;margin-bottom:1rem;width:100%" onclick="logout()">Sign Out</button>
 
@@ -1499,60 +1508,60 @@ var e=ttq._i[t]||[],n=0;n<ttq.methods.length;n++)ttq.setAndDefer(e,ttq.methods[n
 
   <!-- Summary Stats Cards -->
   <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:1.5rem">
-    <div style="background:linear-gradient(135deg,#1a1a2e,#16213e);border:1px solid var(--border);border-radius:var(--radius);padding:1rem">
-      <div id="stat-avg-score" style="font-size:24px;font-weight:700;color:var(--accent)">—</div>
-      <div style="font-size:11px;color:var(--text-muted)">Avg VEKTRA Score</div>
+    <div style="background:linear-gradient(135deg,var(--bg-card),var(--bg-secondary));border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;box-shadow:var(--card-shadow);transition:transform 0.2s ease,box-shadow 0.2s ease">
+      <div id="stat-avg-score" style="font-size:28px;font-weight:800;color:var(--accent);text-shadow:0 0 20px var(--accent-glow)">—</div>
+      <div style="font-size:12px;color:var(--text-secondary);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;margin-top:4px">Avg VEKTRA Score</div>
     </div>
-    <div style="background:linear-gradient(135deg,#1a1a2e,#16213e);border:1px solid var(--border);border-radius:var(--radius);padding:1rem">
-      <div id="stat-best-day" style="font-size:24px;font-weight:700;color:var(--success)">—</div>
-      <div style="font-size:11px;color:var(--text-muted)">Best Day</div>
+    <div style="background:linear-gradient(135deg,var(--bg-card),var(--bg-secondary));border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;box-shadow:var(--card-shadow);transition:transform 0.2s ease,box-shadow 0.2s ease">
+      <div id="stat-best-day" style="font-size:28px;font-weight:800;color:var(--success)">—</div>
+      <div style="font-size:12px;color:var(--text-secondary);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;margin-top:4px">Best Day</div>
     </div>
-    <div style="background:linear-gradient(135deg,#1a1a2e,#16213e);border:1px solid var(--border);border-radius:var(--radius);padding:1rem">
-      <div id="stat-total-income" style="font-size:24px;font-weight:700;color:var(--text-primary)">—</div>
-      <div style="font-size:11px;color:var(--text-muted)">Total Income</div>
+    <div style="background:linear-gradient(135deg,var(--bg-card),var(--bg-secondary));border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;box-shadow:var(--card-shadow);transition:transform 0.2s ease,box-shadow 0.2s ease">
+      <div id="stat-total-income" style="font-size:28px;font-weight:800;color:var(--text-primary)">—</div>
+      <div style="font-size:12px;color:var(--text-secondary);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;margin-top:4px">Total Income</div>
     </div>
-    <div style="background:linear-gradient(135deg,#1a1a2e,#16213e);border:1px solid var(--border);border-radius:var(--radius);padding:1rem">
-      <div id="stat-streak" style="font-size:24px;font-weight:700;color:var(--warning)">—</div>
-      <div style="font-size:11px;color:var(--text-muted)">Current Streak</div>
+    <div style="background:linear-gradient(135deg,var(--bg-card),var(--bg-secondary));border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;box-shadow:var(--card-shadow);transition:transform 0.2s ease,box-shadow 0.2s ease">
+      <div id="stat-streak" style="font-size:28px;font-weight:800;color:var(--warning)">—</div>
+      <div style="font-size:12px;color:var(--text-secondary);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;margin-top:4px">Current Streak</div>
     </div>
   </div>
 
   <!-- VEKTRA Score Chart -->
-  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
-    <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">VEKTRA Score</div>
-    <div id="chart-vektra" style="height:150px;position:relative">
+  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem;margin-bottom:1rem;box-shadow:var(--card-shadow);transition:transform 0.2s ease,box-shadow 0.2s ease">
+    <div style="font-size:12px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:1rem;font-weight:700">VEKTRA Score</div>
+    <div id="chart-vektra" style="height:160px;position:relative">
       <div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-muted);font-size:13px">Loading...</div>
     </div>
   </div>
 
   <!-- Net Worth Chart -->
-  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
-    <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">Net Worth</div>
-    <div id="chart-networth" style="height:150px;position:relative">
+  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem;margin-bottom:1rem;box-shadow:var(--card-shadow);transition:transform 0.2s ease,box-shadow 0.2s ease">
+    <div style="font-size:12px;color:var(--success);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:1rem;font-weight:700">Net Worth</div>
+    <div id="chart-networth" style="height:160px;position:relative">
       <div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-muted);font-size:13px">Loading...</div>
     </div>
   </div>
 
   <!-- Sleep Chart -->
-  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
-    <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">Sleep Hours</div>
-    <div id="chart-sleep" style="height:150px;position:relative">
+  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem;margin-bottom:1rem;box-shadow:var(--card-shadow);transition:transform 0.2s ease,box-shadow 0.2s ease">
+    <div style="font-size:12px;color:var(--warning);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:1rem;font-weight:700">Sleep Hours</div>
+    <div id="chart-sleep" style="height:160px;position:relative">
       <div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-muted);font-size:13px">Loading...</div>
     </div>
   </div>
 
   <!-- Mood Chart -->
-  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
-    <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">Mood</div>
-    <div id="chart-mood" style="height:150px;position:relative">
+  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem;margin-bottom:1rem;box-shadow:var(--card-shadow);transition:transform 0.2s ease,box-shadow 0.2s ease">
+    <div style="font-size:12px;color:var(--pink);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:1rem;font-weight:700">Mood</div>
+    <div id="chart-mood" style="height:160px;position:relative">
       <div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-muted);font-size:13px">Loading...</div>
     </div>
   </div>
 
   <!-- Focus Chart -->
-  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
-    <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">Focus Hours</div>
-    <div id="chart-focus" style="height:150px;position:relative">
+  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem;margin-bottom:1rem;box-shadow:var(--card-shadow);transition:transform 0.2s ease,box-shadow 0.2s ease">
+    <div style="font-size:12px;color:#06b6d4;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:1rem;font-weight:700">Focus Hours</div>
+    <div id="chart-focus" style="height:160px;position:relative">
       <div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-muted);font-size:13px">Loading...</div>
     </div>
   </div>
@@ -2540,7 +2549,7 @@ var e=ttq._i[t]||[],n=0;n<ttq.methods.length;n++)ttq.setAndDefer(e,ttq.methods[n
 
 <!-- ── BOTTOM NAVIGATION CONTAINER ── -->
 <!-- Back into the HTML DOM structure, equipped with safety-validated onclick handlers -->
-<div id="bottom-nav" style="display:none;position:fixed;bottom:0;left:0;right:0;background:var(--bg-card);border-top:1px solid var(--border);padding:12px 20px;z-index:1000">
+<div id="bottom-nav" style="display:none;position:fixed;bottom:0;left:0;right:0;background:var(--bg-card);border-top:1px solid var(--border);padding:12px 20px;z-index:1000;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);box-shadow:0 -4px 20px var(--shadow)">
   <div style="display:flex;justify-content:space-between;align-items:center;max-width:600px;margin:0 auto">
     
     <!-- Home Menu Icon Layout -->

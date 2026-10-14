@@ -3,7 +3,7 @@ Referral Commission Service
 ============================
 Turns a referred user's own successful payment into a real-money commission
 for whoever referred them - a declining percentage of that specific referred
-person's 1st through 4th payment (22% / 16.5% / 11% / 5.5%, then 0%). Resets
+person's 1st through 4th payment (32% / 24% / 16% / 8%, then 0%). Resets
 per referred user, not per the referrer's lifetime referral count.
 
 "available" (withdrawable) is never a stored status - it's computed at read
@@ -23,7 +23,7 @@ from app.core.config import settings
 from app.db.models import Referral, ReferralCommission, Payment
 from app import crud
 
-RATE_SCHEDULE = {1: 0.22, 2: 0.165, 3: 0.11, 4: 0.055}  # 5+ -> no row created at all
+RATE_SCHEDULE = {1: 0.32, 2: 0.24, 3: 0.16, 4: 0.08}  # 5+ -> no row created at all
 
 
 async def create_commission_for_payment(db: AsyncSession, payment: Payment) -> Optional[ReferralCommission]:

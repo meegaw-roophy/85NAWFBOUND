@@ -72,6 +72,23 @@
       --danger: #ef4444;
     }
 
+    :root[data-theme="light"] {
+      --bg: #f8f9fc;
+      --bg-soft: #ffffff;
+      --card: #ffffff;
+      --card-hover: #f0f0f5;
+      --accent: #6c63ff;
+      --pink: #ec4899;
+      --text: #1a1a2e;
+      --muted: #5a5a7a;
+      --muted-2: #8888aa;
+      --border: rgba(0,0,0,0.08);
+      --border-strong: rgba(0,0,0,0.12);
+      --success: #16a34a;
+      --warning: #d97706;
+      --danger: #dc2626;
+    }
+
     html {
       scroll-behavior: smooth;
     }
@@ -82,6 +99,7 @@
       font-family: "Inter", sans-serif;
       line-height: 1.6;
       overflow-x: hidden;
+      transition: background 0.3s ease, color 0.3s ease;
     }
 
     a {
@@ -164,12 +182,19 @@
       font-weight: 700;
       cursor: pointer;
       text-decoration: none;
-      transition: transform .2s ease, opacity .2s ease;
+      transition: transform .2s ease, opacity .2s ease, box-shadow .2s ease;
+      box-shadow: 0 4px 15px rgba(108, 99, 255, 0.3);
     }
 
     .nav-cta:hover {
-      transform: translateY(-1px);
-      opacity: .92;
+      transform: translateY(-2px);
+      opacity: .95;
+      box-shadow: 0 6px 20px rgba(108, 99, 255, 0.4);
+    }
+
+    .nav-cta:active {
+      transform: translateY(0);
+      box-shadow: 0 2px 10px rgba(108, 99, 255, 0.3);
     }
 
     /* =========================
@@ -1191,6 +1216,23 @@
       background: rgba(34,197,94,.14);
     }
 
+    .hero-install {
+      display: inline-block;
+      margin: 0 0 .6rem .5rem;
+      padding: .45rem 1rem;
+      border-radius: 999px;
+      border: 1px solid rgba(108,99,255,.4);
+      background: rgba(108,99,255,.1);
+      color: #b4b0ff;
+      font-size: 13px;
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    .hero-install:hover {
+      background: rgba(108,99,255,.18);
+    }
+
     @media (max-width: 850px) {
       .earn-grid {
         grid-template-columns: 1fr;
@@ -1520,6 +1562,7 @@
   }(window, document, 'ttq');
   </script>
   <!-- TikTok Pixel Code End -->
+  <meta name='probely-verification' content='b76c21b8-3479-44ef-8b10-ae1871e49824' />
 </head>
 
 <body>
@@ -1534,6 +1577,7 @@
     </a>
 
     <div class="nav-actions">
+      <button onclick="toggleTheme()" style="background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:18px;padding:8px;transition:color 0.2s ease" title="Toggle theme">🌙</button>
       <a href="#earn" class="nav-link">Earn Cash</a>
       <a href="#pricing" class="nav-link">Pricing</a>
       <a href="#how-it-works" class="nav-link">How it works</a>
@@ -1587,6 +1631,10 @@
 
     <a href="#earn" class="hero-earn">
       💸 Invite friends, earn real cash →
+    </a>
+
+    <a href="https://vektraapp.online/app/?install=1" class="hero-install" data-track="hero-install">
+      📲 Get the app on your phone
     </a>
 
 
@@ -2368,26 +2416,26 @@
 
         <div class="earn-ladder">
           <div class="earn-rung">
-            <div class="earn-rung-amt" data-rate="0.22">$4.40</div>
-            <div class="earn-rung-bar" style="--h:100%">22%</div>
+            <div class="earn-rung-amt" data-rate="0.32">$6.40</div>
+            <div class="earn-rung-bar" style="--h:100%">32%</div>
             <div class="earn-rung-label">1st payment</div>
           </div>
 
           <div class="earn-rung">
-            <div class="earn-rung-amt" data-rate="0.165">$3.30</div>
-            <div class="earn-rung-bar" style="--h:75%">16.5%</div>
+            <div class="earn-rung-amt" data-rate="0.24">$4.80</div>
+            <div class="earn-rung-bar" style="--h:75%">24%</div>
             <div class="earn-rung-label">2nd payment</div>
           </div>
 
           <div class="earn-rung">
-            <div class="earn-rung-amt" data-rate="0.11">$2.20</div>
-            <div class="earn-rung-bar" style="--h:50%">11%</div>
+            <div class="earn-rung-amt" data-rate="0.16">$3.20</div>
+            <div class="earn-rung-bar" style="--h:50%">16%</div>
             <div class="earn-rung-label">3rd payment</div>
           </div>
 
           <div class="earn-rung">
-            <div class="earn-rung-amt" data-rate="0.055">$1.10</div>
-            <div class="earn-rung-bar" style="--h:25%">5.5%</div>
+            <div class="earn-rung-amt" data-rate="0.08">$1.60</div>
+            <div class="earn-rung-bar" style="--h:25%">8%</div>
             <div class="earn-rung-label">4th payment</div>
           </div>
         </div>
@@ -2682,6 +2730,42 @@
   <script>
 
     /* =========================
+       THEME TOGGLE
+    ========================== */
+
+    function toggleTheme() {
+      const html = document.documentElement;
+      const currentTheme = html.getAttribute('data-theme');
+      const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+
+      html.setAttribute('data-theme', newTheme);
+      localStorage.setItem('vektra-theme', newTheme);
+
+      // Update button emoji
+      const btn = document.querySelector('.nav-actions button[onclick="toggleTheme()"]');
+      if (btn) {
+        btn.textContent = newTheme === 'light' ? '🌙' : '☀️';
+      }
+    }
+
+    // Initialize theme on load
+    function initTheme() {
+      const savedTheme = localStorage.getItem('vektra-theme');
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const theme = savedTheme || (prefersDark ? 'dark' : 'light');
+
+      document.documentElement.setAttribute('data-theme', theme);
+
+      const btn = document.querySelector('.nav-actions button[onclick="toggleTheme()"]');
+      if (btn) {
+        btn.textContent = theme === 'light' ? '🌙' : '☀️';
+      }
+    }
+
+    // Run theme initialization
+    initTheme();
+
+    /* =========================
        WAITLIST
     ========================== */
 
@@ -2763,7 +2847,7 @@
     ========================== */
 
     (function () {
-      const RATES = [0.22, 0.165, 0.11, 0.055];
+      const RATES = [0.32, 0.24, 0.16, 0.08];
       const RATE_SUM = RATES.reduce((a, b) => a + b, 0);
       const slider = document.getElementById("earn-friends");
       if (!slider) return;

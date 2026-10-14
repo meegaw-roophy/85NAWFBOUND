@@ -470,7 +470,7 @@ class RefundRequest(Base):
 
 # ─────────────────────────────────────────────
 #  REFERRAL COMMISSION  (real-money affiliate earnings)
-#  Declining % of a referred user's own 1st-4th payment: 22/16.5/11/5.5%, then 0.
+#  Declining % of a referred user's own 1st-4th payment: 32/24/16/8%, then 0.
 #  "available" is deliberately not a stored status - it's computed at read time
 #  as: status='pending' AND available_at <= now() AND not claimed AND the
 #  triggering payment has no open refund request. See referral_commission_service.py.
@@ -487,7 +487,7 @@ class ReferralCommission(Base):
     payment_id              = Column(Integer,  ForeignKey('payments.id', ondelete='CASCADE'), nullable=False, unique=True, index=True)  # one commission per triggering payment - doubles as a webhook-retry idempotency guard
 
     sequence_number         = Column(Integer,  nullable=False)  # which of the referred user's own payments this is (1-4; 5+ never gets a row)
-    commission_rate         = Column(Float,    nullable=False)  # 0.22 / 0.165 / 0.11 / 0.055
+    commission_rate         = Column(Float,    nullable=False)  # 0.32 / 0.24 / 0.16 / 0.08
     commission_amount       = Column(Float,    nullable=False)
     currency                = Column(String(10), nullable=False, default='USD')  # native currency of the triggering payment, never converted
 

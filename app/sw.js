@@ -1,4 +1,4 @@
-const CACHE_NAME = 'vektra-v5';
+const CACHE_NAME = 'vektra-v6';
 
 // 1. Core static assets to cache for 100% offline functionality
 const PRECACHE_ASSETS = [
@@ -6,7 +6,10 @@ const PRECACHE_ASSETS = [
   '/app/index.html',
   '/app/css/style.css',
   '/app/js/app.js',
-  '/app/manifest.json'
+  '/app/manifest.json',
+  '/app/assets/icon-192.png',
+  '/app/assets/icon-512.png',
+  '/app/assets/apple-touch-icon.png'
 ];
 
 // Install Event: Pre-cache the critical static assets immediately
