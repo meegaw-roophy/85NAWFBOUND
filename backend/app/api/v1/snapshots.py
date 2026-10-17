@@ -5,7 +5,7 @@ from app.schemas import SnapshotCreate, SnapshotOut, SnapshotStatusOut
 from app.db.session import get_session
 from sqlalchemy.ext.asyncio import AsyncSession
 from app import crud
-from app.core.deps import get_current_user, get_effective_tier
+from app.core.deps import FREE_TIER_LOG_LIMIT, get_current_user, get_effective_tier
 from app.services.math_engine import calculate_correlations
 from app.services.vektra_engine import calculate_vektra_score
 
@@ -17,10 +17,10 @@ async def add_snapshot(user_id: int, payload: SnapshotCreate, db: AsyncSession =
     if current_user.id != user_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not allowed")
 
-    # ── Free tier limit: 7 snapshots max ──
+    # ── Free tier limit ──
     if get_effective_tier(current_user) == 'free':
-        existing = await crud.list_snapshots(db, user_id, limit=10)
-        if len(existing) >= 7:
+        existing = await crud.list_snapshots(db, user_id, limit=FREE_TIER_LOG_LIMIT)
+        if len(existing) >= FREE_TIER_LOG_LIMIT:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="free_tier_limit_reached"

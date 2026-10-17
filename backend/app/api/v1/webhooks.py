@@ -9,7 +9,10 @@ from app.services import referral_commission_service
 from app import crud
 from datetime import datetime, timedelta
 from app.core.config import settings
+from app.api.v1.pricing import paid_access_for_payment
+import logging
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
@@ -93,13 +96,7 @@ async def paystack_webhook(
 
     if event == "charge.success":
         reference = data.get("reference")
-        metadata = data.get("metadata", {}) if isinstance(data.get("metadata"), dict) else {}
-        user_id = metadata.get("user_id")
-        tier = metadata.get("tier", "tier1")
-        special_offer = str(metadata.get("special_offer", "false")).lower() == "true"
-        offer_expires_at = datetime.fromisoformat(
-            metadata["access_expires_at"].replace("Z", "+00:00")
-        ) if special_offer and metadata.get("access_expires_at") else None
+        payment = None
 
         if reference:
             payment_result = await db.execute(
@@ -121,28 +118,37 @@ async def paystack_webhook(
                 if not already_succeeded:
                     await referral_commission_service.create_commission_for_payment(db, payment)
 
-        if user_id:
-            user_result = await db.execute(select(User).where(User.id == int(user_id)))
+        # Access is granted only for a payment we know about, on the amount
+        # Paystack confirmed - never from metadata alone. This used to set
+        # user.tier straight from metadata.tier with no expiry, so any
+        # amount labelled "tier3" granted Founder forever, and every webhook
+        # delivery stacked another duration onto the latest subscription.
+        user = None
+        if payment:
+            user_result = await db.execute(select(User).where(User.id == payment.user_id))
             user = user_result.scalar_one_or_none()
-            if user:
-                user.tier = tier
-                user.tier_expires_at = offer_expires_at or user.tier_expires_at
-                db.add(user)
-                await db.commit()
+        access = paid_access_for_payment(payment, user.country_code) if user else None
+
+        if access:
+            user.tier = access.tier
+            user.tier_expires_at = access.expires_at
+            db.add(user)
+            await db.commit()
 
             subscription_result = await db.execute(
-                select(Subscription).where(Subscription.user_id == int(user_id)).order_by(Subscription.created_at.desc())
+                select(Subscription).where(Subscription.user_id == user.id).order_by(Subscription.created_at.desc())
             )
-            subscription = subscription_result.scalar_one_or_none()
+            subscription = subscription_result.scalars().first()
             if subscription:
                 subscription.active = True
+                subscription.plan = access.tier
                 subscription.provider_subscription_id = reference
                 subscription.last_webhook_at = datetime.utcnow()
-                subscription.expires_at = offer_expires_at or (
-                    subscription.expires_at or datetime.utcnow()
-                ) + timedelta(days=subscription.duration_days or 30)
+                subscription.expires_at = access.expires_at
                 db.add(subscription)
                 await db.commit()
+        elif payment:
+            logger.warning("Paystack charge %s did not cover a plan; no access granted", reference)
 
     elif event == "subscription.disable":
         reference = data.get("subscription_code")

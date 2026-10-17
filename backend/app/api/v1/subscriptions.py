@@ -7,12 +7,13 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from typing import List
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from app.db.session import get_session
 from app.api.v1.auth import get_current_user
 from app.db.models import User, Subscription, Payment
 from app.schemas import SubscriptionCreate, SubscriptionOut, PaymentOut
+from app.api.v1.pricing import paid_access_for_payment, tier_catalog
 
 # Plan id -> tier name granted on User.tier once a payment for that plan clears.
 PLAN_TO_TIER = {
@@ -87,6 +88,13 @@ async def create_subscription(
     if payment.status != "succeeded":
         raise HTTPException(status_code=400, detail="Payment has not succeeded yet")
 
+    # Plan and duration come from what the provider confirmed was charged,
+    # never from the request body: the client used to send a fixed 30 days
+    # (so longer purchases were shortchanged) and any plan it liked.
+    access = paid_access_for_payment(payment, current_user.country_code)
+    if access is None:
+        raise HTTPException(status_code=400, detail="Payment amount does not cover this plan")
+
     # Deactivate existing subscriptions
     result = await db.execute(
         select(Subscription)
@@ -97,32 +105,29 @@ async def create_subscription(
     for sub in existing:
         sub.active = False
 
-    # Calculate expiration
-    duration_days = subscription_data.duration_days or 30
-    expires_at = datetime.utcnow() + timedelta(days=duration_days)
+    # Expiry is anchored to when the payment cleared, so re-submitting the
+    # same payment_id reproduces the same window instead of extending it.
+    duration_days = access.days
+    expires_at = access.expires_at
 
-    # Create new subscription, trusting the verified payment's own amount/
-    # currency/provider rather than whatever the client claims.
     subscription = Subscription(
         user_id=current_user.id,
         provider=payment.provider,
-        plan=subscription_data.plan,
+        plan=access.tier,
         duration_days=duration_days,
         discount_pct=subscription_data.discount_pct,
-        amount_paid=payment.amount,
-        currency=payment.currency or "USD",
+        amount_paid=access.amount,
+        currency=access.currency,
         active=True,
-        starts_at=datetime.utcnow(),
+        starts_at=payment.succeeded_at or datetime.utcnow(),
         expires_at=expires_at
     )
 
     db.add(subscription)
 
-    tier = PLAN_TO_TIER.get(subscription_data.plan, subscription_data.plan)
-    if tier:
-        current_user.tier = tier
-        current_user.tier_expires_at = expires_at
-        db.add(current_user)
+    current_user.tier = PLAN_TO_TIER[access.tier]
+    current_user.tier_expires_at = expires_at
+    db.add(current_user)
 
     await db.commit()
     await db.refresh(subscription)
@@ -133,7 +138,7 @@ async def create_subscription(
     # after a real payment clears - it was 500ing here even though the
     # subscription/tier had already been saved correctly, meaning a paying
     # customer would see an error immediately after a successful payment.
-    subscription.days_remaining = duration_days
+    subscription.days_remaining = max(0, (expires_at - datetime.utcnow()).days)
     return subscription
 
 
@@ -142,64 +147,14 @@ async def get_subscription_plans():
     """Get available subscription plans"""
     plans = [
         {
-            "id": "free",
-            "name": "Free",
-            "price": 0,
+            "id": tier["id"],
+            "name": tier["name"],
+            "price": float(tier["price_usd"]),
             "currency": "USD",
-            "duration_days": None,
-            "features": [
-                "Daily logging",
-                "Basic VEKTRA score",
-                "Weekly reports",
-                "Limited analytics (7 days)"
-            ]
-        },
-        {
-            "id": "tier1",
-            "name": "Pro",
-            "price": 20.00,
-            "currency": "USD",
-            "duration_days": 30,
-            "features": [
-                "Everything in Free",
-                "Advanced analytics (90 days)",
-                "Goal prediction",
-                "AI-powered reports",
-                "Weekly comparison",
-                "Priority support"
-            ]
-        },
-        {
-            "id": "tier2",
-            "name": "Premium",
-            "price": 50.00,
-            "currency": "USD",
-            "duration_days": 30,
-            "features": [
-                "Everything in Pro",
-                "Unlimited analytics (1 year)",
-                "Monthly reports",
-                "Data export (CSV/PDF)",
-                "Achievement tracking",
-                "Streak calendar",
-                "Dedicated support"
-            ]
-        },
-        {
-            "id": "tier3",
-            "name": "Enterprise",
-            "price": 49.99,
-            "currency": "USD",
-            "duration_days": 30,
-            "features": [
-                "Everything in Premium",
-                "Team collaboration",
-                "API access",
-                "Custom integrations",
-                "White-label reports",
-                "Account manager"
-            ]
+            "duration_days": None if tier["id"] == "free" else 30,
+            "features": tier["features"],
         }
+        for tier in tier_catalog()
     ]
     return {"plans": plans}
 

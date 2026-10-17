@@ -19,6 +19,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app import crud
 from app.core.deps import get_current_user
 from app.core.config import settings
+from app.api.v1.pricing import special_offer_active
 from app.db.models import Payment, RefundRequest
 from app.services.payment_service import create_stripe_subscription, initiate_mpesa_payment
 from app.services.paystack_service import initialize_payment as initialize_paystack_payment
@@ -92,6 +93,10 @@ async def paystack_payment(
     if current_user.id != user_id:
         raise HTTPException(status_code=http_status.HTTP_403_FORBIDDEN, detail="Not allowed")
 
+    # The campaign flag only means something before its deadline; after it,
+    # the payment is priced and granted like any other.
+    special_offer = bool(payload.special_offer) and special_offer_active()
+
     try:
         # Create local pending payment record
         payment = await crud.create_payment(db, user_id, {
@@ -112,8 +117,8 @@ async def paystack_payment(
                 "local_payment_id": str(payment.id), 
                 "user_id": str(user_id),
                 "tier": payload.tier or 'tier1',
-                "special_offer": bool(payload.special_offer),
-                "access_expires_at": "2027-01-01T23:59:59+03:00" if payload.special_offer else None,
+                "special_offer": special_offer,
+                "access_expires_at": "2027-01-01T23:59:59+03:00" if special_offer else None,
             },
             currency=payload.currency or 'KES',
             callback_url=payload.callback_url,
@@ -200,6 +205,7 @@ async def verify_paystack(
             raise HTTPException(status_code=http_status.HTTP_404_NOT_FOUND, detail="Payment record not found")
 
         payment.status = "succeeded"
+        payment.succeeded_at = payment.succeeded_at or datetime.datetime.utcnow()
         payment.external_response = result
         db.add(payment)
         await db.commit()

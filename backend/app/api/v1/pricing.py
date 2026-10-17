@@ -10,9 +10,9 @@ Philosophy:
     - Nothing else.
 
 Base prices (after 1.3333 multiplier applied internally):
-    Tier 1: $15.00/month target → charge $20/month → user sees local currency
-    Tier 2: $37.50/month target → charge $50/month → user sees local currency
-    Tier 3: $75.00/month target → charge $100/month → user sees local currency
+    Tier 1: $11.25/month target → charge $15/month → user sees local currency
+    Tier 2: $22.50/month target → charge $30/month → user sees local currency
+    Tier 3: $45.00/month target → charge $60/month → user sees local currency
 
 Discount caps:
     Tier 1: max 16.667% at 366 days (2 month free equivalent)
@@ -23,8 +23,7 @@ Discount curve: linear from 0% at day 30 to max% at day 366
 """
 
 from fastapi import APIRouter, Depends
-from app.core.deps import get_current_user
-from app.db.models import User
+from app.core.deps import FREE_TIER_LOG_LIMIT, get_current_user
 from pydantic import BaseModel
 from typing import Optional
 import datetime
@@ -139,8 +138,8 @@ async def refresh_fx_cache_if_stale() -> None:
 
 # ─────────────────────────────────────────────
 #  PPP FACTORS — individually assigned per country, not banded.
-#  Range: 0.40 (floor — matches lowest-income markets) to 1.00 (US baseline).
-#  DEFAULT deliberately sits high (0.75), not low: an unrecognized/VPN'd
+#  Range: 0.50 (floor — matches lowest-income markets) to 1.00 (US baseline).
+#  DEFAULT deliberately sits high (0.82), not low: an unrecognized/VPN'd
 #  visitor shouldn't get charity pricing by default — under-charging a
 #  country we simply have no data on costs more than over-charging a
 #  handful of genuine edge cases. Revisit every value here once real
@@ -153,6 +152,14 @@ async def refresh_fx_cache_if_stale() -> None:
 #  everything else is still the original estimate. No A/B split exists —
 #  this replaces the old value outright, watch conversion/revenue over the
 #  following weeks to judge it.
+#
+#  2026-10 rebase: floor raised 0.40 -> 0.50 alongside the base price cut
+#  ($20/$50/$100 -> $15/$30/$60). Every value below 1.00 was moved by
+#      new = old + 0.10 * (1 - ((old - 0.40) / 0.60) ** 2)
+#  so the uplift is largest at the bottom (+25% at 0.40, ~+9% at 0.75) and
+#  tapers to zero at 1.00, keeping every country's relative order. All
+#  numbers in this table — values, band labels and "was" notes — are on
+#  the new scale.
 # ─────────────────────────────────────────────
 PPP_FACTORS = {
     # ── 1.00 — core high-income anglophone / nordic / western european ──
@@ -162,91 +169,107 @@ PPP_FACTORS = {
     "NZ": 1.00, "FI": 1.00, "AT": 1.00, "BE": 1.00, "IS": 1.00,
     "LU": 1.00, "HK": 1.00,
 
-    # ── 0.97 — small, very high income (oil/finance) ──
-    "QA": 0.97, "KW": 0.97,
+    # ── 0.98 — small, very high income (oil/finance) ──
+    "QA": 0.98, "KW": 0.98,
 
-    # ── 0.95 — high income gulf ──
-    "AE": 0.95, "BH": 0.95, "OM": 0.95,
+    # ── 0.97 — high income gulf ──
+    "AE": 0.97, "BH": 0.97, "OM": 0.97,
 
-    # ── 0.92 — high income, smaller markets ──
-    "IL": 0.92, "CY": 0.92, "MT": 0.92,
+    # ── 0.94 — high income, smaller markets ──
+    "IL": 0.94, "CY": 0.94, "MT": 0.94,
 
-    # ── ~0.88 — southern europe / advanced asia / gulf ──
-    "ES": 0.88, "IT": 0.88, "TW": 0.88, "SI": 0.88,
-    "SA": 0.90,  # tested, was 0.88
+    # ── ~0.92 — southern europe / advanced asia / gulf ──
+    "ES": 0.92, "IT": 0.92, "TW": 0.92, "SI": 0.92,
+    "SA": 0.93,  # tested, was 0.92
 
-    # ── ~0.83 — upper southern/eastern europe ──
-    "EE": 0.83, "LT": 0.83, "LV": 0.83, "GR": 0.83,
-    "PT": 0.85,  # tested, was 0.83
+    # ── ~0.88 — upper southern/eastern europe ──
+    "EE": 0.88, "LT": 0.88, "LV": 0.88, "GR": 0.88,
+    "PT": 0.89,  # tested, was 0.88
 
-    # ── ~0.78 — central europe ──
-    "SK": 0.78, "HR": 0.78,
-    "PL": 0.80,  # tested, was 0.78
-    "HU": 0.77,  # tested, was 0.78 (down slightly)
+    # ── ~0.84 — central europe ──
+    "SK": 0.84, "HR": 0.84,
+    "PL": 0.86,  # tested, was 0.84
+    "HU": 0.83,  # tested, was 0.84 (down slightly)
 
-    # ── ~0.73 — upper-middle, resource/industrial economies ──
-    "RU": 0.73, "KZ": 0.73, "BG": 0.73, "UY": 0.73,
-    "CZ": 0.78,  # tested, was 0.73
+    # ── ~0.80 — upper-middle, resource/industrial economies ──
+    "RU": 0.80, "KZ": 0.80, "BG": 0.80, "UY": 0.80,
+    "CZ": 0.84,  # tested, was 0.80
 
-    # ── ~0.68 — upper-middle latin/balkan ──
-    "CL": 0.68, "RS": 0.68, "ME": 0.68, "MK": 0.68, "PA": 0.68, "CR": 0.68,
-    "RO": 0.71,  # tested, was 0.68
+    # ── ~0.76 — upper-middle latin/balkan ──
+    "CL": 0.76, "RS": 0.76, "ME": 0.76, "MK": 0.76, "PA": 0.76, "CR": 0.76,
+    "RO": 0.78,  # tested, was 0.76
 
-    # ── ~0.63 — large emerging markets ──
-    "TR": 0.63, "BW": 0.63, "GE": 0.63, "AM": 0.63, "AZ": 0.63,
-    "CN": 0.70,  # tested, was 0.63
-    "MX": 0.66,  # tested, was 0.63
+    # ── ~0.72 — large emerging markets ──
+    "TR": 0.72, "BW": 0.72, "GE": 0.72, "AM": 0.72, "AZ": 0.72,
+    "CN": 0.77,  # tested, was 0.72
+    "MX": 0.74,  # tested, was 0.72
 
-    # ── ~0.58 — middle income, mixed regions ──
-    "EC": 0.58, "JO": 0.58, "TN": 0.58, "AL": 0.58, "NA": 0.58, "FJ": 0.58,
-    "MY": 0.62,  # tested, was 0.58
-    "TH": 0.61,  # tested, was 0.58
+    # ── ~0.67 — middle income, mixed regions ──
+    "EC": 0.67, "JO": 0.67, "TN": 0.67, "AL": 0.67, "NA": 0.67, "FJ": 0.67,
+    "MY": 0.71,  # tested, was 0.67
+    "TH": 0.70,  # tested, was 0.67
 
-    # ── ~0.53 — lower-middle, larger populations ──
-    "AR": 0.53, "DO": 0.53, "JM": 0.53, "LK": 0.53,
-    "ZA": 0.57,  # tested, was 0.53
-    "BR": 0.56,  # tested, was 0.53
-    "CO": 0.55,  # tested, was 0.53
-    "PE": 0.55,  # tested, was 0.53
+    # ── ~0.63 — lower-middle, larger populations ──
+    "AR": 0.63, "DO": 0.63, "JM": 0.63, "LK": 0.63,
+    "ZA": 0.66,  # tested, was 0.63
+    "BR": 0.65,  # tested, was 0.63
+    "CO": 0.64,  # tested, was 0.63
+    "PE": 0.64,  # tested, was 0.63
 
-    # ── ~0.48 — lower-middle income ──
-    "MA": 0.48, "DZ": 0.48, "LY": 0.48, "IQ": 0.48, "GT": 0.48,
-    "SV": 0.48, "HN": 0.48, "NI": 0.48, "BO": 0.48,
-    "ID": 0.51,  # tested, was 0.48
-    "PH": 0.51,  # tested, was 0.48
+    # ── ~0.58 — lower-middle income ──
+    "MA": 0.58, "DZ": 0.58, "LY": 0.58, "IQ": 0.58, "GT": 0.58,
+    "SV": 0.58, "HN": 0.58, "NI": 0.58, "BO": 0.58,
+    "ID": 0.61,  # tested, was 0.58
+    "PH": 0.61,  # tested, was 0.58
 
-    # ── ~0.44 — low-middle income ──
-    "CI": 0.44, "SN": 0.44, "CM": 0.44, "ZM": 0.44, "AO": 0.44,
-    "KH": 0.44, "LA": 0.44, "MM": 0.44, "NP": 0.44, "UZ": 0.44, "BD": 0.44,
-    "VN": 0.47,  # tested, was 0.44
-    "GH": 0.46,  # tested, was 0.44
-    "EG": 0.50,  # tested, was 0.44
+    # ── ~0.54 — low-middle income ──
+    "CI": 0.54, "SN": 0.54, "CM": 0.54, "ZM": 0.54, "AO": 0.54,
+    "KH": 0.54, "LA": 0.54, "MM": 0.54, "NP": 0.54, "UZ": 0.54, "BD": 0.54,
+    "VN": 0.57,  # tested, was 0.54
+    "GH": 0.56,  # tested, was 0.54
+    "EG": 0.60,  # tested, was 0.54
 
-    # ── 0.40 floor, minus the tested markets below ──
-    "ET": 0.40, "ML": 0.40, "BF": 0.40, "NE": 0.40, "TD": 0.40,
-    "MZ": 0.40, "MW": 0.40, "MG": 0.40, "SD": 0.40, "GN": 0.40, "BJ": 0.40,
-    "PK": 0.42,  # tested, was 0.40
-    "TZ": 0.42,  # tested, was 0.40
-    "UG": 0.42,  # tested, was 0.40
-    "IN": 0.43,  # tested, was 0.40
-    "NG": 0.43,  # tested, was 0.40
-    "RW": 0.44,  # tested, was 0.40
-    "KE": 0.45,  # tested, was 0.40
+    # ── 0.50 floor, minus the tested markets below ──
+    "ET": 0.50, "ML": 0.50, "BF": 0.50, "NE": 0.50, "TD": 0.50,
+    "MZ": 0.50, "MW": 0.50, "MG": 0.50, "SD": 0.50, "GN": 0.50, "BJ": 0.50,
+    "PK": 0.52,  # tested, was 0.50
+    "TZ": 0.52,  # tested, was 0.50
+    "UG": 0.52,  # tested, was 0.50
+    "IN": 0.53,  # tested, was 0.50
+    "NG": 0.53,  # tested, was 0.50
+    "RW": 0.54,  # tested, was 0.50
+    "KE": 0.55,  # tested, was 0.50
 
-    "DEFAULT": 0.75,
+    "DEFAULT": 0.82,
 }
 
 
 # ─────────────────────────────────────────────
 #  BASE PRICES — already include 1.3333 multiplier
-#  Internal: $16.50/$41.25 target revenue
-#  Charged: $22/$55 (covers all fees/taxes)
+#  Internal: $11.25/$22.50/$45.00 target revenue
+#  Charged: $15/$30/$60 (covers all fees/taxes)
+#  2026-10: cut from $20/$50/$100 — VEKTRA is sold to individuals, and the
+#  old USD base read as B2B pricing.
 # ─────────────────────────────────────────────
 BASE_USD_MONTHLY = {
-    "tier1": 20,
-    "tier2": 50,
-    "tier3": 100,
+    "tier1": 15,
+    "tier2": 30,
+    "tier3": 60,
 }
+
+# Quick Money campaign (3 months paid, 4 months access). Shared by
+# /calculate, payment initialization and access granting, so an offer flag
+# sent after the deadline can never buy campaign access.
+CAMPAIGN_TIMEZONE = datetime.timezone(datetime.timedelta(hours=3))
+SPECIAL_OFFER_DEADLINE = datetime.datetime(2026, 9, 9, 23, 59, 59, tzinfo=CAMPAIGN_TIMEZONE)
+SPECIAL_OFFER_ACCESS_UNTIL = datetime.datetime(2027, 1, 1, 23, 59, 59, tzinfo=CAMPAIGN_TIMEZONE)
+
+
+def special_offer_active(at: Optional[datetime.datetime] = None) -> bool:
+    at = at or datetime.datetime.now(datetime.timezone.utc)
+    if at.tzinfo is None:  # DB timestamps are naive UTC
+        at = at.replace(tzinfo=datetime.timezone.utc)
+    return at < SPECIAL_OFFER_DEADLINE
 
 # Discount caps per tier
 DISCOUNT_CAPS = {
@@ -262,17 +285,17 @@ DISCOUNT_CAPS = {
 def calculate_discount(days: int, tier: str) -> float:
     """
     Discount formula: ((((days-30)/336)^k)/m)
-    k = 1.9 (between 1.5-2.0)
-    m = 6 for tier1 (Vector), 5 for tier2 (Apex)
+    k = 2 (quadratic — short stays near full price, long stays earn most)
+    m = 6 for tier1 (Vector), 5 for tier2 (Apex), 4 for tier3 (Founder)
     """
     if days <= 30:
         return 0.0
-    
-    k = 1.9
+
+    k = 2
     m = 6 if tier == "tier1" else 5 if tier == "tier2" else 4
     progress = ((days - 30) / 336) ** k
     discount_rate = progress / m
-    return discount_rate  # Cap at 25%
+    return discount_rate  # Peaks at 1/m at 366 days (max 25%)
 
 
 def calculate_bonus_days(discount_rate: float, days: int) -> int:
@@ -374,6 +397,63 @@ def local_price_to_days(amount: float, tier: str, country_code: str, currency: s
         ),
     )
 
+
+# FX is refreshed daily, so a quote can drift slightly before the charge
+# clears. Payments within this margin of the 30-day price still count.
+UNDERPAYMENT_TOLERANCE = 0.05
+
+
+class PaidAccess(BaseModel):
+    tier: str
+    days: int
+    expires_at: datetime.datetime  # naive UTC, like the rest of the DB
+    amount: float
+    currency: str
+
+
+def paid_access_for_payment(payment, country_code: Optional[str]) -> Optional[PaidAccess]:
+    """What a succeeded payment actually bought, from the provider's own record.
+
+    Reads the amount/currency/metadata Paystack confirmed (stored in
+    external_response by verify or the webhook) rather than anything the
+    client sends afterwards, and maps the amount back onto the pricing curve.
+    Returns None when the charge is below the plan's 30-day price, so an
+    underpayment never grants access. Deterministic for a given payment, so
+    the webhook and /subscriptions/create agree and re-running either one
+    can't stretch access.
+    """
+    data = (payment.external_response or {}).get("data") or {}
+    metadata = data.get("metadata") if isinstance(data.get("metadata"), dict) else {}
+
+    tier = metadata.get("tier") or "tier1"
+    if tier not in BASE_USD_MONTHLY:
+        return None
+
+    if data.get("amount") is not None:
+        amount = float(data["amount"]) / 100  # Paystack reports subunits
+    elif payment.amount is not None:
+        amount = float(payment.amount)
+    else:
+        return None
+    currency = (data.get("currency") or payment.currency or "USD").upper()
+    country = country_code or "DEFAULT"
+    paid_at = payment.succeeded_at or payment.created_at or datetime.datetime.utcnow()
+
+    monthly = days_to_local_price(30, tier, country, currency)["total"]
+    floor = 1 - UNDERPAYMENT_TOLERANCE
+
+    offer_requested = str(metadata.get("special_offer", "false")).lower() == "true"
+    if offer_requested and special_offer_active(payment.created_at) and amount >= monthly * 3 * floor:
+        expires_at = SPECIAL_OFFER_ACCESS_UNTIL.astimezone(datetime.timezone.utc).replace(tzinfo=None)
+        return PaidAccess(tier=tier, days=(expires_at - paid_at).days, expires_at=expires_at,
+                          amount=amount, currency=currency)
+
+    if amount < monthly * floor:
+        return None
+    days = local_price_to_days(amount, tier, country, currency)
+    return PaidAccess(tier=tier, days=days, expires_at=paid_at + datetime.timedelta(days=days),
+                      amount=amount, currency=currency)
+
 # ─────────────────────────────────────────────
 #  API MODELS
 # ─────────────────────────────────────────────
@@ -403,20 +483,14 @@ class PriceResponse(BaseModel):
 # ─────────────────────────────────────────────
 #  ENDPOINTS
 # ─────────────────────────────────────────────
-@router.post("/calculate", response_model=PriceResponse)
-async def calculate_price(
-    req: PriceRequest,
-    current_user: User = Depends(get_current_user)
-):
+@router.post("/calculate", response_model=PriceResponse, dependencies=[Depends(get_current_user)])
+async def calculate_price(req: PriceRequest):
     """Calculate final price — single source of truth."""
 
     await refresh_fx_cache_if_stale()
 
-    # Check if special offer is active
-    campaign_timezone = datetime.timezone(datetime.timedelta(hours=3))
-    SPECIAL_OFFER_DEADLINE = datetime.datetime(2026, 9, 9, 23, 59, 59, tzinfo=campaign_timezone)
-    now = datetime.datetime.now(campaign_timezone)
-    is_special_offer_active = req.special_offer and now < SPECIAL_OFFER_DEADLINE
+    now = datetime.datetime.now(CAMPAIGN_TIMEZONE)
+    is_special_offer_active = req.special_offer and special_offer_active(now)
     
     # If special offer is active, force 120 days (4 months) and apply 25% discount
     if is_special_offer_active:
@@ -483,7 +557,7 @@ async def calculate_price(
         
     # Set expiry date to Jan 1, 2027 for special offer, otherwise normal calculation
     if is_special_offer_active:
-        expires_at = datetime.datetime(2027, 1, 1, 23, 59, 59, tzinfo=campaign_timezone).isoformat()
+        expires_at = SPECIAL_OFFER_ACCESS_UNTIL.isoformat()
     else:
         expires_at = result["expires_at"]
     
@@ -504,79 +578,83 @@ async def calculate_price(
     )
 
 
-@router.get("/tiers")
-async def get_tiers(current_user: User = Depends(get_current_user)):
-    return {
-        "tiers": [
-            {
-                "id": "free",
-                "name": "Free",
-                "tagline": "Start your trajectory",
-                "features": [
-                    "7 days of tracking",
-                    "Basic daily log",
-                    "VEKTRA score",
-                    "One weekly preview report",
-                ],
-                "cta": "Current Plan",
-                "price_usd": 0,
-            },
-            {
-                "id": "tier1",
-                "name": "Vector",
-                "tagline": "For the focused builder",
-                "features": [
-                    "Unlimited daily logging",
-                    "Weekly AI harsh-truth reports",
-                    "Full score breakdown",
-                    "Streak tracking",
-                    "Financial engine",
-                    "Log history",
-                    "Birthday trajectory card",
-                ],
-                "cta": "Choose Vector",
-                "price_usd": 20,
-            },
-            {
-                "id": "tier2",
-                "name": "Apex",
-                "tagline": "For the serious operator",
-                "features": [
-                    "Everything in Vector",
-                    "Monthly deep reports",
-                    "Quarterly strategy report",
-                    "Custom AI tone",
-                    "Early feature access",
-                    "👑 Founder badge",
-                ],
-                "cta": "Choose Apex",
-                "price_usd": 50,
-            },
-            {
-                "id": "tier3",
-                "name": "Founder",
-                "tagline": "For the ambitious operator",
-                "features": [
-                    "Everything in Apex",
-                    "Priority support",
-                    "Advanced growth planning",
-                    "Early access to new modules",
-                ],
-                "cta": "Choose Founder",
-                "price_usd": 100,
-            }
-        ]
-    }
+def tier_catalog() -> list:
+    """Plan names, features and USD base prices — shared by /pricing/tiers
+    and /subscriptions/plans so the two screens can't disagree."""
+    return [
+        {
+            "id": "free",
+            "name": "Free",
+            "tagline": "Start your trajectory",
+            "features": [
+                f"{FREE_TIER_LOG_LIMIT} days of tracking",
+                "Basic daily log",
+                "VEKTRA score",
+                "One weekly preview report",
+            ],
+            "cta": "Current Plan",
+            "price_usd": 0,
+        },
+        {
+            "id": "tier1",
+            "name": "Vector",
+            "tagline": "For the focused builder",
+            "features": [
+                "Unlimited daily logging",
+                "Weekly AI harsh-truth reports",
+                "Full score breakdown",
+                "Streak tracking",
+                "Financial engine",
+                "Log history",
+                "Birthday trajectory card",
+            ],
+            "cta": "Choose Vector",
+            "price_usd": BASE_USD_MONTHLY["tier1"],
+        },
+        {
+            "id": "tier2",
+            "name": "Apex",
+            "tagline": "For the serious operator",
+            "features": [
+                "Everything in Vector",
+                "Monthly deep reports",
+                "Quarterly strategy report",
+                "Custom AI tone",
+                "Early feature access",
+                "👑 Founder badge",
+            ],
+            "cta": "Choose Apex",
+            "price_usd": BASE_USD_MONTHLY["tier2"],
+        },
+        {
+            "id": "tier3",
+            "name": "Founder",
+            "tagline": "For the ambitious operator",
+            "features": [
+                "Everything in Apex",
+                "Priority support",
+                "Advanced growth planning",
+                "Early access to new modules",
+            ],
+            "cta": "Choose Founder",
+            "price_usd": BASE_USD_MONTHLY["tier3"],
+        }
+    ]
 
 
-@router.get("/fx-rates")
-async def get_current_fx_rates(current_user: User = Depends(get_current_user)):
+@router.get("/tiers", dependencies=[Depends(get_current_user)])
+async def get_tiers():
+    return {"tiers": tier_catalog()}
+
+
+@router.get("/fx-rates", dependencies=[Depends(get_current_user)])
+async def get_current_fx_rates():
     """Returns current FX rates in use — for transparency."""
     return get_fx_rates()
 
 
-@router.get("/ppp-factors")
-async def get_current_ppp_factors(current_user: User = Depends(get_current_user)):
+@router.get("/ppp-factors", dependencies=[Depends(get_current_user)])
+async def get_current_ppp_factors():
     """
     Returns current PPP factors — lets the frontend's instant price preview
     (shown before /calculate resolves) stay in sync with this table instead

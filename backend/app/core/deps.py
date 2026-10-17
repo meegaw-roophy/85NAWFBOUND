@@ -8,6 +8,10 @@ from app import crud
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/token")
 
+# Daily logs a free account can make before it must upgrade. Free-tier
+# reports use zero-cost mock AI, so this cap is what bounds a free user.
+FREE_TIER_LOG_LIMIT = 10
+
 
 def get_effective_tier(user) -> str:
     """The tier a user is actually entitled to right now.

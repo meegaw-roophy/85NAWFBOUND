@@ -39,7 +39,7 @@
     "offers": {
       "@type": "AggregateOffer",
       "lowPrice": "0",
-      "highPrice": "100",
+      "highPrice": "60",
       "priceCurrency": "USD",
       "offerCount": "4"
     },
@@ -82,7 +82,7 @@
       --card: #ffffff;
       --card-hover: #f0f0f5;
       --accent: #6c63ff;
-      --pink: #ec4899;
+      --pink: #db2777;
       --text: #1a1a2e;
       --muted: #5a5a7a;
       --muted-2: #8888aa;
@@ -1630,7 +1630,7 @@
     </div>
 
     <div class="hero-note">
-      Start free with 7 days of logging. Upgrade when you're ready to keep going.
+      Start free with 10 days of logging. Upgrade when you're ready to keep going.
     </div>
 
     <a href="#earn" class="hero-earn">
@@ -2242,12 +2242,12 @@
         </div>
 
         <div class="pricing-period">
-          7-day free trial
+          10-day free trial
         </div>
 
         <ul class="pricing-features">
           <li>
-            7 days of daily logging
+            10 days of daily logging
           </li>
 
           <li>
@@ -2279,7 +2279,7 @@
         </div>
 
         <div class="pricing-price">
-          $20
+          $15
         </div>
 
         <div class="pricing-period">
@@ -2335,7 +2335,7 @@
         </div>
 
         <div class="pricing-price">
-          $50
+          $30
         </div>
 
         <div class="pricing-period">
@@ -2414,38 +2414,38 @@
         </div>
 
         <div class="earn-plan-toggle" role="group" aria-label="Plan your friend picks">
-          <button type="button" class="earn-plan-btn active" data-price="20" aria-pressed="true">Vector · $20</button>
-          <button type="button" class="earn-plan-btn" data-price="50" aria-pressed="false">Apex · $50</button>
+          <button type="button" class="earn-plan-btn active" data-price="15" aria-pressed="true">Vector · $15</button>
+          <button type="button" class="earn-plan-btn" data-price="30" aria-pressed="false">Apex · $30</button>
         </div>
 
         <div class="earn-ladder">
           <div class="earn-rung">
-            <div class="earn-rung-amt" data-rate="0.32">$6.40</div>
+            <div class="earn-rung-amt" data-rate="0.32">$4.80</div>
             <div class="earn-rung-bar" style="--h:100%">32%</div>
             <div class="earn-rung-label">1st payment</div>
           </div>
 
           <div class="earn-rung">
-            <div class="earn-rung-amt" data-rate="0.24">$4.80</div>
+            <div class="earn-rung-amt" data-rate="0.24">$3.60</div>
             <div class="earn-rung-bar" style="--h:75%">24%</div>
             <div class="earn-rung-label">2nd payment</div>
           </div>
 
           <div class="earn-rung">
-            <div class="earn-rung-amt" data-rate="0.16">$3.20</div>
+            <div class="earn-rung-amt" data-rate="0.16">$2.40</div>
             <div class="earn-rung-bar" style="--h:50%">16%</div>
             <div class="earn-rung-label">3rd payment</div>
           </div>
 
           <div class="earn-rung">
-            <div class="earn-rung-amt" data-rate="0.08">$1.60</div>
+            <div class="earn-rung-amt" data-rate="0.08">$1.20</div>
             <div class="earn-rung-bar" style="--h:25%">8%</div>
             <div class="earn-rung-label">4th payment</div>
           </div>
         </div>
 
         <div class="earn-card-foot">
-          Up to <strong id="earn-per-friend">$11.00</strong> per friend
+          Up to <strong id="earn-per-friend">$12.00</strong> per friend
           at the base monthly price.
         </div>
 
@@ -2466,13 +2466,13 @@
         <input type="range" id="earn-friends" min="1" max="100" value="10">
 
         <div class="earn-result">
-          <div class="earn-result-num" id="earn-total">$110.00</div>
+          <div class="earn-result-num" id="earn-total">$120.00</div>
           <div class="earn-result-sub">across their first four payments</div>
         </div>
 
         <div class="earn-result-row">
           <span>From their first payment alone</span>
-          <strong id="earn-first">$44.00</strong>
+          <strong id="earn-first">$48.00</strong>
         </div>
 
         <a
@@ -2857,7 +2857,7 @@
       if (!slider) return;
 
       const planBtns = document.querySelectorAll(".earn-plan-btn");
-      let price = 20;
+      let price = 15;
 
       const money = n => "$" + n.toLocaleString("en-US", {
         minimumFractionDigits: 2,

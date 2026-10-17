@@ -400,18 +400,20 @@ async function handlePaystackReturn() {
     const verifyData = await verifyRes.json();
 
     if (verifyRes.ok && verifyData.status === 'success') {
-      const plan = localStorage.getItem('vektra_pending_plan') || verifyData.tier || 'tier1';
+      // Plan and length are decided server-side from the amount Paystack
+      // actually charged, so only the payment is sent.
       const subRes = await wakeAwareFetch(`${API}/api/v1/subscriptions/create`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ payment_id: verifyData.payment_id, plan, duration_days: 30 })
+        body: JSON.stringify({ payment_id: verifyData.payment_id })
       });
 
       if (subRes.ok) {
+        const subscription = await subRes.json();
         localStorage.removeItem('vektra_pending_payment_id');
         localStorage.removeItem('vektra_pending_plan');
-        currentUser.tier = plan;
-        showToast('Subscription activated — welcome aboard! 🎉', 'success', 6000);
+        currentUser.tier = subscription.plan;
+        showToast(`Subscription activated — ${subscription.days_remaining} days unlocked 🎉`, 'success', 6000);
       } else {
         showToast('Payment confirmed but activation failed — contact support and mention reference ' + reference, 'error', 9000);
       }
@@ -1784,7 +1786,7 @@ async function submitLog() {
 
     // 3. Handle specific 403 error
     if (res.status === 403 && data.detail === 'free_tier_limit_reached') {
-      showToast('7-day free trial complete — upgrade to keep logging 🔥', 'warning', 5000);
+      showToast('10-day free trial complete — upgrade to keep logging 🔥', 'warning', 5000);
       setTimeout(() => {
         goTo('upgrade');
         openUpgrade();
@@ -4493,9 +4495,9 @@ function renderCurrentSubscription(subscription) {
   
   const planNames = {
     'free': 'Free Plan',
-    'tier1': 'Pro Plan',
-    'tier2': 'Premium Plan',
-    'tier3': 'Enterprise Plan'
+    'tier1': 'Vector Plan',
+    'tier2': 'Apex Plan',
+    'tier3': 'Founder Plan'
   };
   
   nameEl.textContent = planNames[subscription.plan] || subscription.plan;
@@ -5804,19 +5806,19 @@ function getLanguageName(code) {
 // ── Currency pricing by region ──
 function getPricingForCurrency(currency) {
   const pricing = {
-    'KES': { tier1: 20, tier2: 50, tier3: 100, symbol: 'KES', name: 'Kenya' },
-    'NGN': { tier1: 20, tier2: 50, tier3: 100, symbol: '₦', name: 'Nigeria' },
-    'GHS': { tier1: 20, tier2: 50, tier3: 100, symbol: '₵', name: 'Ghana' },
-    'ZAR': { tier1: 20, tier2: 50, tier3: 100, symbol: 'R', name: 'South Africa' },
-    'UGX': { tier1: 20, tier2: 50, tier3: 100, symbol: 'UGX', name: 'Uganda' },
-    'TZS': { tier1: 20, tier2: 50, tier3: 100, symbol: 'TZS', name: 'Tanzania' },
-    'USD': { tier1: 20, tier2: 50, tier3: 100, symbol: '$', name: 'US' },
-    'BRL': { tier1: 20, tier2: 50, tier3: 100, symbol: 'R$', name: 'Brazil' },
-    'MXN': { tier1: 20, tier2: 50, tier3: 100, symbol: '$', name: 'Mexico' },
-    'GBP': { tier1: 20, tier2: 50, tier3: 100, symbol: '£', name: 'UK' },
-    'EUR': { tier1: 20, tier2: 50, tier3: 100, symbol: '€', name: 'Europe' },
-    'INR': { tier1: 20, tier2: 50, tier3: 100, symbol: '₹', name: 'India' },
-    'PKR': { tier1: 20, tier2: 50, tier3: 100, symbol: '₨', name: 'Pakistan' },
+    'KES': { tier1: 15, tier2: 30, tier3: 60, symbol: 'KES', name: 'Kenya' },
+    'NGN': { tier1: 15, tier2: 30, tier3: 60, symbol: '₦', name: 'Nigeria' },
+    'GHS': { tier1: 15, tier2: 30, tier3: 60, symbol: '₵', name: 'Ghana' },
+    'ZAR': { tier1: 15, tier2: 30, tier3: 60, symbol: 'R', name: 'South Africa' },
+    'UGX': { tier1: 15, tier2: 30, tier3: 60, symbol: 'UGX', name: 'Uganda' },
+    'TZS': { tier1: 15, tier2: 30, tier3: 60, symbol: 'TZS', name: 'Tanzania' },
+    'USD': { tier1: 15, tier2: 30, tier3: 60, symbol: '$', name: 'US' },
+    'BRL': { tier1: 15, tier2: 30, tier3: 60, symbol: 'R$', name: 'Brazil' },
+    'MXN': { tier1: 15, tier2: 30, tier3: 60, symbol: '$', name: 'Mexico' },
+    'GBP': { tier1: 15, tier2: 30, tier3: 60, symbol: '£', name: 'UK' },
+    'EUR': { tier1: 15, tier2: 30, tier3: 60, symbol: '€', name: 'Europe' },
+    'INR': { tier1: 15, tier2: 30, tier3: 60, symbol: '₹', name: 'India' },
+    'PKR': { tier1: 15, tier2: 30, tier3: 60, symbol: '₨', name: 'Pakistan' },
   };
   return pricing[currency] || pricing['USD'];
 }
@@ -5828,7 +5830,7 @@ function getPricingForCurrency(currency) {
 let pricingReferenceData = null;
 
 async function loadPricingReferenceData() {
-  const CACHE_KEY = 'vektra_pricing_reference';
+  const CACHE_KEY = 'vektra_pricing_reference_v2'; // v2: 2026-10 PPP rebase
   const ONE_DAY = 24 * 60 * 60 * 1000;
 
   try {
@@ -5859,7 +5861,7 @@ async function loadPricingReferenceData() {
 
 function getTierPreviewPrice(tier, currency = 'USD') {
   const pricing = getPricingForCurrency(currency);
-  const base = pricing[tier] || pricing.tier1 || 20;
+  const base = pricing[tier] || pricing.tier1 || 15;
 
   // Fallback only used before loadPricingReferenceData() has ever resolved
   // (e.g. this screen's very first paint) — deliberately not kept precise
@@ -5874,7 +5876,7 @@ function getTierPreviewPrice(tier, currency = 'USD') {
   const fx = pricingReferenceData?.fxRates?.[currency] ?? fallbackFx[currency] ?? 1;
   const ppp = pricingReferenceData?.pppFactors?.[currentUser?.country_code]
     ?? fallbackPpp[currency]
-    ?? 0.75; // matches backend DEFAULT
+    ?? 0.82; // matches backend DEFAULT
 
   return Math.round(base * ppp * fx);
 }
