@@ -21,4 +21,7 @@ venv/
 
 # Node
 node_modules/
-backend/vektra_dev.db 
+
+# Local databases and runtime caches
+*.db
+backend/app/api/v1/fx_cache.json
