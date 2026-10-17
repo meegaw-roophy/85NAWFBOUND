@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [main, master]
 
+# Tests only need to read the code; don't hand the job a token that can push.
+permissions:
+  contents: read
+
 jobs:
   test:
     runs-on: ubuntu-latest
