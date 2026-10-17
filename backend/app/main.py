@@ -37,6 +37,26 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+SECURITY_HEADERS = {
+    "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "DENY",
+    "Referrer-Policy": "strict-origin-when-cross-origin",
+}
+# The API only returns JSON, so it never needs to load anything. /docs and
+# /redoc pull Swagger/ReDoc assets from a CDN, so they're left out.
+API_CSP = "default-src 'none'; frame-ancestors 'none'"
+
+
+@app.middleware("http")
+async def add_security_headers(request, call_next):
+    response = await call_next(request)
+    response.headers.update(SECURITY_HEADERS)
+    if not request.url.path.startswith(("/docs", "/redoc")):
+        response.headers["Content-Security-Policy"] = API_CSP
+    return response
+
+
 app.include_router(v1_router, prefix="/api/v1")
 
 @app.get("/")
