@@ -45,7 +45,7 @@ var e=ttq._i[t]||[],n=0;n<ttq.methods.length;n++)ttq.setAndDefer(e,ttq.methods[n
 </div>
 
 <!-- Notification Panel -->
-<div id="notification-panel" style="position:fixed;top:80px;left:20px;width:320px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1rem;z-index:9998;display:none;box-shadow:0 10px 40px rgba(0,0,0,0.3)">
+<div id="notification-panel" style="position:fixed;top:80px;left:20px;width:320px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1rem;z-index:9998;display:none;box-shadow:0 10px 40px var(--shadow);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
     <div style="font-size:14px;font-weight:700">Notifications</div>
     <button onclick="clearNotifications()" style="padding:4px 8px;font-size:11px;background:transparent;border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-secondary);cursor:pointer;font-family:var(--font)">Clear All</button>
@@ -794,84 +794,168 @@ var e=ttq._i[t]||[],n=0;n<ttq.methods.length;n++)ttq.setAndDefer(e,ttq.methods[n
   </div>
 
   <!-- Report Type Selector -->
-  <div style="display:flex;gap:8px;margin-bottom:1.5rem">
-    <button id="rpt-btn-daily" onclick="switchReport('daily')" 
-      style="flex:1;padding:10px;border-radius:var(--radius-sm);border:2px solid var(--accent);background:rgba(108,99,255,0.15);color:var(--text-primary);cursor:pointer;font-size:13px;font-weight:600;font-family:var(--font)">
+  <div style="display:flex;gap:10px;margin-bottom:1.5rem">
+    <button id="rpt-btn-daily" onclick="switchReport('daily')"
+      style="flex:1;padding:12px;border-radius:var(--radius-sm);border:2px solid var(--accent);background:rgba(108,99,255,0.15);color:var(--text-primary);cursor:pointer;font-size:13px;font-weight:700;font-family:var(--font);transition:all 0.2s ease">
       Today
     </button>
     <button id="rpt-btn-weekly" onclick="switchReport('weekly')"
-      style="flex:1;padding:10px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;font-size:13px;font-weight:600;font-family:var(--font)">
+      style="flex:1;padding:12px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;font-size:13px;font-weight:600;font-family:var(--font);transition:all 0.2s ease">
       Weekly
     </button>
     <button id="rpt-btn-monthly" onclick="switchReport('monthly')"
-      style="flex:1;padding:10px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;font-size:13px;font-weight:600;font-family:var(--font)">
+      style="flex:1;padding:12px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;font-size:13px;font-weight:600;font-family:var(--font);transition:all 0.2s ease">
       Monthly
     </button>
     <button id="rpt-btn-quarterly" onclick="switchReport('quarterly')"
-      style="flex:1;padding:10px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;font-size:13px;font-weight:600;font-family:var(--font)">
+      style="flex:1;padding:12px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;font-size:13px;font-weight:600;font-family:var(--font);transition:all 0.2s ease">
       Quarterly
     </button>
   </div>
 
   <!-- Weekly Comparison -->
-  <div id="weekly-comparison" style="background:linear-gradient(135deg,#1a1a2e,#16213e);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
-    <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">vs Last Week</div>
-    <div id="comparison-metrics" style="display:flex;flex-direction:column;gap:8px">
-      <div style="display:flex;align-items:center;justify-content:center;height:40px;color:var(--text-muted);font-size:13px">Loading comparison...</div>
+  <div id="weekly-comparison" style="background:linear-gradient(135deg,var(--bg-card),var(--bg-secondary));border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem;margin-bottom:1.5rem;box-shadow:var(--card-shadow)">
+    <div style="font-size:12px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:1rem;font-weight:700">vs Last Week</div>
+    <div id="comparison-metrics" style="display:flex;flex-direction:column;gap:10px">
+      <div style="display:flex;align-items:center;justify-content:center;height:50px;color:var(--text-muted);font-size:14px">Loading comparison...</div>
     </div>
   </div>
 
   <!-- Score Card -->
-  <div style="background:linear-gradient(135deg,#1a1a2e,#16213e);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem;margin-bottom:1rem;text-align:center">
-    <div style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px">Composite VEKTRA Score</div>
-    <div id="report-score" style="font-size:56px;font-weight:800;background:linear-gradient(135deg,#6c63ff,#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1">—</div>
-    <div style="font-size:12px;color:var(--text-muted);margin-top:4px">out of 100</div>
-    <button class="btn-primary" style="width:100%;margin-top:16px" onclick="shareReportAsImage()">📸 Share as Image</button>
+  <div style="background:linear-gradient(135deg,var(--bg-card),var(--bg-secondary));border:1px solid var(--border);border-radius:var(--radius);padding:2rem;margin-bottom:1.5rem;text-align:center;box-shadow:var(--card-shadow);position:relative;overflow:hidden">
+    <div style="position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--accent),transparent);opacity:0.5"></div>
+    <div style="font-size:12px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:12px;font-weight:600">Composite VEKTRA Score</div>
+    <div id="report-score" style="font-size:64px;font-weight:900;background:linear-gradient(135deg,#6c63ff,#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1;filter:drop-shadow(0 4px 20px rgba(108,99,255,0.4))">—</div>
+    <div style="font-size:13px;color:var(--text-muted);margin-top:8px;font-weight:500">out of 100</div>
+    <button class="btn-primary" style="width:100%;margin-top:20px;padding:16px;font-size:15px" onclick="shareReportAsImage()">📸 Share as Image</button>
   </div>
 
   <!-- Quick Stats -->
-  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:1rem">
-    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:.75rem;text-align:center">
-      <div style="font-size:10px;color:var(--text-muted);margin-bottom:4px">UNIQUE DAYS</div>
-      <div id="report-days" style="font-size:20px;font-weight:700">—</div>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:1.5rem">
+    <div style="background:linear-gradient(135deg,var(--bg-card),var(--bg-secondary));border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;text-align:center;box-shadow:var(--card-shadow);transition:transform 0.2s ease,box-shadow 0.2s ease">
+      <div style="font-size:11px;color:var(--text-secondary);font-weight:600;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px">Unique Days</div>
+      <div id="report-days" style="font-size:28px;font-weight:800;color:var(--accent);text-shadow:0 0 20px var(--accent-glow)">—</div>
     </div>
-    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:.75rem;text-align:center">
-      <div style="font-size:10px;color:var(--text-muted);margin-bottom:4px">REPORT TIMER</div>
-      <div id="report-timer" style="font-size:20px;font-weight:700">—</div>
+    <div style="background:linear-gradient(135deg,var(--bg-card),var(--bg-secondary));border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;text-align:center;box-shadow:var(--card-shadow);transition:transform 0.2s ease,box-shadow 0.2s ease">
+      <div style="font-size:11px;color:var(--text-secondary);font-weight:600;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px">Report Timer</div>
+      <div id="report-timer" style="font-size:28px;font-weight:800;color:var(--warning)">—</div>
     </div>
-    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:.75rem;text-align:center">
-      <div style="font-size:10px;color:var(--text-muted);margin-bottom:4px">CASH FLOW</div>
-      <div id="report-cashflow" style="font-size:16px;font-weight:700">—</div>
+    <div style="background:linear-gradient(135deg,var(--bg-card),var(--bg-secondary));border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;text-align:center;box-shadow:var(--card-shadow);transition:transform 0.2s ease,box-shadow 0.2s ease">
+      <div style="font-size:11px;color:var(--text-secondary);font-weight:600;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px">Cash Flow</div>
+      <div id="report-cashflow" style="font-size:24px;font-weight:800;color:var(--success)">—</div>
     </div>
-    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:.75rem;text-align:center">
-      <div style="font-size:10px;color:var(--text-muted);margin-bottom:4px">GOALS HIT</div>
-      <div id="report-goals" style="font-size:20px;font-weight:700">—</div>
+    <div style="background:linear-gradient(135deg,var(--bg-card),var(--bg-secondary));border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;text-align:center;box-shadow:var(--card-shadow);transition:transform 0.2s ease,box-shadow 0.2s ease">
+      <div style="font-size:11px;color:var(--text-secondary);font-weight:600;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px">Goals Hit</div>
+      <div id="report-goals" style="font-size:28px;font-weight:800;color:var(--pink)">—</div>
     </div>
   </div>
 
-  <div id="report-readiness" style="display:block;background:rgba(236,72,153,0.08);border:1px solid rgba(236,72,153,0.3);border-radius:var(--radius-sm);padding:.85rem;margin-bottom:1rem;font-size:13px;color:var(--text-secondary)">Your weekly report arrives after at least 3 logged days. Keep tracking daily to unlock a meaningful trajectory analysis.</div>
+  <div id="report-readiness" style="display:block;background:linear-gradient(135deg,rgba(236,72,153,0.12),rgba(108,99,255,0.12));border:1px solid rgba(236,72,153,0.3);border-radius:var(--radius);padding:1.25rem;margin-bottom:1.5rem;font-size:14px;color:var(--text-secondary);line-height:1.6">Your weekly report arrives after at least 3 logged days. Keep tracking daily to unlock a meaningful trajectory analysis.</div>
 
   <!-- Inputs Recap - shown before the AI verdict so the analysis is traceable to real data, not a black box -->
-  <div id="report-inputs-recap" style="display:none;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
-    <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">Here's What You Logged</div>
-    <div id="report-inputs-recap-body" style="font-size:13px;color:var(--text-secondary);line-height:1.7"></div>
+  <div id="report-inputs-recap" style="display:none;background:linear-gradient(135deg,var(--bg-card),var(--bg-secondary));border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem;margin-bottom:1.5rem;box-shadow:var(--card-shadow)">
+    <div style="font-size:12px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:1rem;font-weight:700">Here's What You Logged</div>
+    <div id="report-inputs-recap-body" style="font-size:14px;color:var(--text-primary);line-height:1.8"></div>
   </div>
 
   <!-- AI Narrative -->
-  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem;margin-bottom:1rem;box-shadow:var(--card-shadow)">
-    <div style="font-size:12px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:1rem;font-weight:700">VEKTRA Analysis</div>
-    <div id="report-narrative" style="font-size:15px;color:var(--text-primary);line-height:1.9;white-space:pre-wrap;border-left:3px solid var(--accent);padding-left:16px">Your weekly trajectory summary appears once VEKTRA has enough data. Keep logging daily to unlock actionable insights, trend clarity, and a stronger momentum playbook.</div>
-    <div id="report-empty" style="display:none;text-align:center;padding:2rem">
-      <div style="font-size:48px;margin-bottom:1rem">📊</div>
-      <div style="font-size:16px;font-weight:600;color:var(--text-primary);margin-bottom:8px">Not enough data yet</div>
-      <div style="font-size:13px;color:var(--text-muted)">Log at least 3 days to unlock your first weekly report, built to reveal your trajectory and momentum.</div>
+  <div style="background:linear-gradient(135deg,var(--bg-card),var(--bg-secondary));border:1px solid var(--border);border-radius:var(--radius);padding:2rem;margin-bottom:1.5rem;box-shadow:var(--card-shadow);position:relative;overflow:hidden">
+    <div style="position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--accent),transparent);opacity:0.5"></div>
+    <div style="font-size:13px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:1.25rem;font-weight:700;display:flex;align-items:center;gap:8px">
+      <span style="font-size:18px">🧠</span> Deep Trajectory Analysis
+    </div>
+    <div id="report-narrative" style="font-size:16px;color:var(--text-primary);line-height:2;white-space:pre-wrap;border-left:4px solid var(--accent);padding-left:20px;position:relative">
+      Your weekly trajectory summary appears once VEKTRA has enough data. Keep logging daily to unlock actionable insights, trend clarity, and a stronger momentum playbook.
+    </div>
+    <div id="report-empty" style="display:none;text-align:center;padding:3rem">
+      <div style="font-size:64px;margin-bottom:1.5rem;filter:drop-shadow(0 4px 12px rgba(108,99,255,0.3))">📊</div>
+      <div style="font-size:18px;font-weight:700;color:var(--text-primary);margin-bottom:12px">Not enough data yet</div>
+      <div style="font-size:14px;color:var(--text-secondary);line-height:1.6">Log at least 3 days to unlock your first weekly report, built to reveal your trajectory and momentum.</div>
+    </div>
+  </div>
+
+  <!-- Trajectory Visualization -->
+  <div style="background:linear-gradient(135deg,var(--bg-card),var(--bg-secondary));border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem;margin-bottom:1.5rem;box-shadow:var(--card-shadow)">
+    <div style="font-size:12px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:1.25rem;font-weight:700">Trajectory Vector</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+      <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:1rem">
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px">DEVIATION FROM NORTH STAR</div>
+        <div id="trajectory-angle" class="trajectory-metric-value" style="font-size:32px;font-weight:800;color:var(--accent)">—°</div>
+        <div style="font-size:12px;color:var(--text-secondary);margin-top:4px">0° = Perfect alignment</div>
+      </div>
+      <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:1rem">
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px">MOMENTUM VELOCITY</div>
+        <div id="momentum-velocity" class="trajectory-metric-value" style="font-size:32px;font-weight:800;color:var(--success)">—</div>
+        <div style="font-size:12px;color:var(--text-secondary);margin-top:4px">Rate of trajectory change</div>
+      </div>
+    </div>
+    <div style="margin-top:1rem;padding:1rem;background:rgba(108,99,255,0.05);border-radius:var(--radius-sm);border-left:3px solid var(--accent)">
+      <div style="font-size:13px;color:var(--text-primary);line-height:1.6">
+        <strong>Why this matters:</strong> VEKTRA tracks not just what you do, but the DIRECTION you're moving. Unlike habit trackers that count checkboxes, we measure the VECTOR of your life - how close you are to your north star and how fast you're getting there.
+      </div>
+    </div>
+  </div>
+
+  <!-- VEKTRA Differentiator -->
+  <div style="background:linear-gradient(135deg,rgba(108,99,255,0.08),rgba(236,72,153,0.08));border:1px solid rgba(108,99,255,0.2);border-radius:var(--radius);padding:1.5rem;margin-bottom:1.5rem">
+    <div style="font-size:12px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:1rem;font-weight:700">Why VEKTRA ≠ Habit Trackers</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+      <div style="padding:12px;background:var(--bg-card);border-radius:var(--radius-sm);border:1px solid var(--border)">
+        <div style="font-size:20px;margin-bottom:8px">❌ Habit Trackers</div>
+        <div style="font-size:13px;color:var(--text-secondary);line-height:1.6">
+          • Count checkboxes<br>
+          • Surface-level metrics<br>
+          • No trajectory insight<br>
+          • Binary success/fail
+        </div>
+      </div>
+      <div style="padding:12px;background:var(--bg-card);border-radius:var(--radius-sm);border:1px solid var(--accent)">
+        <div style="font-size:20px;margin-bottom:8px">✅ VEKTRA</div>
+        <div style="font-size:13px;color:var(--text-primary);line-height:1.6">
+          • Measure life vectors<br>
+          • Deep pattern intelligence<br>
+          • Predictive trajectory<br>
+          • Composite 5-engine scoring
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pattern Recognition -->
+  <div style="background:linear-gradient(135deg,var(--bg-card),var(--bg-secondary));border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem;margin-bottom:1.5rem;box-shadow:var(--card-shadow)">
+    <div style="font-size:12px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:1.25rem;font-weight:700">Pattern Intelligence</div>
+    <div id="pattern-insights" style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--bg-secondary);border-radius:var(--radius-sm)">
+        <div style="font-size:24px">📈</div>
+        <div>
+          <div style="font-size:13px;font-weight:600;color:var(--text-primary)">Trend Analysis</div>
+          <div style="font-size:12px;color:var(--text-secondary)">Log more data to unlock trend insights</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--bg-secondary);border-radius:var(--radius-sm)">
+        <div style="font-size:24px">🔄</div>
+        <div>
+          <div style="font-size:13px;font-weight:600;color:var(--text-primary)">Cycle Detection</div>
+          <div style="font-size:12px;color:var(--text-secondary)">Identifying weekly/monthly patterns</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--bg-secondary);border-radius:var(--radius-sm)">
+        <div style="font-size:24px">⚡</div>
+        <div>
+          <div style="font-size:13px;font-weight:600;color:var(--text-primary)">Peak Performance Windows</div>
+          <div style="font-size:12px;color:var(--text-secondary)">Your best times for key activities</div>
+        </div>
+      </div>
     </div>
   </div>
 
   <!-- Engine Breakdown -->
-  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
-    <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">Signal Breakdown</div>
-    
+  <div style="background:linear-gradient(135deg,var(--bg-card),var(--bg-secondary));border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem;margin-bottom:1.5rem;box-shadow:var(--card-shadow)">
+    <div style="font-size:12px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:1.25rem;font-weight:700">Engine Signal Breakdown</div>
+    <div style="font-size:12px;color:var(--text-secondary);margin-bottom:1rem;line-height:1.6">
+      VEKTRA's 5-engine system goes beyond surface-level tracking. Each engine represents a core dimension of life success, measured as a composite signal rather than isolated metrics.
+    </div>
+
     <div class="engine-bar" id="bar-financial" data-label="Financial" data-color="#22c55e"></div>
     <div class="engine-bar" id="bar-mental" data-label="Mental" data-color="#6c63ff"></div>
     <div class="engine-bar" id="bar-execution" data-label="Execution" data-color="#ec4899"></div>
@@ -879,50 +963,88 @@ var e=ttq._i[t]||[],n=0;n<ttq.methods.length;n++)ttq.setAndDefer(e,ttq.methods[n
     <div class="engine-bar" id="bar-growth" data-label="Growth" data-color="#06b6d4"></div>
   </div>
 
+  <!-- Comparative Analysis -->
+  <div style="background:linear-gradient(135deg,var(--bg-card),var(--bg-secondary));border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem;margin-bottom:1.5rem;box-shadow:var(--card-shadow)">
+    <div style="font-size:12px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:1.25rem;font-weight:700">Comparative Intelligence</div>
+    <div id="comparative-insights" style="display:flex;flex-direction:column;gap:10px">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px;background:var(--bg-secondary);border-radius:var(--radius-sm)">
+        <span style="font-size:13px;color:var(--text-primary)">vs Last Week</span>
+        <span id="compare-week" style="font-size:14px;font-weight:700;color:var(--text-muted)">Loading...</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px;background:var(--bg-secondary);border-radius:var(--radius-sm)">
+        <span style="font-size:13px;color:var(--text-primary)">vs Last Month</span>
+        <span id="compare-month" style="font-size:14px;font-weight:700;color:var(--text-muted)">Loading...</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px;background:var(--bg-secondary);border-radius:var(--radius-sm)">
+        <span style="font-size:13px;color:var(--text-primary)">Top Decile of Users</span>
+        <span id="compare-percentile" style="font-size:14px;font-weight:700;color:var(--text-muted)">Loading...</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Actionable Insights -->
+  <div style="background:linear-gradient(135deg,var(--bg-card),var(--bg-secondary));border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem;margin-bottom:1.5rem;box-shadow:var(--card-shadow)">
+    <div style="font-size:12px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:1.25rem;font-weight:700">High-Impact Actions</div>
+    <div id="actionable-insights" style="display:flex;flex-direction:column;gap:12px">
+      <div style="padding:12px;background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.3);border-radius:var(--radius-sm)">
+        <div style="font-size:13px;font-weight:600;color:var(--success);margin-bottom:4px">🎯 Priority Focus</div>
+        <div style="font-size:13px;color:var(--text-primary);line-height:1.5">Continue logging to get personalized priority recommendations based on your trajectory data.</div>
+      </div>
+      <div style="padding:12px;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);border-radius:var(--radius-sm)">
+        <div style="font-size:13px;font-weight:600;color:var(--warning);margin-bottom:4px">⚠️ Risk Mitigation</div>
+        <div style="font-size:13px;color:var(--text-primary);line-height:1.5">VEKTRA will flag patterns that could derail your progress before they become problems.</div>
+      </div>
+      <div style="padding:12px;background:rgba(108,99,255,0.1);border:1px solid rgba(108,99,255,0.3);border-radius:var(--radius-sm)">
+        <div style="font-size:13px;font-weight:600;color:var(--accent);margin-bottom:4px">🚀 Opportunity Capture</div>
+        <div style="font-size:13px;color:var(--text-primary);line-height:1.5">Identify your highest-leverage activities that move the needle fastest.</div>
+      </div>
+    </div>
+  </div>
+
   <!-- Regenerate -->
-  <button class="btn-secondary" style="margin-bottom:3rem" onclick="loadReport()">↺ Regenerate Report</button>
+  <button class="btn-secondary" style="margin-bottom:2rem;width:100%" onclick="loadReport()">↺ Regenerate Report</button>
 
   <!-- Share Report -->
-  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
-    <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">Share Report</div>
-    
-    <div style="margin-bottom:12px">
-      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:8px">
-        <input type="checkbox" id="share-public" onchange="updateShareSettings()" style="accent-color:var(--accent)">
-        <span style="font-size:13px;color:var(--text-secondary)">Make publicly accessible</span>
+  <div style="background:linear-gradient(135deg,var(--bg-card),var(--bg-secondary));border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem;margin-bottom:1rem;box-shadow:var(--card-shadow)">
+    <div style="font-size:12px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:1.25rem;font-weight:700">Share Report</div>
+
+    <div style="margin-bottom:16px">
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;margin-bottom:12px;padding:8px;border-radius:var(--radius-sm);transition:background 0.2s ease">
+        <input type="checkbox" id="share-public" onchange="updateShareSettings()" style="accent-color:var(--accent);width:18px;height:18px">
+        <span style="font-size:14px;color:var(--text-primary);font-weight:500">Make publicly accessible</span>
       </label>
-      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:8px">
-        <input type="checkbox" id="share-circles" onchange="updateShareSettings()" style="accent-color:var(--accent)">
-        <span style="font-size:13px;color:var(--text-secondary)">Share with circles</span>
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;margin-bottom:12px;padding:8px;border-radius:var(--radius-sm);transition:background 0.2s ease">
+        <input type="checkbox" id="share-circles" onchange="updateShareSettings()" style="accent-color:var(--accent);width:18px;height:18px">
+        <span style="font-size:14px;color:var(--text-primary);font-weight:500">Share with circles</span>
       </label>
-      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:8px">
-        <input type="checkbox" id="share-anonymous" onchange="updateShareSettings()" style="accent-color:var(--accent)">
-        <span style="font-size:13px;color:var(--text-secondary)">Share anonymously (hide identity)</span>
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;margin-bottom:12px;padding:8px;border-radius:var(--radius-sm);transition:background 0.2s ease">
+        <input type="checkbox" id="share-anonymous" onchange="updateShareSettings()" style="accent-color:var(--accent);width:18px;height:18px">
+        <span style="font-size:14px;color:var(--text-primary);font-weight:500">Share anonymously (hide identity)</span>
       </label>
     </div>
-    
-    <div style="margin-bottom:12px">
-      <label for="share-message" style="font-size:12px;color:var(--text-muted);margin-bottom:6px;display:block">Custom message</label>
-      <textarea id="share-message" placeholder="Add a personal message..." style="width:100%;padding:10px 12px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:13px;font-family:var(--font);outline:none;resize:vertical;min-height:60px"></textarea>
+
+    <div style="margin-bottom:16px">
+      <label for="share-message" style="font-size:12px;color:var(--text-secondary);font-weight:600;margin-bottom:8px;display:block;text-transform:uppercase;letter-spacing:0.08em">Custom message</label>
+      <textarea id="share-message" placeholder="Add a personal message..." style="width:100%;padding:14px 16px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;font-family:var(--font);outline:none;resize:vertical;min-height:80px;line-height:1.6;transition:border-color 0.2s ease,box-shadow 0.2s ease"></textarea>
     </div>
-    
-    <div style="margin-bottom:12px">
-      <label for="share-theme" style="font-size:12px;color:var(--text-muted);margin-bottom:6px;display:block">Theme</label>
-      <select id="share-theme" onchange="updateShareSettings()" style="width:100%;padding:10px 12px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:13px;font-family:var(--font);outline:none">
+
+    <div style="margin-bottom:16px">
+      <label for="share-theme" style="font-size:12px;color:var(--text-secondary);font-weight:600;margin-bottom:8px;display:block;text-transform:uppercase;letter-spacing:0.08em">Theme</label>
+      <select id="share-theme" onchange="updateShareSettings()" style="width:100%;padding:14px 16px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;font-family:var(--font);outline:none;cursor:pointer">
         <option value="dark">Dark</option>
         <option value="light">Light</option>
         <option value="custom">Custom</option>
       </select>
     </div>
-    
-    <div id="share-link-container" style="display:none;margin-bottom:12px">
-      <label for="share-link" style="font-size:12px;color:var(--text-muted);margin-bottom:6px;display:block">Share link</label>
-      <div style="display:flex;gap:8px">
-        <input id="share-link" type="text" readonly style="flex:1;padding:10px 12px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:12px;font-family:var(--font);outline:none">
-        <button onclick="copyShareLink()" style="padding:10px 16px;background:var(--accent);border:none;border-radius:var(--radius-sm);color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font)">Copy</button>
+
+    <div id="share-link-container" style="display:none;margin-bottom:16px">
+      <label for="share-link" style="font-size:12px;color:var(--text-secondary);font-weight:600;margin-bottom:8px;display:block;text-transform:uppercase;letter-spacing:0.08em">Share link</label>
+      <div style="display:flex;gap:10px">
+        <input id="share-link" type="text" readonly style="flex:1;padding:14px 16px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:13px;font-family:var(--font);outline:none">
+        <button onclick="copyShareLink()" style="padding:14px 24px;background:linear-gradient(135deg,var(--accent),var(--pink));border:none;border-radius:var(--radius-sm);color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:var(--font);transition:transform 0.2s ease,box-shadow 0.2s ease">Copy</button>
       </div>
     </div>
-    
+
     <button class="btn-primary" onclick="saveShareSettings()">Save Sharing Settings</button>
   </div>
 
@@ -1666,21 +1788,6 @@ var e=ttq._i[t]||[],n=0;n<ttq.methods.length;n++)ttq.setAndDefer(e,ttq.methods[n
       </div>
       <div id="settings-reminder-success" style="display:none;color:var(--success);font-size:13px;margin-bottom:8px">✓ Reminder updated</div>
       <button class="btn-primary" onclick="updateReminder()" style="margin-top:.5rem">Save Reminder</button>
-    </div>
-
-    <!-- Appearance -->
-    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
-      <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">Appearance</div>
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
-        <div>
-          <div style="font-size:14px;color:var(--text-primary);font-weight:500">Dark Mode</div>
-          <div style="font-size:12px;color:var(--text-muted)">Use dark theme</div>
-        </div>
-        <label style="display:flex;align-items:center;cursor:pointer">
-          <input type="checkbox" id="settings-darkmode" onchange="toggleDarkMode()" style="width:44px;height:24px;appearance:none;background:var(--border);border-radius:12px;position:relative;cursor:pointer;transition:background .3s">
-          <span style="position:absolute;top:2px;left:2px;width:20px;height:20px;background:var(--text-primary);border-radius:50%;transition:transform .3s;transform:translateX(0)" id="darkmode-toggle"></span>
-        </label>
-      </div>
     </div>
 
     <!-- Data Management -->

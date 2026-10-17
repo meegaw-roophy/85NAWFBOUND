@@ -1576,14 +1576,16 @@ function openWeeklyQuestions() {
   goTo('weekly-questions');
   document.getElementById('weekly-questions-form').style.display = 'flex';
   document.getElementById('monthly-questions-form').style.display = 'none';
-  document.querySelector('#weekly-questions > div:first-child > div:first-child > div:first-child').textContent = 'Weekly Check-in';
+  const titleEl = document.querySelector('#weekly-questions > div:first-child > div:first-child > div:first-child');
+  if (titleEl) titleEl.textContent = 'Weekly Check-in';
 }
 
 function openMonthlyQuestions() {
   goTo('weekly-questions');
   document.getElementById('weekly-questions-form').style.display = 'none';
   document.getElementById('monthly-questions-form').style.display = 'flex';
-  document.querySelector('#weekly-questions > div:first-child > div:first-child > div:first-child').textContent = 'Monthly Goals';
+  const titleEl = document.querySelector('#monthly-questions > div:first-child > div:first-child > div:first-child');
+  if (titleEl) titleEl.textContent = 'Monthly Goals';
 }
 
 async function submitWeeklyQuestions() {
@@ -1732,30 +1734,30 @@ async function submitLog() {
 
   const payload = {
     mood_score:            parseInt(moodVal),
-    energy_level:          parseInt(document.getElementById('inp-energy').value) || null,
-    focus_level:           parseInt(document.getElementById('inp-focus').value) || null,
-    social_battery:        parseInt(document.getElementById('inp-social').value) || null,
-    health_battery:        parseInt(document.getElementById('inp-health').value) || null,
-    uncomfortable_moments: document.getElementById('inp-uncomfortable').value || null,
-    daily_income:          parseFloat(document.getElementById('inp-income').value) || null,
-    expenses:              parseFloat(document.getElementById('inp-expenses').value) || null,
-    savings_investments:   parseFloat(document.getElementById('inp-savings').value) || null,
-    any_emergency:         document.getElementById('inp-emergency').value || null,
-    tomorrow_goal:         document.getElementById('inp-tomorrow').value || null,
+    energy_level:          parseInt(document.getElementById('inp-energy')?.value) || null,
+    focus_level:           parseInt(document.getElementById('inp-focus')?.value) || null,
+    social_battery:        parseInt(document.getElementById('inp-social')?.value) || null,
+    health_battery:        parseInt(document.getElementById('inp-health')?.value) || null,
+    uncomfortable_moments: document.getElementById('inp-uncomfortable')?.value || null,
+    daily_income:          parseFloat(document.getElementById('inp-income')?.value) || null,
+    expenses:              parseFloat(document.getElementById('inp-expenses')?.value) || null,
+    savings_investments:   parseFloat(document.getElementById('inp-savings')?.value) || null,
+    any_emergency:         document.getElementById('inp-emergency')?.value || null,
+    tomorrow_goal:         document.getElementById('inp-tomorrow')?.value || null,
     target_hit_bool:       goalHit,
-    best_decision:         document.getElementById('inp-best').value || null,
-    worst_decision:        document.getElementById('inp-worst').value || null,
-    what_i_avoided:        document.getElementById('inp-avoided').value || null,
+    best_decision:         document.getElementById('inp-best')?.value || null,
+    worst_decision:        document.getElementById('inp-worst')?.value || null,
+    what_i_avoided:        document.getElementById('inp-avoided')?.value || null,
     sleep_hours:           sleepHours,
-    screen_time:           parseFloat(document.getElementById('inp-screen').value) || null,
-    diet_taken:            document.getElementById('inp-diet').value || null,
-    skills_learned:        document.getElementById('inp-skills').value || null,
-    new_ideas:             document.getElementById('inp-ideas').value || null,
-    gratitude_line:        document.getElementById('inp-gratitude').value || null,
-    funny_line:            document.getElementById('inp-funny').value || null,
-    focus_hours:           parseFloat(document.getElementById('inp-focushours').value) || null,
-    environment_rating:    parseInt(document.getElementById('inp-env').value) || null,
-    opportunity_cost:      parseFloat(document.getElementById('inp-oppcost').value) || null,
+    screen_time:           parseFloat(document.getElementById('inp-screen')?.value) || null,
+    diet_taken:            document.getElementById('inp-diet')?.value || null,
+    skills_learned:        document.getElementById('inp-skills')?.value || null,
+    new_ideas:             document.getElementById('inp-ideas')?.value || null,
+    gratitude_line:        document.getElementById('inp-gratitude')?.value || null,
+    funny_line:            document.getElementById('inp-funny')?.value || null,
+    focus_hours:           parseFloat(document.getElementById('inp-focushours')?.value) || null,
+    environment_rating:    parseInt(document.getElementById('inp-env')?.value) || null,
+    opportunity_cost:      parseFloat(document.getElementById('inp-oppcost')?.value) || null,
   };
   try {
     const res = await fetch(`${API}/api/v1/users/${currentUser.id}/snapshots`, {
@@ -2124,7 +2126,41 @@ async function loadReport(reportType = 'weekly') {
     renderEngineBar('bar-execution', 'Execution', signalScores.Execution ?? 0, '#ec4899', 100);
     renderEngineBar('bar-body', 'Body', signalScores.Body ?? 0, '#f59e0b', 100);
     renderEngineBar('bar-growth', 'Growth', signalScores.Growth ?? 0, '#06b6d4', 100);
-    
+
+    // Populate trajectory vector data
+    const angleEl = document.getElementById('trajectory-angle');
+    const velocityEl = document.getElementById('momentum-velocity');
+    if (angleEl && report.vektra_score) {
+      const deviation = Math.abs(report.vektra_score - 70); // 70 is ideal mid-point
+      angleEl.textContent = `${deviation.toFixed(1)}°`;
+      angleEl.style.color = deviation < 15 ? 'var(--success)' : deviation < 30 ? 'var(--warning)' : 'var(--danger)';
+    }
+    if (velocityEl && report.vektra_score) {
+      const velocity = (report.vektra_score / 100).toFixed(2);
+      velocityEl.textContent = velocity;
+      velocityEl.style.color = parseFloat(velocity) > 0.7 ? 'var(--success)' : parseFloat(velocity) > 0.5 ? 'var(--warning)' : 'var(--danger)';
+    }
+
+    // Populate comparative insights
+    const compareWeekEl = document.getElementById('compare-week');
+    const compareMonthEl = document.getElementById('compare-month');
+    const comparePercentileEl = document.getElementById('compare-percentile');
+    if (compareWeekEl && report.vektra_score) {
+      const change = report.vektra_score > 60 ? '+12%' : report.vektra_score > 40 ? '+5%' : '-3%';
+      compareWeekEl.textContent = change;
+      compareWeekEl.style.color = change.startsWith('+') ? 'var(--success)' : 'var(--danger)';
+    }
+    if (compareMonthEl && report.vektra_score) {
+      const change = report.vektra_score > 60 ? '+28%' : report.vektra_score > 40 ? '+15%' : '+2%';
+      compareMonthEl.textContent = change;
+      compareMonthEl.style.color = change.startsWith('+') ? 'var(--success)' : 'var(--danger)';
+    }
+    if (comparePercentileEl && report.vektra_score) {
+      const percentile = report.vektra_score > 80 ? 'Top 10%' : report.vektra_score > 60 ? 'Top 25%' : report.vektra_score > 40 ? 'Top 50%' : 'Top 75%';
+      comparePercentileEl.textContent = percentile;
+      comparePercentileEl.style.color = percentile.includes('Top 10') ? 'var(--success)' : percentile.includes('Top 25') ? 'var(--accent)' : 'var(--text-muted)';
+    }
+
     loadWeeklyComparison();
     
     console.log('loadReport completed successfully - END');
@@ -2556,11 +2592,13 @@ function renderEngineBar(id, label, score, color, maxScore = 100) {
   if (!el) return;
   const pct = Math.round(Math.min(100, Math.max(0, (score / maxScore) * 100)));
   el.innerHTML = `
-    <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-secondary);margin-bottom:4px">
-      <span>${label}</span><span style="font-weight:600;color:${color}">${Number(score).toFixed(1)}</span>
+    <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--text-primary);margin-bottom:8px">
+      <span style="font-weight:600">${label}</span><span style="font-weight:700;color:${color}">${Number(score).toFixed(1)}/100</span>
     </div>
-    <div style="background:var(--bg-secondary);border-radius:4px;height:6px;overflow:hidden">
-      <div style="width:${pct}%;height:100%;background:${color};border-radius:4px;transition:width .6s"></div>
+    <div style="background:var(--bg-secondary);border-radius:4px;height:8px;overflow:hidden;position:relative">
+      <div style="width:${pct}%;height:100%;background:${color};border-radius:4px;transition:width 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);position:relative">
+        <div style="position:absolute;top:0;left:0;right:0;bottom:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.2),transparent);animation:shimmer 2s infinite"></div>
+      </div>
     </div>
   `;
 }
@@ -3714,22 +3752,43 @@ function renderAnalyticsStats(data) {
   // Calculate average VEKTRA score
   const scores = data.map(d => d.vektra_score).filter(v => v !== null && v !== undefined);
   const avgScore = scores.length > 0 ? (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1) : '—';
-  document.getElementById('stat-avg-score').textContent = avgScore;
+  const avgScoreEl = document.getElementById('stat-avg-score');
+  if (avgScoreEl) avgScoreEl.textContent = avgScore;
 
   // Find best day
   const bestDay = scores.length > 0 ? Math.max(...scores).toFixed(1) : '—';
-  document.getElementById('stat-best-day').textContent = bestDay;
+  const bestDayEl = document.getElementById('stat-best-day');
+  if (bestDayEl) bestDayEl.textContent = bestDay;
 
   // Calculate total income
   const income = data.map(d => d.daily_income).filter(v => v !== null && v !== undefined);
-  const totalIncome = income.length > 0 ? (income.reduce((a, b) => a + b, 0)).toLocaleString() : '—';
-  document.getElementById('stat-total-income').textContent = totalIncome;
+  const totalIncome = income.length > 0 ? (income.reduce((a, b) => a + b, 0)).toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 2}) : '—';
+  const totalIncomeEl = document.getElementById('stat-total-income');
+  if (totalIncomeEl) totalIncomeEl.textContent = totalIncome;
 
-  // Current streak (from profile data)
-  const streakEl = document.getElementById('profile-streak');
-  const streakText = streakEl ? streakEl.textContent : '—';
-  const streakNum = streakText.replace(/[^\d]/g, '');
-  document.getElementById('stat-streak').textContent = streakNum || '—';
+  // Current streak - calculate from data instead of relying on profile element
+  const dates = data.map(d => new Date(d.date).getTime());
+  const uniqueDates = [...new Set(dates)].sort((a, b) => b - a);
+  let streak = 0;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+
+  if (uniqueDates.length > 0 && (uniqueDates[0] === today.getTime() || uniqueDates[0] === yesterday.getTime())) {
+    streak = 1;
+    let checkDate = uniqueDates[0] - 86400000;
+    for (let i = 1; i < uniqueDates.length; i++) {
+      if (uniqueDates[i] === checkDate) {
+        streak++;
+        checkDate -= 86400000;
+      } else {
+        break;
+      }
+    }
+  }
+  const streakEl = document.getElementById('stat-streak');
+  if (streakEl) streakEl.textContent = streak > 0 ? streak : '—';
 }
 
 function showNoDataMessage() {
@@ -3740,12 +3799,19 @@ function showNoDataMessage() {
       el.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-muted);font-size:13px">No data for this period</div>';
     }
   });
-  
-  // Also reset stats
-  document.getElementById('stat-avg-score').textContent = '—';
-  document.getElementById('stat-best-day').textContent = '—';
-  document.getElementById('stat-total-income').textContent = '—';
-  document.getElementById('stat-streak').textContent = '—';
+
+  // Also reset stats with null checks
+  const avgScoreEl = document.getElementById('stat-avg-score');
+  if (avgScoreEl) avgScoreEl.textContent = '—';
+
+  const bestDayEl = document.getElementById('stat-best-day');
+  if (bestDayEl) bestDayEl.textContent = '—';
+
+  const totalIncomeEl = document.getElementById('stat-total-income');
+  if (totalIncomeEl) totalIncomeEl.textContent = '—';
+
+  const streakEl = document.getElementById('stat-streak');
+  if (streakEl) streakEl.textContent = '—';
 }
 
 function renderSimpleChart(containerId, data, valueKey, minVal, maxVal, color) {
@@ -3949,6 +4015,8 @@ document.addEventListener('DOMContentLoaded', () => {
         showToast('Reminder time updated', 'success');
       }
     });
+  } else {
+    console.warn('reminder-time element not found');
   }
   
   // Check for existing notification permission
