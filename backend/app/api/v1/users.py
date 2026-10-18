@@ -6,6 +6,7 @@ from app.db.models import User, Wager
 from app import crud
 from app.core.deps import get_current_user
 from app.core.security import verify_password, get_password_hash
+from app.schemas import UserOut as BaseUserOut
 from pydantic import BaseModel, EmailStr, ConfigDict
 from typing import Optional
 from datetime import datetime, date, time  # 1. FIXED: Imported date and time
@@ -39,30 +40,12 @@ class DeleteAccountRequest(BaseModel):
     password: str
 
 
-class UserOut(BaseModel):
-    id: int
-    username: str
-    email: str
-    full_name: Optional[str] = None
-    primary_goal: Optional[str] = None
-    north_star: Optional[str] = None
-    north_star_deadline: Optional[date] = None
-    initial_net_worth: Optional[float] = None
-    currency: Optional[str] = None
-    language: Optional[str] = None
-    preferred_feedback_tone: Optional[str] = None
-    ai_tone_language: Optional[str] = None
-    tier: Optional[str] = None
-    tier_expires_at: Optional[datetime] = None  # 2. RECOMMENDED: Kept as datetime/date or string
-    created_at: Optional[datetime] = None
-    current_location: Optional[str] = None
-    country_code: Optional[str] = None
+class UserOut(BaseUserOut):
+    """Profile as the app sees it: the shared user fields (including
+    effective_tier) plus profile-only extras."""
     dob: Optional[date] = None
     vek_credit_balance: Optional[int] = 0
     referral_count: Optional[int] = 0
-    
-    # 3. FIXED: Kept v2 syntax and removed the redundant v1 "class Config" block
-    model_config = ConfigDict(from_attributes=True)
 
 
 @router.get("/me", response_model=UserOut)

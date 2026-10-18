@@ -61,22 +61,31 @@ async def test_build_weekly_summary_separates_entries_from_unique_days():
     assert summary["signal_scores"]["Execution"] >= 0
 
 
-def test_mock_weekly_report_uses_unique_days_in_narrative():
-    client = AIClient()
-    report = client._mock_weekly_report({
-        "avg_vektra_score": 64.57,
-        "days_logged": 9,
-        "unique_days_logged": 6,
-        "report_countdown": 1,
-        "net_cash_flow": 3030,
-        "goals_hit": 7,
-        "goals_set": 8,
-        "avg_sleep": 7.67,
-    })
+@pytest.mark.asyncio
+async def test_template_narrative_is_built_from_real_insights():
+    import datetime as dt
+    days = [
+        # sleep lines up with score: long-sleep days score high, short-sleep days low
+        make_snapshot(timestamp=dt.datetime(2026, 7, d, 9), sleep_hours=sleep, vektra_score=score,
+                      daily_income=100, expenses=spend)
+        for d, sleep, score, spend in [
+            (1, 8.0, 80, 30), (2, 5.5, 55, 90), (3, 8.5, 82, 20), (4, 5.0, 50, 120),
+            (5, 7.5, 76, 40), (6, 6.0, 58, 70),
+        ]
+    ]
+    summary = await build_weekly_summary(days, period_days=7)
+    insights = summary["insights"]
 
-    assert "across 6 unique days logged" in report
-    assert "Days logged: 6/7" in report
-    assert "Weekly countdown: 1/7" in report
+    assert insights["drivers"][0]["factor"] == "sleep_hours"
+    assert insights["best_day"]["score"] == 82 and insights["worst_day"]["score"] == 50
+    assert insights["money"]["net"] == 600 - 370
+
+    narrative = AIClient().template_narrative(summary, "week")
+    assert set(narrative) >= {"headline", "verdict", "story", "wins", "leaks", "patterns",
+                              "money", "focus", "risk", "opportunity", "challenge"}
+    assert "sleep" in narrative["patterns"][0]["detail"]
+    assert "230" in narrative["money"]
+    assert narrative["focus"]["title"] == "Protect your sleep"
 
 
 @pytest.mark.asyncio

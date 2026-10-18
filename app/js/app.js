@@ -1966,6 +1966,8 @@ async function loadReport(reportType = 'weekly') {
   console.log('Navigating to reports screen');
   goTo('reports');
   console.log('Current screen after goTo:', currentScreen);
+  currentReportType = reportType;
+  await refreshCurrentUser(60 * 1000);
   updateReportTabLocks();
 
   showLoader('Generating your report...');
@@ -1987,6 +1989,14 @@ async function loadReport(reportType = 'weekly') {
       hideLoader();
       const data = await res.json().catch(() => ({}));
       console.error('Report generation failed:', data);
+      if (res.status === 403 && REPORT_TIER_REQUIREMENT[reportType]) {
+        // The server says the plan doesn't cover this; our copy was stale.
+        await refreshCurrentUser();
+        updateReportTabLocks();
+        showToast(data.detail || 'This report is part of Apex.', 'info', 5000);
+        openUpgrade('tier2');
+        return;
+      }
       showToast(data.detail || 'Could not generate report. Try again.', 'error');
       if (narrativeEl) narrativeEl.textContent = 'Could not load report. Try again.';
       return;
@@ -2107,7 +2117,15 @@ async function loadReport(reportType = 'weekly') {
       .replace(/<form[^>]*>/g, '') // Remove form tags
       .replace(/<\/form>/g, '')
       .trim();
-    if (narrativeEl) narrativeEl.innerHTML = formatted.replace(/\n/g, '<br>');
+    if (narrativeEl) {
+      if (content.narrative && reportReady) {
+        narrativeEl.style.whiteSpace = 'normal';
+        narrativeEl.innerHTML = renderNarrativeSections(content);
+      } else {
+        narrativeEl.style.whiteSpace = 'pre-wrap';
+        narrativeEl.innerHTML = escHtml(formatted).replace(/\n/g, '<br>');
+      }
+    }
 
     const recapEl = document.getElementById('report-inputs-recap');
     const recapBodyEl = document.getElementById('report-inputs-recap-body');
@@ -2121,45 +2139,13 @@ async function loadReport(reportType = 'weekly') {
       }
     }
 
-    renderEngineBar('bar-financial', 'Financial', signalScores.Financial ?? 0, '#22c55e', 100);
-    renderEngineBar('bar-mental', 'Mental', signalScores.Mental ?? 0, '#6c63ff', 100);
-    renderEngineBar('bar-execution', 'Execution', signalScores.Execution ?? 0, '#ec4899', 100);
-    renderEngineBar('bar-body', 'Body', signalScores.Body ?? 0, '#f59e0b', 100);
-    renderEngineBar('bar-growth', 'Growth', signalScores.Growth ?? 0, '#06b6d4', 100);
+    const engines = content.insights?.engines || {};
+    [['bar-financial', 'Financial', '#22c55e'], ['bar-mental', 'Mental', '#6c63ff'], ['bar-execution', 'Execution', '#ec4899'],
+     ['bar-body', 'Body', '#f59e0b'], ['bar-growth', 'Growth', '#06b6d4']].forEach(([id, name, color]) => {
+      renderEngineBar(id, name, signalScores[name] ?? null, color, 100, engines[name]?.detail);
+    });
 
-    // Populate trajectory vector data
-    const angleEl = document.getElementById('trajectory-angle');
-    const velocityEl = document.getElementById('momentum-velocity');
-    if (angleEl && report.vektra_score) {
-      const deviation = Math.abs(report.vektra_score - 70); // 70 is ideal mid-point
-      angleEl.textContent = `${deviation.toFixed(1)}°`;
-      angleEl.style.color = deviation < 15 ? 'var(--success)' : deviation < 30 ? 'var(--warning)' : 'var(--danger)';
-    }
-    if (velocityEl && report.vektra_score) {
-      const velocity = (report.vektra_score / 100).toFixed(2);
-      velocityEl.textContent = velocity;
-      velocityEl.style.color = parseFloat(velocity) > 0.7 ? 'var(--success)' : parseFloat(velocity) > 0.5 ? 'var(--warning)' : 'var(--danger)';
-    }
-
-    // Populate comparative insights
-    const compareWeekEl = document.getElementById('compare-week');
-    const compareMonthEl = document.getElementById('compare-month');
-    const comparePercentileEl = document.getElementById('compare-percentile');
-    if (compareWeekEl && report.vektra_score) {
-      const change = report.vektra_score > 60 ? '+12%' : report.vektra_score > 40 ? '+5%' : '-3%';
-      compareWeekEl.textContent = change;
-      compareWeekEl.style.color = change.startsWith('+') ? 'var(--success)' : 'var(--danger)';
-    }
-    if (compareMonthEl && report.vektra_score) {
-      const change = report.vektra_score > 60 ? '+28%' : report.vektra_score > 40 ? '+15%' : '+2%';
-      compareMonthEl.textContent = change;
-      compareMonthEl.style.color = change.startsWith('+') ? 'var(--success)' : 'var(--danger)';
-    }
-    if (comparePercentileEl && report.vektra_score) {
-      const percentile = report.vektra_score > 80 ? 'Top 10%' : report.vektra_score > 60 ? 'Top 25%' : report.vektra_score > 40 ? 'Top 50%' : 'Top 75%';
-      comparePercentileEl.textContent = percentile;
-      comparePercentileEl.style.color = percentile.includes('Top 10') ? 'var(--success)' : percentile.includes('Top 25') ? 'var(--accent)' : 'var(--text-muted)';
-    }
+    renderReportExtras(reportType, content, reportReady);
 
     loadWeeklyComparison();
     
@@ -2174,9 +2160,34 @@ async function loadReport(reportType = 'weekly') {
 }
 
 const REPORT_TIER_REQUIREMENT = { monthly: ['tier2', 'tier3'], quarterly: ['tier2', 'tier3'] };
+const PLAN_NAMES = { free: 'Free', tier1: 'Vector', tier2: 'Apex', tier3: 'Founder' };
+let currentReportType = 'weekly';
+let userRefreshedAt = 0;
+
+// The plan actually in force. `tier` is the label saved at purchase and keeps
+// its value after expiry; the server computes effective_tier from the expiry.
+function getUserTier() {
+  return currentUser?.effective_tier || currentUser?.tier || 'free';
+}
+
+// Re-read the user from the server. The copy in memory is loaded once at
+// startup, so a payment that cleared since then (webhook, another device)
+// would otherwise still look like the old plan.
+async function refreshCurrentUser(maxAgeMs = 0) {
+  if (!authToken || Date.now() - userRefreshedAt < maxAgeMs) return currentUser;
+  try {
+    const res = await fetch(`${API}/api/v1/users/me`, { headers: { 'Authorization': `Bearer ${authToken}` } });
+    if (res.ok) {
+      currentUser = await res.json();
+      window.currentUser = currentUser;
+      userRefreshedAt = Date.now();
+    }
+  } catch (e) { /* keep the copy we have */ }
+  return currentUser;
+}
 
 function updateReportTabLocks() {
-  const tier = currentUser?.tier || 'free';
+  const tier = getUserTier();
   Object.entries(REPORT_TIER_REQUIREMENT).forEach(([type, allowedTiers]) => {
     const btn = document.getElementById(`rpt-btn-${type}`);
     if (!btn) return;
@@ -2184,13 +2195,44 @@ function updateReportTabLocks() {
     const label = type.charAt(0).toUpperCase() + type.slice(1);
     btn.textContent = locked ? `🔒 ${label}` : label;
   });
+  renderPlanChip();
 }
 
-function switchReport(type) {
+function renderPlanChip() {
+  const chip = document.getElementById('report-plan-chip');
+  if (!chip) return;
+  const tier = getUserTier();
+  const name = PLAN_NAMES[tier] || 'Free';
+  const expires = currentUser?.tier_expires_at && tier !== 'free'
+    ? new Date(currentUser.tier_expires_at.endsWith('Z') ? currentUser.tier_expires_at : currentUser.tier_expires_at + 'Z')
+    : null;
+  const until = expires ? ` · until ${expires.toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}` : '';
+  const includes = tier === 'free' ? 'Weekly preview'
+    : tier === 'tier1' ? 'Daily + weekly reports'
+    : 'Daily, weekly, monthly + quarterly';
+  const cta = tier === 'tier2' || tier === 'tier3' ? '' : `<span style="color:var(--accent);font-weight:700;white-space:nowrap">${tier === 'free' ? 'Upgrade' : 'Get Apex'} →</span>`;
+  chip.innerHTML = `<span><strong style="color:var(--text-primary)">${name} plan</strong><span style="color:var(--text-muted)">${until} · ${includes}</span></span>${cta}`;
+  chip.style.display = 'flex';
+}
+
+function onPlanChipClick() {
+  const tier = getUserTier();
+  if (tier === 'tier2' || tier === 'tier3') return;
+  openUpgrade(tier === 'free' ? 'tier1' : 'tier2');
+}
+
+async function switchReport(type) {
   const required = REPORT_TIER_REQUIREMENT[type];
-  if (required && !required.includes(currentUser?.tier)) {
-    showToast(`${type.charAt(0).toUpperCase() + type.slice(1)} reports require the Apex tier or above.`, 'info');
-    openUpgrade();
+  if (required && !required.includes(getUserTier())) {
+    // Check with the server before showing a paywall to someone who may
+    // already have paid.
+    await refreshCurrentUser();
+    updateReportTabLocks();
+  }
+  if (required && !required.includes(getUserTier())) {
+    const label = type.charAt(0).toUpperCase() + type.slice(1);
+    showToast(`${label} reports are part of Apex. You're on ${PLAN_NAMES[getUserTier()] || 'Free'}.`, 'info', 5000);
+    openUpgrade('tier2');
     return;
   }
 
@@ -2587,14 +2629,209 @@ async function generateReport(e) {
 }
 
 // ── Render engine bar ──
-function renderEngineBar(id, label, score, color, maxScore = 100) {
+function escHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+const VERDICT_STYLE = {
+  climbing: { label: '▲ Climbing', color: 'var(--success)', bg: 'rgba(34,197,94,0.12)' },
+  holding: { label: '■ Holding', color: 'var(--warning)', bg: 'rgba(245,158,11,0.12)' },
+  sliding: { label: '▼ Sliding', color: 'var(--danger)', bg: 'rgba(239,68,68,0.12)' },
+};
+
+function periodWord(reportType) {
+  return reportType === 'quarterly' ? 'quarter' : reportType === 'monthly' ? 'month' : 'week';
+}
+
+function signed(n, digits = 0) {
+  const v = Number(n);
+  return `${v > 0 ? '+' : v < 0 ? '−' : '±'}${Math.abs(v).toFixed(digits)}`;
+}
+
+function renderNarrativeSections(content) {
+  const n = content.narrative || {};
+  const list = items => (items || []).map(i => `
+    <div style="padding:10px 12px;background:var(--bg-secondary);border-radius:var(--radius-sm);margin-bottom:8px">
+      <div style="font-size:13px;font-weight:700;color:var(--text-primary);margin-bottom:2px">${escHtml(i.title)}</div>
+      <div style="font-size:13px;color:var(--text-secondary);line-height:1.6">${escHtml(i.detail)}</div>
+    </div>`).join('');
+  const section = (icon, title, body) => body ? `
+    <div style="margin-top:1.25rem">
+      <div style="font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent);margin-bottom:8px">${icon} ${title}</div>
+      ${body}
+    </div>` : '';
+  const locked = content.locked_sections ? `
+    <div style="margin-top:1.25rem;padding:1.25rem;border:1px dashed var(--accent);border-radius:var(--radius-sm);text-align:center">
+      <div style="font-size:22px;margin-bottom:6px">🔒</div>
+      <div style="font-size:14px;font-weight:700;color:var(--text-primary);margin-bottom:6px">There's more in your data</div>
+      <div style="font-size:13px;color:var(--text-secondary);line-height:1.6;margin-bottom:12px">What went right, what's quietly costing you, every pattern VEKTRA found, your money read and a 3-step plan with targets.</div>
+      <button class="btn-primary" style="width:100%" onclick="openUpgrade('tier1')">Unlock the full report</button>
+    </div>` : '';
+
+  return `
+    <div style="font-size:20px;font-weight:800;line-height:1.35;color:var(--text-primary);margin-bottom:10px">${escHtml(n.headline)}</div>
+    <div style="font-size:15px;line-height:1.75;color:var(--text-primary)">${escHtml(n.story)}</div>
+    ${section('🏆', 'What went right', list(n.wins))}
+    ${section('⚠️', "What's holding you back", list(n.leaks))}
+    ${section('🔍', 'Patterns in your data', list(n.patterns))}
+    ${section('💰', 'Money', n.money ? `<div style="font-size:14px;line-height:1.7;color:var(--text-primary)">${escHtml(n.money)}</div>` : '')}
+    ${n.challenge ? `<div style="margin-top:1.25rem;padding:12px 14px;border-radius:var(--radius-sm);background:linear-gradient(135deg,rgba(108,99,255,0.15),rgba(236,72,153,0.15));font-size:14px;font-weight:700;color:var(--text-primary)">⚡ ${escHtml(n.challenge)}</div>` : ''}
+    ${locked}`;
+}
+
+// Everything on the report screen besides the narrative, from real data.
+// These cards used to show fixed placeholder text and comparison numbers
+// derived from score thresholds; when there's no data they now say so.
+function renderReportExtras(reportType, content, reportReady) {
+  const insights = content.insights || {};
+  const n = content.narrative || {};
+  const word = periodWord(reportType);
+  const vs = insights.vs_previous?.delta || {};
+  const trend = insights.trend;
+  const known = v => v !== null && v !== undefined;
+
+  const deltaEl = document.getElementById('report-score-delta');
+  if (deltaEl) {
+    deltaEl.style.display = known(vs.score) ? 'block' : 'none';
+    if (known(vs.score)) {
+      deltaEl.textContent = `${signed(vs.score, 1).replace(/\.0$/, '')} vs last ${word}`;
+      deltaEl.style.color = vs.score >= 0 ? 'var(--success)' : 'var(--danger)';
+    }
+  }
+  const verdictEl = document.getElementById('report-verdict');
+  const verdict = VERDICT_STYLE[n.verdict || trend?.direction];
+  if (verdictEl) {
+    verdictEl.style.display = verdict && reportReady ? 'block' : 'none';
+    if (verdict) {
+      verdictEl.textContent = verdict.label;
+      verdictEl.style.color = verdict.color;
+      verdictEl.style.background = verdict.bg;
+    }
+  }
+
+  const differentiator = document.getElementById('report-differentiator');
+  if (differentiator) differentiator.style.display = reportReady ? 'none' : 'block';
+
+  // Trend card
+  const angleEl = document.getElementById('trajectory-angle');
+  const angleSub = document.getElementById('trajectory-angle-sub');
+  const velocityEl = document.getElementById('momentum-velocity');
+  const velocityLabel = document.getElementById('momentum-velocity-label');
+  if (velocityLabel) velocityLabel.textContent = `NEXT ${word.toUpperCase()} AT THIS PACE`;
+  if (angleEl && velocityEl) {
+    if (trend) {
+      angleEl.textContent = signed(trend.delta, 1);
+      angleEl.style.color = trend.delta >= 3 ? 'var(--success)' : trend.delta <= -3 ? 'var(--danger)' : 'var(--warning)';
+      if (angleSub) angleSub.textContent = `${Math.round(trend.first_half_avg)} → ${Math.round(trend.second_half_avg)}, first half to second`;
+      velocityEl.textContent = trend.projection_next;
+      velocityEl.style.color = trend.projection_next >= (content.report_score || 0) ? 'var(--success)' : 'var(--danger)';
+    } else {
+      angleEl.textContent = '—';
+      angleEl.style.color = 'var(--text-muted)';
+      if (angleSub) angleSub.textContent = 'Needs 4+ logged days';
+      velocityEl.textContent = '—';
+      velocityEl.style.color = 'var(--text-muted)';
+    }
+  }
+
+  // Pattern intelligence
+  const patternsEl = document.getElementById('pattern-insights');
+  if (patternsEl) {
+    const rows = [];
+    (insights.drivers || []).forEach(d => rows.push(['📈', `Your ${d.label} lever`, d.text]));
+    if (insights.weekday) {
+      const w = insights.weekday;
+      rows.push(['🔄', `${w.best}s vs ${w.worst}s`, `You average ${w.best_avg} on ${w.best}s and ${w.worst_avg} on ${w.worst}s.`]);
+    }
+    if (insights.best_day) {
+      const b = insights.best_day;
+      rows.push(['⚡', `Best day: ${b.weekday} (${b.score})`, b.why?.length ? `You ${b.why.join(' and ')}.` : 'Your highest score this period.']);
+    }
+    if (insights.worst_day) {
+      const w = insights.worst_day;
+      rows.push(['🧊', `Toughest day: ${w.weekday} (${w.score})`, w.why?.length ? `You ${w.why.join(' and ')}.` : 'Your lowest score this period.']);
+    }
+    if (insights.consistency) {
+      const c = insights.consistency;
+      rows.push(['🔥', `${c.logged} of ${c.period_days} days logged`, `Longest streak: ${c.longest_streak} day${c.longest_streak === 1 ? '' : 's'}. Current: ${c.current_streak}.`]);
+    }
+    if (!rows.length) rows.push(['📊', 'Patterns need a few days', 'Log sleep, screen time and deep work daily. After 4 days VEKTRA shows which of them moves your score most.']);
+    const visible = content.locked_sections ? rows.slice(0, 1) : rows;
+    const hidden = rows.length - visible.length;
+    patternsEl.innerHTML = visible.map(([icon, title, text]) => `
+      <div style="display:flex;align-items:flex-start;gap:12px;padding:12px;background:var(--bg-secondary);border-radius:var(--radius-sm)">
+        <div style="font-size:22px;line-height:1">${icon}</div>
+        <div>
+          <div style="font-size:13px;font-weight:600;color:var(--text-primary)">${escHtml(title)}</div>
+          <div style="font-size:12px;color:var(--text-secondary);line-height:1.5">${escHtml(text)}</div>
+        </div>
+      </div>`).join('')
+      + (hidden ? `<div style="font-size:12px;color:var(--text-muted);text-align:center">🔒 ${hidden} more pattern${hidden === 1 ? '' : 's'} in the full report</div>` : '');
+  }
+
+  // Comparative intelligence: real deltas and an honest percentile
+  const setCompare = (id, labelId, label, text, good) => {
+    const labelEl = labelId && document.getElementById(labelId);
+    if (labelEl) labelEl.textContent = label;
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = text;
+    el.style.color = good === null ? 'var(--text-muted)' : good ? 'var(--success)' : 'var(--danger)';
+  };
+  setCompare('compare-week', 'compare-week-label', `Score vs last ${word}`,
+    known(vs.score) ? `${signed(vs.score, 1)} pts` : `No last ${word} yet`,
+    known(vs.score) ? vs.score >= 0 : null);
+  setCompare('compare-month', 'compare-month-label', `Goals hit vs last ${word}`,
+    known(vs.goal_hit_rate) ? `${signed(vs.goal_hit_rate)}%` : '—',
+    known(vs.goal_hit_rate) ? vs.goal_hit_rate >= 0 : null);
+  const pct = content.percentile;
+  setCompare('compare-percentile', null, null,
+    pct ? `Ahead of ${pct.better_than_pct}%` : 'Not enough users yet',
+    pct ? pct.better_than_pct >= 50 : null);
+
+  // High-impact actions from the plan
+  const actionsEl = document.getElementById('actionable-insights');
+  if (actionsEl) {
+    const card = (heading, color, rgb, action) => `
+      <div style="padding:12px;background:rgba(${rgb},0.1);border:1px solid rgba(${rgb},0.3);border-radius:var(--radius-sm)">
+        <div style="font-size:13px;font-weight:600;color:${color};margin-bottom:4px">${heading}: ${escHtml(action.title)}</div>
+        <div style="font-size:13px;color:var(--text-primary);line-height:1.5">${escHtml(action.detail)}</div>
+        ${action.target ? `<div style="margin-top:8px;font-size:12px;font-weight:700;color:${color}">🎯 Target: ${escHtml(action.target)}</div>` : ''}
+      </div>`;
+    if (n.focus && n.risk && n.opportunity) {
+      actionsEl.innerHTML = card('🎯 Priority Focus', 'var(--success)', '34,197,94', n.focus)
+        + card('⚠️ Risk Mitigation', 'var(--warning)', '245,158,11', n.risk)
+        + card('🚀 Opportunity Capture', 'var(--accent)', '108,99,255', n.opportunity);
+    } else if (content.locked_sections) {
+      actionsEl.innerHTML = `
+        <div style="padding:14px;border:1px dashed var(--accent);border-radius:var(--radius-sm);text-align:center;font-size:13px;color:var(--text-secondary);line-height:1.6">
+          🔒 Your 3-step plan (one focus, one risk, one opportunity, each with a target) is part of the full report.
+          <button class="btn-primary" style="width:100%;margin-top:10px" onclick="openUpgrade('tier1')">Unlock my plan</button>
+        </div>`;
+    } else {
+      actionsEl.innerHTML = `<div style="font-size:13px;color:var(--text-secondary);line-height:1.6">Your plan appears once this ${word} has enough logged days.</div>`;
+    }
+  }
+}
+
+async function regenerateReport() {
+  const previousId = currentReportId;
+  await loadReport(currentReportType);
+  if (currentReportId && currentReportId === previousId) {
+    showToast('Already up to date. Log today and it will refresh with the new data.', 'info', 4000);
+  }
+}
+
+function renderEngineBar(id, label, score, color, maxScore = 100, detail = '') {
   const el = document.getElementById(id);
   if (!el) return;
-  const pct = Math.round(Math.min(100, Math.max(0, (score / maxScore) * 100)));
+  const hasScore = score !== null && score !== undefined;
+  const pct = hasScore ? Math.round(Math.min(100, Math.max(0, (score / maxScore) * 100))) : 0;
   el.innerHTML = `
     <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--text-primary);margin-bottom:8px">
-      <span style="font-weight:600">${label}</span><span style="font-weight:700;color:${color}">${Number(score).toFixed(1)}/100</span>
+      <span style="font-weight:600">${label}</span><span style="font-weight:700;color:${hasScore ? color : 'var(--text-muted)'}">${hasScore ? Math.round(score) + '/100' : 'No data'}</span>
     </div>
+    ${detail ? `<div style="font-size:12px;color:var(--text-secondary);margin:-4px 0 8px">${escHtml(detail)}</div>` : ''}
     <div style="background:var(--bg-secondary);border-radius:4px;height:8px;overflow:hidden;position:relative">
       <div style="width:${pct}%;height:100%;background:${color};border-radius:4px;transition:width 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);position:relative">
         <div style="position:absolute;top:0;left:0;right:0;bottom:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.2),transparent);animation:shimmer 2s infinite"></div>
@@ -5572,6 +5809,8 @@ window.confirmPasswordReset = confirmPasswordReset;
 window.resendVerificationEmail = resendVerificationEmail;
 window.verifyEmailWithToken = verifyEmailWithToken;
 window.switchReport = switchReport;
+window.regenerateReport = regenerateReport;
+window.onPlanChipClick = onPlanChipClick;
 window.updateShareSettings = updateShareSettings;
 window.saveShareSettings = saveShareSettings;
 window.copyShareLink = copyShareLink;
@@ -5986,19 +6225,18 @@ let priceCalculateTimer = null;
 let priceLockInterval = null;
 let priceLockSeconds = 900; // 15 minutes
 
-async function openUpgrade() {
+async function openUpgrade(tier = 'tier1') {
+  if (!['tier1', 'tier2', 'tier3'].includes(tier)) tier = 'tier1';
   goTo('upgrade');
   await loadPricingReferenceData();
-  selectedTierUpgrade = 'tier1';
   document.getElementById('days-slider').value = 30;
   const currency = currentUser?.currency || 'USD';
-  document.getElementById('amount-input').value = getTierPreviewPrice('tier1', currency);
+  document.getElementById('amount-input').value = getTierPreviewPrice(tier, currency);
   document.getElementById('price-content').style.display = 'none';
   document.getElementById('price-loading').style.display = 'block';
   document.getElementById('milestone-badge').style.display = 'none';
   updateTierButtonLabels();
-  updateAmountConstraints();
-  await onSliderChange(30);
+  selectTier(tier);
 }
 
 function updateTierButtonLabels() {

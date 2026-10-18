@@ -9,11 +9,12 @@ import datetime
 import os
 from typing import Optional, List
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 from app import crud
 from app.db.models import Snapshot, User, Report
-from app.services.ai_client import ai_client
+from app.services.ai_client import ai_client, render_narrative_text
+from app.services.report_insights import ENGINE_WEIGHTS, build_insights
 
 
 def _safe_avg(values: list) -> Optional[float]:
@@ -32,12 +33,22 @@ def _safe_list(values: list, limit: int = 3) -> list:
     return [v for v in values if v and len(str(v)) > 3][:limit]
 
 
-async def build_weekly_summary(snapshots: List[Snapshot], period_days: int = 7) -> dict:
+PERIODS = {'weekly': (7, 'week'), 'monthly': (30, 'month'), 'quarterly': (90, 'quarter')}
+
+# Percentiles only mean something once enough people are in the pool.
+MIN_PERCENTILE_POOL = 20
+
+
+async def build_weekly_summary(
+    snapshots: List[Snapshot],
+    period_days: int = 7,
+    previous_snapshots: Optional[List[Snapshot]] = None,
+) -> dict:
     """
-    Compute period summary statistics from a list of snapshots (used for
-    both weekly and monthly reports - period_days controls the "X/N days
-    logged" framing and readiness threshold). This is what gets sent to the
-    AI and stored in the report.
+    Compute period summary statistics from a list of snapshots (weekly,
+    monthly or quarterly - period_days controls the "X/N days logged"
+    framing and readiness threshold). The raw totals stay at the top level
+    for older readers; the deeper analysis lives under 'insights'.
     """
     if not snapshots:
         return {}
@@ -102,30 +113,17 @@ async def build_weekly_summary(snapshots: List[Snapshot], period_days: int = 7) 
         if report_ready
         else f'Need {days_needed} more day{"s" if days_needed != 1 else ""} to reach {minimum_days_for_report} logged days for a richer {period_label}ly report.'
     )
-    component_scores = {
-        'Financial': round(min(100, max(0, avg_vektra_score or 50))),
-        'Mental': round(min(100, max(0, (avg_mood or 0) * 10))),
-        'Execution': round(min(100, max(0, goal_hit_rate or 0))),
-        'Body': round(min(100, max(0, (avg_sleep and avg_sleep / 9 * 100) or 0))),
-        'Growth': round(min(100, max(0, (skills_count / 7) * 100 if skills_count else 0))),
-    }
-    signal_scores = {
-        'Financial': component_scores['Financial'],
-        'Mental': component_scores['Mental'],
-        'Execution': component_scores['Execution'],
-        'Body': component_scores['Body'],
-        'Growth': component_scores['Growth'],
-    }
-    report_score = round(
-        (
-            signal_scores['Financial'] * 0.25
-            + signal_scores['Mental'] * 0.2
-            + signal_scores['Execution'] * 0.2
-            + signal_scores['Body'] * 0.2
-            + signal_scores['Growth'] * 0.15
-        ),
-        1,
-    )
+
+    # Engine scores are each day's real engine score (the same engine as the
+    # dashboard) averaged over the days the user logged that area. They used
+    # to be stand-ins - "Financial" was the overall score, "Growth" counted
+    # skills out of 7 regardless of period length.
+    insights = build_insights(snapshots, previous_snapshots, period_days)
+    signal_scores = {name: (insights.get('engines') or {}).get(name, {}).get('score') for name in ENGINE_WEIGHTS}
+    # Same number the "vs last period" comparison uses, so the two always agree.
+    report_score = (insights.get('current') or {}).get('score')
+    if report_score is None:
+        report_score = avg_vektra_score
 
     return {
         'days_logged':          len(snapshots),
@@ -135,6 +133,7 @@ async def build_weekly_summary(snapshots: List[Snapshot], period_days: int = 7) 
         'report_countdown':     report_countdown,
         'signal_scores':        signal_scores,
         'report_score':         report_score,
+        'insights':             insights,
         'avg_vektra_score':     avg_vektra_score,
         'avg_mood':             avg_mood,
         'avg_energy':           avg_energy,
@@ -151,7 +150,7 @@ async def build_weekly_summary(snapshots: List[Snapshot], period_days: int = 7) 
         'emergency_count':      emergency_count,
         'goals_set':            goals_set,
         'goals_hit':            goals_hit,
-        'goal_hit_rate':        round(goals_hit / goals_set * 100, 1) if goals_set > 0 else None,
+        'goal_hit_rate':        goal_hit_rate,
         'procrastination_days': procrast_days,
         'avg_leverage':         avg_leverage,
         'survival_runway':      survival_runway,
@@ -165,45 +164,68 @@ async def build_weekly_summary(snapshots: List[Snapshot], period_days: int = 7) 
     }
 
 
+async def _snapshots_between(db: AsyncSession, user_id: int, start, end) -> List[Snapshot]:
+    result = await db.execute(
+        select(Snapshot)
+        .where(Snapshot.user_id == user_id)
+        .where(Snapshot.timestamp >= start)
+        .where(Snapshot.timestamp <= end)
+        .order_by(Snapshot.timestamp.desc())
+    )
+    return result.scalars().all()
+
+
+async def score_percentile(db: AsyncSession, user_id: int, report_type: str, score, since) -> Optional[dict]:
+    """Share of other users whose latest report of this type scored below this one."""
+    if score is None:
+        return None
+    result = await db.execute(
+        select(Report.user_id, Report.vektra_score, Report.generated_at)
+        .where(Report.report_type == report_type)
+        .where(Report.status == 'ready')
+        .where(Report.generated_at >= since)
+        .where(Report.vektra_score.is_not(None))
+        .order_by(Report.generated_at)
+    )
+    latest = {uid: s for uid, s, _ in result.all() if uid != user_id}
+    if len(latest) < MIN_PERCENTILE_POOL:
+        return None
+    below = sum(1 for s in latest.values() if s < score)
+    return {'better_than_pct': round(below / len(latest) * 100), 'pool': len(latest)}
+
+
 async def generate_period_report(
     db: AsyncSession,
     user_id: int,
     report_type: str,
-    period_days: int,
     period_start: Optional[datetime.datetime] = None,
     period_end: Optional[datetime.datetime] = None,
+    full_access: bool = True,
 ) -> object:
     """
-    Full period report pipeline, shared by weekly (period_days=7) and
-    monthly (period_days=30) reports:
-    1. Pull last period_days of snapshots
-    2. Build summary statistics
-    3. Get user context (north star, tone preference)
-    4. Pull historical reports of the SAME report_type for AI memory
-       (monthly compares against past months, not past weeks)
-    5. Call AI to generate narrative with historical context
-    6. Store report in database
-    7. Return report object
-    """
-    period_label = 'week' if period_days <= 7 else 'quarter' if period_days > 60 else 'month'
+    Full period report pipeline, shared by weekly, monthly and quarterly:
+    1. Pull this period's snapshots, and the period before it for comparison
+    2. Compute the summary and insights (report_insights.py)
+    3. Pull the last few reports of the SAME type for the AI's memory
+    4. Write the narrative (Claude for paid tiers, the template otherwise)
+    5. Store and return the report
 
-    # ── Default to the last period_days ──────
+    full_access=False is the free weekly preview: real scores, engines and
+    the headline insight, with the deeper sections marked locked and no AI
+    cost.
+    """
+    period_days, period_label = PERIODS[report_type]
+
     if not period_end:
         period_end = datetime.datetime.utcnow()
     if not period_start:
         period_start = period_end - datetime.timedelta(days=period_days)
 
-    # ── Pull snapshots ───────────────────────
-    result = await db.execute(
-        select(Snapshot)
-        .where(Snapshot.user_id == user_id)
-        .where(Snapshot.timestamp >= period_start)
-        .where(Snapshot.timestamp <= period_end)
-        .order_by(Snapshot.timestamp.desc())
+    snapshots = await _snapshots_between(db, user_id, period_start, period_end)
+    previous = await _snapshots_between(
+        db, user_id, period_start - datetime.timedelta(days=period_days), period_start
     )
-    snapshots = result.scalars().all()
 
-    # ── Pull user context ────────────────────
     user_result = await db.execute(select(User).where(User.id == user_id))
     user = user_result.scalars().first()
     user_data = {
@@ -213,138 +235,74 @@ async def generate_period_report(
         'language': user.language if user else None,
     }
 
-    # ── Build period summary ─────────────────
-    summary = await build_weekly_summary(snapshots, period_days=period_days)
+    summary = await build_weekly_summary(snapshots, period_days=period_days, previous_snapshots=previous)
+    summary['access'] = 'full' if full_access else 'preview'
+    summary['latest_snapshot_id'] = (await db.execute(
+        select(func.max(Snapshot.id)).where(Snapshot.user_id == user_id)
+    )).scalar()
 
-    # ── Pull historical reports of the same type for AI Memory ──
-    historical_result = await db.execute(
-        select(Report)
-        .where(Report.user_id == user_id)
-        .where(Report.report_type == report_type)
-        .where(Report.status == 'ready')
-        .order_by(Report.generated_at.desc())
-        .limit(4)  # Last 4 periods for context
-    )
-    historical_reports = historical_result.scalars().all()
+    if summary.get('report_ready'):
+        historical_result = await db.execute(
+            select(Report)
+            .where(Report.user_id == user_id)
+            .where(Report.report_type == report_type)
+            .where(Report.status == 'ready')
+            .order_by(Report.generated_at.desc())
+            .limit(4)
+        )
+        historical_context = [
+            {
+                'period_end': r.period_end.isoformat() if r.period_end else None,
+                'score': r.vektra_score,
+                'mood': (r.content or {}).get('avg_mood'),
+                'sleep': (r.content or {}).get('avg_sleep'),
+                'net_cash_flow': (r.content or {}).get('net_cash_flow'),
+                'goal_hit_rate': (r.content or {}).get('goal_hit_rate'),
+            }
+            for r in historical_result.scalars().all() if r.content
+        ]
 
-    # Build historical context
-    historical_context = []
-    for report in historical_reports:
-        if report.content:
-            historical_context.append({
-                'period_start': report.period_start.isoformat() if report.period_start else None,
-                'period_end': report.period_end.isoformat() if report.period_end else None,
-                'vektra_score': report.vektra_score,
-                'summary': report.content.get('avg_vektra_score'),
-                'mood': report.content.get('avg_mood'),
-                'sleep': report.content.get('avg_sleep'),
-                'net_cash_flow': report.content.get('net_cash_flow'),
-                'goal_hit_rate': report.content.get('goal_hit_rate'),
-            })
+        written = await ai_client.generate_period_narrative(
+            user_data=user_data,
+            summary=summary,
+            period_label=period_label,
+            historical_context=historical_context,
+            force_template=not full_access,
+        )
+        narrative = written['narrative']
+        summary['narrative_source'] = written['source']
+        summary['percentile'] = await score_percentile(
+            db, user_id, report_type, summary.get('report_score'),
+            since=period_end - datetime.timedelta(days=period_days * 2),
+        )
 
-    # ── Generate AI narrative with memory ───────
-    summary_text = await ai_client.generate_weekly_report(
-        user_data=user_data,
-        weekly_summary=summary,
-        feedback_tone=user_data.get('feedback_tone', 'Balanced'),
-        historical_context=historical_context,
-        period_days=period_days,
-        period_label=period_label,
-    )
+        if full_access:
+            summary['narrative'] = narrative
+            summary_text = render_narrative_text(narrative)
+        else:
+            summary['narrative'] = {
+                'headline': narrative['headline'],
+                'verdict': narrative['verdict'],
+                'story': narrative['story'],
+                'patterns': narrative['patterns'][:1],
+            }
+            summary['locked_sections'] = ['wins', 'leaks', 'money', 'plan']
+            summary_text = (
+                f"🎯 {narrative['headline']}\n\n{narrative['story']}\n\n"
+                "🔒 Your full breakdown (what went right, what's quietly costing you, "
+                "every pattern in your data, your money read and a 3-step plan) unlocks on Vector and above."
+            )
+    else:
+        summary_text = summary.get(
+            'report_readiness_message', f'Log a few more days to unlock your {period_label}ly report.'
+        ) if summary else f'No logs in this {period_label} yet. Log today to start your report.'
 
-    # ── Calculate headline report score ─────
-    avg_score = summary.get('report_score', summary.get('avg_vektra_score'))
-
-    # ── Store report ──────────────────────────
     report_payload = {
         'period_start':  period_start,
         'period_end':    period_end,
         'report_type':   report_type,
         'status':        'ready',
         'summary_text':  summary_text,
-        'vektra_score':  avg_score,
-        'content':       summary,
-        'delivered':     False,
-        'opened':        False,
-    }
-    report = await crud.create_report(db, user_id, report_payload)
-    return report
-
-
-async def generate_weekly_report(
-    db: AsyncSession,
-    user_id: int,
-    period_start: Optional[datetime.datetime] = None,
-    period_end: Optional[datetime.datetime] = None,
-) -> object:
-    return await generate_period_report(db, user_id, 'weekly', 7, period_start, period_end)
-
-
-async def generate_monthly_report(
-    db: AsyncSession,
-    user_id: int,
-    period_start: Optional[datetime.datetime] = None,
-    period_end: Optional[datetime.datetime] = None,
-) -> object:
-    return await generate_period_report(db, user_id, 'monthly', 30, period_start, period_end)
-
-
-async def generate_quarterly_report(
-    db: AsyncSession,
-    user_id: int,
-    period_start: Optional[datetime.datetime] = None,
-    period_end: Optional[datetime.datetime] = None,
-) -> object:
-    return await generate_period_report(db, user_id, 'quarterly', 90, period_start, period_end)
-
-
-async def generate_weekly_preview(
-    db: AsyncSession,
-    user_id: int,
-    period_start: Optional[datetime.datetime] = None,
-    period_end: Optional[datetime.datetime] = None,
-) -> object:
-    """
-    Free-tier weekly report: the real computed scores (that's the core
-    "know your trajectory" hook, not something to paywall), but no AI
-    narrative - just an upgrade teaser instead of the wins/killers/
-    directive breakdown. Zero AI cost, matches the pricing page's actual
-    promise of "one weekly preview report" for Free.
-    """
-    period_days = 7
-    if not period_end:
-        period_end = datetime.datetime.utcnow()
-    if not period_start:
-        period_start = period_end - datetime.timedelta(days=period_days)
-
-    result = await db.execute(
-        select(Snapshot)
-        .where(Snapshot.user_id == user_id)
-        .where(Snapshot.timestamp >= period_start)
-        .where(Snapshot.timestamp <= period_end)
-        .order_by(Snapshot.timestamp.desc())
-    )
-    snapshots = result.scalars().all()
-    summary = await build_weekly_summary(snapshots, period_days=period_days)
-
-    if summary.get('report_ready'):
-        teaser = (
-            "🔒 This is a preview. Your full weekly breakdown — wins, the one metric "
-            "quietly holding you back, and a direct action plan generated fresh from "
-            "your own data — unlocks on Vector and above."
-        )
-    else:
-        teaser = summary.get(
-            'report_readiness_message',
-            'Log a few more days to unlock your weekly preview.',
-        )
-
-    report_payload = {
-        'period_start':  period_start,
-        'period_end':    period_end,
-        'report_type':   'weekly',
-        'status':        'ready',
-        'summary_text':  teaser,
         'vektra_score':  summary.get('report_score', summary.get('avg_vektra_score')),
         'content':       summary,
         'delivered':     False,
@@ -440,10 +398,8 @@ async def generate_and_store_report(
     """
     if report_type == 'daily':
         return await generate_daily_report(db, user_id, user_tier=user_tier)
-    if report_type == 'monthly':
-        return await generate_monthly_report(db, user_id, period_start, period_end)
-    if report_type == 'quarterly':
-        return await generate_quarterly_report(db, user_id, period_start, period_end)
-    if user_tier == 'free':
-        return await generate_weekly_preview(db, user_id, period_start, period_end)
-    return await generate_weekly_report(db, user_id, period_start, period_end)
+    full_access = user_tier != 'free'
+    return await generate_period_report(
+        db, user_id, report_type if report_type in PERIODS else 'weekly',
+        period_start, period_end, full_access=full_access,
+    )

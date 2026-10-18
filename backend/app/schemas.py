@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, ConfigDict, Field
+from pydantic import BaseModel, EmailStr, ConfigDict, Field, computed_field
 from typing import Optional, Any, List
 from datetime import datetime, date, time
 
@@ -37,6 +37,15 @@ class UserOut(BaseModel):
     country_code: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
+
+    @computed_field
+    @property
+    def effective_tier(self) -> str:
+        """The plan in force right now - `tier` keeps its label after expiry."""
+        tier = self.tier or 'free'
+        if tier != 'free' and self.tier_expires_at and self.tier_expires_at < datetime.utcnow():
+            return 'free'
+        return tier
 
 
 # ─────────────────────────────────────────────

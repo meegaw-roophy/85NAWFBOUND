@@ -1,6 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from typing import List, Optional
-from datetime import datetime
+from datetime import datetime, timedelta
+from sqlalchemy import func, select
+from app.db.models import Report, Snapshot
 import os
 from app.schemas import ReportCreate, ReportOut
 from app.db.session import get_session
@@ -27,6 +29,36 @@ async def list_reports(user_id: int, db: AsyncSession = Depends(get_session), cu
     return await crud.list_reports(db, user_id)
 
 
+PLAN_NAMES = {'free': 'Free', 'tier1': 'Vector', 'tier2': 'Apex', 'tier3': 'Founder'}
+REUSE_WINDOW = timedelta(hours=24)
+
+
+async def _reusable_report(db: AsyncSession, user_id: int, report_type: str, access: str):
+    """Latest report of this type if nothing has been logged since it was written.
+
+    Reports are regenerated on every tab switch and Regenerate tap; without
+    this each one was a fresh AI call for an identical answer.
+    """
+    report = (await db.execute(
+        select(Report)
+        .where(Report.user_id == user_id, Report.report_type == report_type, Report.status == 'ready')
+        .order_by(Report.generated_at.desc())
+        .limit(1)
+    )).scalars().first()
+    if not report or not report.generated_at or (report.content or {}).get('access') != access:
+        return None
+    if report.generated_at < datetime.utcnow() - REUSE_WINDOW:
+        return None
+    # Compared by id, not timestamp: log timestamps can sit ahead of UTC for
+    # users east of GMT, which would make every same-day report look stale.
+    newest_log = (await db.execute(
+        select(func.max(Snapshot.id)).where(Snapshot.user_id == user_id)
+    )).scalar()
+    if newest_log != (report.content or {}).get('latest_snapshot_id'):
+        return None
+    return report
+
+
 @router.post("/users/{user_id}/reports/generate", response_model=ReportOut)
 async def generate_report(user_id: int, payload: Optional[ReportCreate] = None, db: AsyncSession = Depends(get_session), current_user=Depends(get_current_user)):
     if current_user.id != user_id:
@@ -42,8 +74,14 @@ async def generate_report(user_id: int, payload: Optional[ReportCreate] = None, 
     if report_type in ('monthly', 'quarterly') and user_tier not in ('tier2', 'tier3'):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"{report_type.capitalize()} reports require the Apex tier or above.",
+            detail=f"{report_type.capitalize()} reports are part of Apex. You're on {PLAN_NAMES.get(user_tier, 'Free')}.",
         )
+
+    if report_type in ('weekly', 'monthly', 'quarterly') and not (period_start or period_end):
+        access = 'preview' if user_tier == 'free' else 'full'
+        cached = await _reusable_report(db, user_id, report_type, access)
+        if cached:
+            return cached
 
     rpt = await generate_and_store_report(db, user_id, report_type=report_type, period_start=period_start, period_end=period_end, user_tier=user_tier)
     return rpt

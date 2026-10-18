@@ -1,92 +1,328 @@
 """
 VEKTRA AI Client
 ================
-Handles all Claude or open-source API calls for report generation.
-Uses production-ready messaging endpoints and processes background tasks safely.
-Falls back to a structured mathematical mock report when API key is unconfigured or rate-limited.
+Turns a period's computed insights (report_insights.py) into the narrative
+a user reads. Two writers produce the same structure:
+
+  - Claude, via structured output, for paid tiers when the API is reachable
+  - a zero-cost template built from the same numbers, used for free tier
+    and whenever the API call fails or declines
+
+Either way every claim comes from the user's own data, so a template report
+is plainer than an AI one but never generic.
 """
 
 import asyncio
-from anthropic import Anthropic
-from typing import List, Optional
+import json
+import logging
+from typing import List, Literal, Optional
+
+import anthropic
+from pydantic import BaseModel
+
 from app.core.config import settings
 
-# Optimized system instructions: Hyper-dense, structural, and zero conversational fluff.
-VEKTRA_SYSTEM_PROMPT = """You are VEKTRA — a personal trajectory analyst who speaks like a mentor who genuinely cares but refuses to lie.
+logger = logging.getLogger(__name__)
 
-Rules:
-- Reference specific numbers from the user's data in every insight
-- Speak like a sharp human mentor, not a corporate report or military system
-- Harsh truths delivered with clarity, not coldness
-- No jargon like "data coordinates", "operational cycles", "biological recovery"
-- Say "days" not "cycles", "sleep" not "biological recovery", "money" not "capital velocity"
-- End with ONE specific action directive, not a vague instruction
+REPORT_MODEL = "claude-opus-5-5"
 
-Tone: Direct. Human. Like a coach who believes in you too much to sugarcoat anything.
-Format: Clean sections with emojis as headers. Conversational but precise."""
+VEKTRA_SYSTEM_PROMPT = """You are VEKTRA, a personal trajectory analyst. You read one person's own logged data and tell them what it says about where their life is heading.
+
+How you write:
+- Every insight cites a specific number from their data. Never invent a number, and never mention a metric they didn't log.
+- Speak like a sharp mentor who cares too much to sugarcoat: direct, warm, human. Plain words ("sleep", "money", "days"), no jargon.
+- Connect dots they can't see on their own: which habits line up with their best days, what changed versus last period, where money is leaking.
+- Be specific enough that they could act on it tomorrow morning."""
+
+PERIOD_WORDS = {"week": "this week", "month": "this month", "quarter": "this quarter"}
+
+
+class ReportInsight(BaseModel):
+    title: str
+    detail: str
+
+
+class ReportAction(BaseModel):
+    title: str
+    detail: str
+    target: str
+
+
+class ReportNarrative(BaseModel):
+    headline: str
+    verdict: Literal["climbing", "holding", "sliding"]
+    story: str
+    wins: List[ReportInsight]
+    leaks: List[ReportInsight]
+    patterns: List[ReportInsight]
+    money: str
+    focus: ReportAction
+    risk: ReportAction
+    opportunity: ReportAction
+    challenge: str
 
 
 def _language_instruction(language: Optional[str]) -> str:
-    """
-    Build a prompt line telling Claude to respond in the user's detected
-    language instead of English. Only affects the real AI call - the mock
-    fallback (used when Claude is unavailable, or forced for free tier) is
-    a static English template and can't translate itself, so this is a
-    paid-tier-with-working-AI-connection feature, not a universal one.
-    """
-    if not language or language.lower().startswith('en'):
+    """The template is English-only; only the live AI call can translate."""
+    if not language or language.lower().startswith("en"):
         return ""
     return (
-        f"\nRespond entirely in the language indicated by this code: '{language}'. "
-        f"Do not respond in English unless that code is unrecognizable.\n"
+        f"\nWrite every text field in the language indicated by this code: '{language}'. "
+        f"Use English only if that code is unrecognizable.\n"
     )
+
+
+def render_narrative_text(narrative: dict) -> str:
+    """Plain-text version, for share pages and anything that can't render sections."""
+    parts = [f"🎯 {narrative['headline']}", narrative["story"]]
+    if narrative.get("wins"):
+        parts.append("🏆 WHAT WENT RIGHT\n" + "\n".join(f"→ {w['title']}: {w['detail']}" for w in narrative["wins"]))
+    if narrative.get("leaks"):
+        parts.append("⚠️ WHAT'S HOLDING YOU BACK\n" + "\n".join(f"→ {l['title']}: {l['detail']}" for l in narrative["leaks"]))
+    if narrative.get("patterns"):
+        parts.append("🔍 PATTERNS IN YOUR DATA\n" + "\n".join(f"→ {p['title']}: {p['detail']}" for p in narrative["patterns"]))
+    if narrative.get("money"):
+        parts.append(f"💰 MONEY\n{narrative['money']}")
+    actions = [narrative.get(k) for k in ("focus", "risk", "opportunity") if narrative.get(k)]
+    if actions:
+        parts.append("🔥 YOUR PLAN\n" + "\n".join(f"→ {a['title']}: {a['detail']} (target: {a['target']})" for a in actions))
+    if narrative.get("challenge"):
+        parts.append(f"⚡ {narrative['challenge']}")
+    return "\n\n".join(p for p in parts if p)
 
 
 class AIClient:
     def __init__(self):
-        # Gracefully instantiates if API key exists; ensures safe fallback protocols
-        self.client = Anthropic(api_key=settings.CLAUDE_API_KEY) if settings.CLAUDE_API_KEY else None
+        self.client = (
+            anthropic.Anthropic(api_key=settings.CLAUDE_API_KEY, timeout=120.0, max_retries=1)
+            if settings.CLAUDE_API_KEY else None
+        )
 
-    async def generate_weekly_report(
+    # ── Period reports (weekly / monthly / quarterly) ─────────────────────
+    async def generate_period_narrative(
         self,
         user_data: dict,
-        weekly_summary: dict,
-        feedback_tone: str = "Balanced",
-        historical_context: Optional[List[dict]] = None,
-        period_days: int = 7,
+        summary: dict,
         period_label: str = "week",
-    ) -> str:
-        """
-        Generate a period VEKTRA report (weekly or monthly) using the Claude
-        messaging API. period_days/period_label let the same pipeline serve
-        both without duplicating the whole prompt/mock-report machinery -
-        monthly just calls this with period_days=30, period_label="month".
-        Safe execution via asyncio thread-pool to prevent event loop blocking.
-        """
-        if not self.client:
-            return self._mock_weekly_report(weekly_summary, historical_context, period_days, period_label)
+        historical_context: Optional[List[dict]] = None,
+        force_template: bool = False,
+    ) -> dict:
+        """Returns {"narrative": ReportNarrative-shaped dict, "source": "ai" | "template"}."""
+        if force_template or not self.client:
+            return {"narrative": self.template_narrative(summary, period_label), "source": "template"}
 
-        prompt = self._build_weekly_prompt(user_data, weekly_summary, feedback_tone, historical_context, period_days, period_label)
-
+        prompt = self._build_period_prompt(user_data, summary, period_label, historical_context)
         try:
-            # CRITICAL LAUNCH FIX: Changed "claude-sonnet-4-6" string to standard production string "claude-3-5-sonnet-20240620"
-            # Used asyncio.get_running_loop() execution to safely handle heavy simultaneous global traffic threads
             loop = asyncio.get_running_loop()
             response = await loop.run_in_executor(
                 None,
-                lambda: self.client.messages.create(
-                    model="claude-3-5-sonnet-20240620",
-                    max_tokens=1000, # Optimized down from 1500 to save API token costs on heavy user volume
-                    temperature=0.3, # Locked temperature low to eliminate AI hallucinations entirely
+                lambda: self.client.messages.parse(
+                    model=REPORT_MODEL,
+                    max_tokens=16000,
                     system=VEKTRA_SYSTEM_PROMPT,
-                    messages=[{"role": "user", "content": prompt}]
-                )
+                    messages=[{"role": "user", "content": prompt}],
+                    output_format=ReportNarrative,
+                    output_config={"effort": "medium"},
+                ),
             )
-            return response.content[0].text
-        except Exception as e:
-            # Fallback wrapper: If API drops, times out, or runs out of cash, the app never crashes
-            return self._mock_weekly_report(weekly_summary, historical_context, period_days, period_label)
+            if response.stop_reason == "end_turn" and response.parsed_output is not None:
+                return {"narrative": response.parsed_output.model_dump(), "source": "ai"}
+            logger.warning("Report narrative not usable (stop_reason=%s, request_id=%s)",
+                           response.stop_reason, response._request_id)
+        except anthropic.APIStatusError as e:
+            logger.warning("Report narrative API error %s: %s", e.status_code, e.message)
+        except anthropic.APIConnectionError as e:
+            logger.warning("Report narrative connection error: %s", e)
+        except Exception:
+            logger.exception("Report narrative failed")
+        return {"narrative": self.template_narrative(summary, period_label), "source": "template"}
 
+    def _build_period_prompt(
+        self,
+        user_data: dict,
+        summary: dict,
+        period_label: str,
+        historical_context: Optional[List[dict]] = None,
+    ) -> str:
+        tone = {
+            "Harsh": "Be brutally direct. No softening, no cushioning.",
+            "Balanced": "Be honest and clear: give real credit for wins, and name problems plainly.",
+            "Gentle": "Be constructive: frame problems as the next opportunity, but never hide them.",
+        }.get(user_data.get("feedback_tone") or "Balanced", "Be honest and clear.")
+
+        facts = {
+            "period": period_label,
+            "north_star": user_data.get("north_star"),
+            "primary_goal": user_data.get("primary_goal"),
+            "insights": summary.get("insights"),
+            "totals": {k: summary.get(k) for k in (
+                "avg_mood", "avg_energy", "avg_focus", "avg_sleep", "avg_screen_time",
+                "avg_focus_hours", "total_income", "total_expenses", "total_savings",
+                "net_cash_flow", "emergency_count", "goals_set", "goals_hit",
+                "procrastination_days", "survival_runway", "skills_count", "ideas_count",
+            )},
+            "in_their_words": {
+                "best_decisions": summary.get("best_decisions"),
+                "worst_decisions": summary.get("worst_decisions"),
+                "avoided": summary.get("avoided_items"),
+            },
+            "earlier_periods": historical_context or [],
+        }
+
+        return f"""Write this person's {period_label}ly VEKTRA report from their data below.
+
+Tone: {tone}
+
+<data>
+{json.dumps(facts, default=str, ensure_ascii=False)}
+</data>
+
+Fields:
+- headline: one line, under 14 words, built around the single most important number.
+- verdict: climbing, holding or sliding, matching insights.trend when present.
+- story: 3-4 sentences on what actually happened {PERIOD_WORDS.get(period_label, 'this period')} and why, connecting at least two different areas of their life.
+- wins: 2-3 things that went right, each tied to a number.
+- leaks: 2-3 things quietly costing them the most, most damaging first.
+- patterns: 2-3 non-obvious connections from insights.drivers, best_day/worst_day, weekday or vs_previous. These should make them say "I never noticed that".
+- money: 1-2 sentences on cash flow, savings rate and pace. If no money was logged, say that tracking it is the missing piece.
+- focus, risk, opportunity: one concrete action each for next {period_label}, each with a measurable target (e.g. "7h sleep on 5 of 7 nights").
+- challenge: one punchy line daring them to beat a specific number next {period_label}.
+{_language_instruction(user_data.get('language'))}"""
+
+    # ── Zero-cost template ────────────────────────────────────────────────
+    def template_narrative(self, summary: dict, period_label: str = "week") -> dict:
+        ins = summary.get("insights") or {}
+        cur = ins.get("current") or {}
+        tr = ins.get("trend") or {}
+        vs = (ins.get("vs_previous") or {}).get("delta") or {}
+        engines = {k: v for k, v in (ins.get("engines") or {}).items() if v.get("score") is not None}
+        cons = ins.get("consistency") or {}
+        cash = ins.get("money") or {}
+        drv = ins.get("drivers") or []
+        best, worst = ins.get("best_day"), ins.get("worst_day")
+        score = summary.get("report_score") or cur.get("score") or 0
+        period_word = PERIOD_WORDS.get(period_label, "this period")
+
+        verdict = tr.get("direction") or (
+            "climbing" if (vs.get("score") or 0) >= 3 else "sliding" if (vs.get("score") or 0) <= -3 else "holding"
+        )
+
+        if vs.get("score") is not None and abs(vs["score"]) >= 1:
+            headline = f"{score:.0f}/100, {'up' if vs['score'] > 0 else 'down'} {abs(vs['score']):g} on last {period_label}"
+        elif tr.get("delta") is not None and abs(tr["delta"]) >= 3:
+            headline = f"{score:.0f}/100 and {'rising' if tr['delta'] > 0 else 'slipping'} {abs(tr['delta']):.0f} points inside the {period_label}"
+        else:
+            headline = f"{score:.0f}/100: steady {period_label}, now find the next gear"
+
+        story = [f"You logged {cons.get('logged', 0)} of {cons.get('period_days', 0)} days {period_word}"
+                 + (f", with a best streak of {cons['longest_streak']} days in a row." if cons.get("longest_streak", 0) >= 3 else ".")]
+        if tr:
+            story.append(f"Your score averaged {tr['first_half_avg']:.0f} in the first half and {tr['second_half_avg']:.0f} in the second, "
+                         f"so at this pace next {period_label} lands around {tr['projection_next']}.")
+        if drv:
+            story.append(drv[0]["text"])
+        if engines:
+            top = max(engines, key=lambda k: engines[k]["score"])
+            low = min(engines, key=lambda k: engines[k]["score"])
+            if top != low:
+                story.append(f"{top} is carrying you ({engines[top]['score']}), while {low} ({engines[low]['score']}) is where the next points are.")
+
+        wins, leaks = [], []
+        if cons.get("rate", 0) >= 80:
+            wins.append({"title": "Showing up", "detail": f"You logged {cons['rate']}% of days. That consistency is why these patterns are visible at all."})
+        if cur.get("goal_hit_rate") is not None and cur["goal_hit_rate"] >= 70:
+            wins.append({"title": "Doing what you said", "detail": f"You hit {cur['goal_hit_rate']}% of the goals you set."})
+        if cash.get("savings_rate") is not None and cash["savings_rate"] > 0:
+            wins.append({"title": "Money kept", "detail": f"You kept {cash['savings_rate']}% of what came in."})
+        if (cur.get("sleep") or 0) >= 7.5:
+            wins.append({"title": "Sleep", "detail": f"You averaged {cur['sleep']}h a night, which most people never manage."})
+        if best:
+            wins.append({"title": f"Best day: {best['weekday']}", "detail": f"You scored {best['score']}" + (f" when you {' and '.join(best['why'])}." if best["why"] else ".")})
+        if not wins and engines:
+            top = max(engines, key=lambda k: engines[k]["score"])
+            wins.append({"title": f"{top} is your strongest engine", "detail": f"{engines[top]['score']}/100. {engines[top]['detail']}."})
+
+        # Each leak carries the action that fixes it, so the plan's "risk"
+        # step is concrete instead of repeating the problem back.
+        if cash.get("net") is not None and cash["net"] < 0:
+            leaks.append({"title": "Spending more than you earn", "detail": f"Net {cash['net']:+,.0f} {period_word}. At this pace that's {cash['monthly_pace']:+,.0f} a month.",
+                          "action": "Stop the cash bleed", "target": f"Daily spend under {cash['avg_daily_spend'] * 0.8:,.0f} (now {cash['avg_daily_spend']:,.0f})"})
+        if cur.get("goal_hit_rate") is not None and cur["goal_hit_rate"] < 50:
+            leaks.append({"title": "Goals set, not hit", "detail": f"Only {cur['goal_hit_rate']}% of your goals got done. Fewer, smaller goals will beat more ambitious ones you skip.",
+                          "action": "Shrink tomorrow's goal", "target": "One must-do goal a day, hit on 5 of 7 days"})
+        if cur.get("sleep") and cur["sleep"] < 6.5:
+            leaks.append({"title": "Running on short sleep", "detail": f"You averaged {cur['sleep']}h. Everything else on this page is harder on that.",
+                          "action": "Set a sleep floor", "target": "7h+ on 5 of 7 nights"})
+        screen, focus_h = summary.get("avg_screen_time"), summary.get("avg_focus_hours")
+        if screen and focus_h and screen > focus_h * 1.5:
+            leaks.append({"title": "Screen time beats deep work", "detail": f"{screen:.1f}h of screen time a day against {focus_h:.1f}h of focused work.",
+                          "action": "Trade an hour of screen for deep work", "target": f"Screen under {max(1.0, screen - 1):.1f}h, deep work {focus_h + 1:.1f}h+ a day"})
+        if cons.get("rate", 100) < 60:
+            leaks.append({"title": "Blind spots", "detail": f"{cons['period_days'] - cons['logged']} unlogged days. The days you skip are usually the ones that explain the most.",
+                          "action": "Close the gaps", "target": "Log at least 6 of every 7 days"})
+        if worst and worst.get("why"):
+            leaks.append({"title": f"Worst day: {worst['weekday']}", "detail": f"You scored {worst['score']} when you {' and '.join(worst['why'])}.",
+                          "action": "Raise your floor", "target": f"No day below {worst['score'] + 10}"})
+        if not leaks and engines:
+            low = min(engines, key=lambda k: engines[k]["score"])
+            leaks.append({"title": f"{low} is lagging", "detail": f"{engines[low]['score']}/100. {engines[low]['detail']}.",
+                          "action": f"Lift {low}", "target": f"{low} {min(100, engines[low]['score'] + 10)}+"})
+
+        patterns = [{"title": f"Your {d['label']} lever", "detail": d["text"]} for d in drv[:2]]
+        wk = ins.get("weekday")
+        if wk:
+            patterns.append({"title": f"{wk['best']}s vs {wk['worst']}s", "detail": f"You average {wk['best_avg']} on {wk['best']}s and {wk['worst_avg']} on {wk['worst']}s."})
+        if vs.get("sleep") is not None and abs(vs["sleep"]) >= 0.5:
+            patterns.append({"title": "Sleep vs last time", "detail": f"Sleep is {'up' if vs['sleep'] > 0 else 'down'} {abs(vs['sleep'])}h a night versus last {period_label}."})
+        if not patterns:
+            patterns.append({"title": "Patterns unlock with data", "detail": "Log sleep, screen time and deep work daily. After 4 days VEKTRA can show which of them moves your score most."})
+
+        if cash:
+            money_text = f"{cash['income']:,.0f} in, {cash['spent']:,.0f} out, net {cash['net']:+,.0f}"
+            if cash.get("savings_rate") is not None:
+                money_text += f" ({cash['savings_rate']}% kept)"
+            money_text += "."
+            if cash.get("biggest_spend"):
+                money_text += f" Biggest spend: {cash['biggest_spend']['amount']:,.0f} on {cash['biggest_spend']['weekday']}."
+        else:
+            money_text = "No money logged yet. That's the blind spot: log income and spending daily and VEKTRA will show your real savings rate."
+
+        target = min(100, int(score) + 5)
+        if drv:
+            d = drv[0]
+            focus = {"title": f"Protect your {d['label']}",
+                     "detail": f"Your best days come with {d['threshold']}{'+' if d['better_when'] == 'higher' else ' or less'} {d['label']}.",
+                     "target": f"{d['threshold']}{'+' if d['better_when'] == 'higher' else ' max'} {d['label']} on 5 of 7 days"}
+        else:
+            focus = {"title": "Log every day", "detail": "More complete days means VEKTRA can find what really drives your score.",
+                     "target": "7 of 7 days logged"}
+        if leaks:
+            risk = {"title": leaks[0]["action"], "detail": leaks[0]["detail"], "target": leaks[0]["target"]}
+        else:
+            risk = {"title": "Guard what's working", "detail": "Nothing is flashing red. The risk now is coasting.",
+                    "target": f"Stay above {max(0, int(score) - 3)}"}
+        if engines:
+            low = min(engines, key=lambda k: engines[k]["score"])
+            opportunity = {"title": f"Lift {low}", "detail": f"It's your lowest engine at {engines[low]['score']}. {engines[low]['detail']}.",
+                           "target": f"{low} {min(100, engines[low]['score'] + 10)}+"}
+        else:
+            opportunity = {"title": "Fill in the gaps", "detail": "Log all five areas so every engine gets scored.", "target": "All 5 engines scored"}
+
+        return {
+            "headline": headline,
+            "verdict": verdict,
+            "story": " ".join(story),
+            "wins": wins[:3],
+            "leaks": [{"title": l["title"], "detail": l["detail"]} for l in leaks[:3]],
+            "patterns": patterns[:3],
+            "money": money_text,
+            "focus": focus,
+            "risk": risk,
+            "opportunity": opportunity,
+            "challenge": f"Next {period_label}: beat {target}. Log every day so the data can prove it.",
+        }
+
+    # ── Daily check-in ────────────────────────────────────────────────────
     async def generate_daily_report(
         self,
         user_data: dict,
@@ -94,65 +330,59 @@ class AIClient:
         feedback_tone: str = "Balanced",
         force_mock: bool = False,
     ) -> str:
-        """
-        Generate a short, personalized daily VEKTRA narrative for paid tiers.
-        force_mock lets the caller enforce the free-tier limit server-side
-        (report_service.py passes this for tier=='free') without a second
-        code path - free tier gets the exact same zero-cost text this
-        already falls back to when Claude itself is unavailable.
-        """
+        """Short daily narrative. force_mock enforces the free-tier limit server-side."""
         if force_mock or not self.client:
             return self._mock_daily_report(daily_snapshot)
 
         prompt = self._build_daily_prompt(user_data, daily_snapshot, feedback_tone)
-
         try:
             loop = asyncio.get_running_loop()
             response = await loop.run_in_executor(
                 None,
                 lambda: self.client.messages.create(
-                    model="claude-3-5-sonnet-20240620",
-                    max_tokens=350,
-                    temperature=0.3,
+                    model=REPORT_MODEL,
+                    max_tokens=4000,
                     system=VEKTRA_SYSTEM_PROMPT,
-                    messages=[{"role": "user", "content": prompt}]
-                )
+                    messages=[{"role": "user", "content": prompt}],
+                    output_config={"effort": "low"},
+                ),
             )
-            return response.content[0].text
-        except Exception:
-            return self._mock_daily_report(daily_snapshot)
+            text = "".join(b.text for b in response.content if b.type == "text").strip()
+            if response.stop_reason == "end_turn" and text:
+                return text
+            logger.warning("Daily narrative not usable (stop_reason=%s)", response.stop_reason)
+        except anthropic.APIError as e:
+            logger.warning("Daily narrative API error: %s", e)
+        return self._mock_daily_report(daily_snapshot)
 
     def _build_daily_prompt(self, user_data: dict, snap: dict, tone: str) -> str:
-        north_star = user_data.get('north_star', 'Not set')
         tone_instruction = {
-            'Harsh': 'Be brutally direct. No softening.',
-            'Balanced': 'Be clinical and honest.',
-            'Gentle': 'Be constructive, frame gaps as opportunities.',
-        }.get(tone, 'Be honest but constructive.')
+            "Harsh": "Be brutally direct. No softening.",
+            "Balanced": "Be clear and honest.",
+            "Gentle": "Be constructive, frame gaps as opportunities.",
+        }.get(tone, "Be honest but constructive.")
 
-        return f"""Generate a short VEKTRA daily check-in for a single day of logged data.
+        return f"""Write a short VEKTRA check-in on one day of logged data. {tone_instruction}
+North Star: {user_data.get('north_star') or 'Not set'}
 
-CORE STRATEGY MATRIX: {tone_instruction}
-North Star: {north_star}
-
-TODAY'S DATA:
-- VEKTRA Score: {snap.get('vektra_score', 'N/A')}/100
-- Mood: {snap.get('mood_score', 'N/A')}/10, Energy: {snap.get('energy_level', 'N/A')}/10
+TODAY:
+- VEKTRA score: {snap.get('vektra_score', 'N/A')}/100
+- Mood: {snap.get('mood_score', 'N/A')}/10, energy: {snap.get('energy_level', 'N/A')}/10
 - Sleep: {snap.get('sleep_hours', 'N/A')} hours
 - Cash flow: {snap.get('cashflow', 'N/A')}
 - Hit yesterday's goal: {snap.get('goal_hit', 'N/A')}
 - Best decision: {snap.get('best_decision', 'N/A')}
 - Tomorrow's goal: {snap.get('tomorrow_goal', 'N/A')}
 {_language_instruction(user_data.get('language'))}
-Write 2-3 short sentences reacting to today specifically (reference at least one real number above), then one specific action directive for tomorrow. Under 80 words total. No headers, no bullet points — just plain prose."""
+2-3 short sentences reacting to today (cite at least one real number), then one specific action for tomorrow. Under 80 words, plain prose, no headers or bullets."""
 
     def _mock_daily_report(self, snap: dict) -> str:
-        """Zero-cost fallback when Claude is unavailable — still data-specific, not generic filler."""
-        score = snap.get('vektra_score') or 50
-        mood = snap.get('mood_score')
-        sleep = snap.get('sleep_hours')
-        cashflow = snap.get('cashflow')
-        tomorrow = snap.get('tomorrow_goal')
+        """Zero-cost fallback — still data-specific, not generic filler."""
+        score = snap.get("vektra_score") or 50
+        mood = snap.get("mood_score")
+        sleep = snap.get("sleep_hours")
+        cashflow = snap.get("cashflow")
+        tomorrow = snap.get("tomorrow_goal")
 
         pieces = [f"Today's score: {score:.0f}/100."]
         if mood is not None:
@@ -165,206 +395,5 @@ Write 2-3 short sentences reacting to today specifically (reference at least one
         directive = f"Tomorrow: {tomorrow}." if tomorrow else "Set a specific target for tomorrow before you log off."
         return " ".join(pieces) + " " + directive
 
-    def _build_weekly_prompt(
-        self,
-        user_data: dict,
-        summary: dict,
-        tone: str,
-        historical_context: Optional[List[dict]] = None,
-        period_days: int = 7,
-        period_label: str = "week",
-    ) -> str:
-        """Build the structured prompt injecting active database metrics."""
-        north_star = user_data.get('north_star', 'Not set')
-        primary_goal = user_data.get('primary_goal', 'Not set')
-        unique_days = summary.get('unique_days_logged', summary.get('days_logged', 0))
-        report_countdown = summary.get('report_countdown', max(0, period_days - unique_days))
-
-        tone_instruction = {
-            'Harsh': 'Be brutally direct. Deliver unfiltered harsh truths. No softening.',
-            'Balanced': 'Be clinical and honest. Balance execution wins with trajectory vulnerabilities.',
-            'Gentle': 'Be constructive. Highlight vector alignments and frame bottlenecks as structural opportunities.',
-        }.get(tone, 'Be honest but constructive.')
-
-        historical_section = ""
-        if historical_context and len(historical_context) > 0:
-            historical_section = f"\nHISTORICAL TREND DATA (Past {len(historical_context)} {period_label.capitalize()}s):\n"
-            for i, period in enumerate(historical_context, 1):
-                historical_section += f"- {period_label.capitalize()} {i}: VEKTRA Score {period.get('vektra_score', 'N/A')}, Mood {period.get('mood', 'N/A')}, Sleep {period.get('sleep', 'N/A')}h, Cash Flow {period.get('net_cash_flow', 'N/A')}, Goal Rate {period.get('goal_hit_rate', 'N/A')}%\n"
-            historical_section += "\nEvaluate these long-term baselines against current stats to define trajectory delta.\n"
-
-        return f"""Generate a VEKTRA {period_label}ly execution review.
-
-CORE STRATEGY MATRIX: {tone_instruction}
-
-USER BACKGROUND PROFILE:
-- Long Term Horizon (North Star): {north_star}
-- Immediate Cycle Objective: {primary_goal}
-- Data Capture Integrity: {unique_days}/{period_days} Days logged
-- Cycle Deadline Margin: {report_countdown} days remaining
-
-QUANTITATIVE DATA COEFFICIENTS:
-- Calculated VEKTRA Score: {summary.get('avg_vektra_score', 'N/A')}/100
-- Mean Emotional State (Mood): {summary.get('avg_mood', 'N/A')}/10
-- Mean Physical Energy Level: {summary.get('avg_energy', 'N/A')}/10
-- Deep Cognitive Focus Index: {summary.get('avg_focus', 'N/A')}/10
-- Sleep Architecture: {summary.get('avg_sleep', 'N/A')} hours/night
-- High-Leverage Deep Work Time: {summary.get('avg_focus_hours', 'N/A')} hrs/day
-- Digital Attention Drain (Screen Time): {summary.get('avg_screen_time', 'N/A')} hrs/day
-
-FINANCIAL LEDGER TRAJECTORY:
-- Gross Inflow (Income): {summary.get('total_income', 0)}
-- Gross Outflow (Expenses): {summary.get('total_expenses', 0)}
-- Net Cash Velocity (Flow): {summary.get('net_cash_flow', 0)}
-- Total Capital Retained (Savings): {summary.get('total_savings', 0)}
-- Operational Emergencies Encountered: {summary.get('emergency_count', 0)}
-
-EXECUTION EFFICIENCY:
-- Targets Secured: {summary.get('goals_hit', 0)}/{summary.get('goals_set', 0)}
-- Friction Indicators (Procrastination): {summary.get('procrastination_days', 0)} days flagged
-- Mean Leverage Score: {summary.get('avg_leverage', 'N/A')}
-- Projected Survival Runway Capital: {summary.get('survival_runway', 'N/A')} days remaining
-
-QUALITATIVE SENTIMENT LOGS:
-- High-Value Operational Calls: {summary.get('best_decisions', [])}
-- Strategic System Errors (Worst Decisions): {summary.get('worst_decisions', [])}
-- Elements Actively Bypassed (Avoided): {summary.get('avoided_items', [])}
-- Core Psychological Signals (Humor/Lines): {summary.get('funny_lines', [])}
-{historical_section}
-{_language_instruction(user_data.get('language'))}
-Construct the output text matching these exact layout keys:
-1. TRAJECTORY STATUS (Max 3 concise sentences. Explicitly state if vector is ascending, stalling, or declining)
-2. TARGETED VECTOR WINS (Bullet points of data-validated tactical achievements)
-3. THE SILENT KILLER (Identify the exact single metric quietly undermining expansion velocity)
-4. SYSTEM STATISTICAL ANALYSIS (Direct, blunt commentary regarding financial and execution data)
-5. IMMEDIATE ACTION DIRECTIVE (One short, unyielding strategic operational instruction for tomorrow)
-
-Constraint: Keep the final response under 380 words. Every single character must deliver high information density."""
-
-    def _mock_weekly_report(
-        self,
-        summary: dict,
-        historical_context: Optional[List[dict]] = None,
-        period_days: int = 7,
-        period_label: str = "week",
-    ) -> str:
-        """
-        Smart mathematical mock report — processes raw data instantly.
-        Acts as the unyielding, zero-cost production baseline for the Free Tier.
-
-        Day-count thresholds below were originally tuned for a 7-day window
-        (e.g. "days >= 6" for high consistency); they're scaled by
-        period_days/7 so the same relative bar applies to a 30-day month
-        instead of every monthly report tripping every low-consistency
-        killer by default.
-        """
-        scale = period_days / 7
-        score = summary.get('report_score', summary.get('avg_vektra_score', 50)) or 50
-        days = summary.get('unique_days_logged', summary.get('days_logged', 0)) or 0
-        cash_flow = summary.get('net_cash_flow', 0) or 0
-        goals_hit = summary.get('goals_hit', 0) or 0
-        goals_set = summary.get('goals_set', 0) or 0
-        sleep = summary.get('avg_sleep', 0) or 0
-        mood = summary.get('avg_mood', 0) or 0
-        energy = summary.get('avg_energy', 0) or 0
-        focus_hours = summary.get('avg_focus_hours', 0) or 0
-        screen_time = summary.get('avg_screen_time', 0) or 0
-        skills_count = summary.get('skills_count', 0) or 0
-        procrastination_days = summary.get('procrastination_days', 0) or 0
-        survival_runway = summary.get('survival_runway', None)
-        best_decisions = summary.get('best_decisions', []) or []
-        countdown = summary.get('report_countdown', 0) or 0
-
-        goal_rate = round(goals_hit / goals_set * 100) if goals_set > 0 else None
-
-        trend_line = ""
-        if historical_context:
-            prev_scores = [w.get('vektra_score') for w in historical_context if w.get('vektra_score')]
-            if prev_scores:
-                avg_prev = sum(prev_scores) / len(prev_scores)
-                diff = score - avg_prev
-                if diff > 6:
-                    trend_line = f" Up {diff:.0f} units over your {len(prev_scores)}-{period_label} trajectory baseline. Acceleration is confirmed."
-                elif diff < -6:
-                    trend_line = f" Down {abs(diff):.0f} units below historical baseline. Severe vector drift detected."
-                else:
-                    trend_line = f" Locked within your long-term {avg_prev:.0f} average. Stable, but lacking velocity."
-
-        # ── Trajectory label & momentum calculation ───────────────────────────
-        if score >= 80:
-            trajectory, momentum = "LOCKED IN", f"Velocity calculated at {score}/100. Routine architecture is highly optimized. Protect this current state."
-        elif score >= 70:
-            trajectory, momentum = "RISING", f"Velocity calculated at {score}/100. Compounding actions are shifting the trajectory vector right."
-        elif score >= 55:
-            trajectory, momentum = "STEADY", f"Velocity calculated at {score}/100. System is operating in equilibrium but lagging acceleration. Identify the dead weight."
-        elif score >= 40:
-            trajectory, momentum = "STALLING", f"Velocity calculated at {score}/100. The divergence between system potential and real output is widening."
-        else:
-            trajectory, momentum = "DECLINING", f"Velocity calculated at {score}/100. Critical operational decay. System parameters require an immediate baseline reset."
-
-        # ── Build WINS section ────────────────────────────────────────────────
-        wins = []
-        if days >= round(6 * scale): wins.append(f"System Integrity: Logged {days}/{period_days} cycles—optimal consistency maintained.")
-        elif days >= round(4 * scale): wins.append(f"System Input: Captured {days}/{period_days} data coordinates. Operational blind spots exist.")
-        if goals_hit > 0 and goal_rate and goal_rate >= 70: wins.append(f"Execution Efficiency: Cleared {goals_hit}/{goals_set} targets ({goal_rate}% execution index).")
-        if cash_flow > 0: wins.append(f"Capital Velocity: Net cash velocity positive at {cash_flow:+.0f} inside this cycle.")
-        if sleep >= 7.5: wins.append(f"Biological Recovery: Sleep averaged {sleep:.1f} hours—neurological rejuvenation prioritized.")
-        if focus_hours >= 4: wins.append(f"Deep Cognitive Input: Averaged {focus_hours:.1f} hours of focused cognitive execution daily.")
-        if skills_count >= 4: wins.append(f"Capability Expansion: Logged raw skill acquisition across {skills_count} operational days.")
-        if best_decisions: wins.append(f"Optimal Allocation: Strategic choice confirmed: '{best_decisions[0]}'")
-        if not wins: wins.append("Log submission secured. System baseline initialized.")
-
-        # ── Build SILENT KILLERS section ─────────────────────────────────────
-        killers = []
-        if days < round(5 * scale): killers.append(f"Data Anemia: Only {days}/{period_days} days tracked. The cycles you omit are the cycles your strategy goes blind.")
-        if goal_rate and goal_rate < 50: killers.append(f"Target Execution Deficit: {goal_rate}% hit-rate. You are configuring objectives without execution compliance.")
-        if cash_flow < 0: killers.append(f"Capital Inversion: Cash flow negative at {cash_flow:+.0f}. Outflow velocity outpaces growth. Runway degradation active.")
-        if sleep < 6.5 and sleep > 0: killers.append(f"Neurological Deficit: Sleep mean at {sleep:.1f}h. Cognitive processing is compromised whether consciously perceived or not.")
-        if screen_time > 0 and focus_hours > 0 and screen_time > focus_hours * 1.5: killers.append(f"Attention Hijack: Digital distraction ({screen_time:.1f}h) dominates high-leverage focus allocation ({focus_hours:.1f}h).")
-        if procrastination_days >= round(3 * scale): killers.append(f"Friction Patterns: Procrastination parameters triggered across {procrastination_days} cycles. This is structural, not incidental.")
-        if survival_runway and survival_runway < 30: killers.append(f"Runway Warning: Capital survival threshold dropped to {survival_runway:.0f} cycles. Red-zone status.")
-        if energy > 0 and mood > 0 and energy < 5 and mood < 5: killers.append(f"Biometric Compression: Mood ({mood:.1f}) and energy ({energy:.1f}) depressed below median equilibrium.")
-        if not killers: killers.append("Zero system alerts triggered. Focus shifts entirely to high-tier system optimization.")
-
-        # ── System Numbers compilation ────────────────────────────────────────
-        numbers = [f"Net Cash Velocity: {cash_flow:+.0f}"]
-        if goals_set > 0: numbers.append(f"Execution Efficiency: {goals_hit}/{goals_set} ({goal_rate}%)")
-        numbers.extend([f"Data Integrity: captured across {days} unique days logged", f"Days logged: {days}/{period_days}", f"{period_label.capitalize()}ly countdown: {countdown}/{period_days}", f"Recovery Index: {sleep:.1f}h mean", f"Deep Work Duration: {focus_hours:.1f}h/day"])
-        if survival_runway is not None: numbers.append(f"Capital Runway: {survival_runway:.0f} cycles remaining")
-
-        # ── Action Directive Decision Tree ────────────────────────────────────
-        if days < round(5 * scale):
-            directive = f"Enforce absolute tracking compliance next {period_label}. Secure all {period_days} cycles. Incomplete variables produce corrupted trajectory vectors."
-        elif goal_rate and goal_rate < 50:
-            directive = f"Target compression protocol active. Reduce next {period_label}'s parameters to a maximum of 2 critical objectives. Execute both with 100% compliance."
-        elif cash_flow < 0:
-            directive = "Capital retention emergency. Execute exactly one direct capital-generating action within the next 24-hour cycle. Halt arbitrary operational outflows."
-        elif score >= 75:
-            directive = f"System running at high optimization ({score}/100). Identify the single sub-engine restricting maximum peak expansion and increase raw power input."
-        elif focus_hours > 0 and screen_time > focus_hours:
-            directive = "Isolate cognitive workspace. For the initial 120 minutes of tomorrow's execution layer: complete zero external network verification. Focus purely on output production."
-        else:
-            directive = f"Force your system vector score past {min(100, int(score) + 8)} next cycle. Choose your absolute lowest execution matrix and input 30 minutes of deep intentional correction daily."
-
-        # ── Assemble final report blocks ──────────────────────────────────────
-        wins_text = "\n".join(f"→ {w}" for w in wins)
-        killers_text = "\n".join(f"→ {k}" for k in killers)
-        numbers_text = "\n".join(f"→ {n}" for n in numbers)
-        trend_section = f"\n{trend_line}" if trend_line else ""
-
-        return f"""🎯 TRAJECTORY STATUS: {trajectory}
-{momentum}{trend_section}
-
-🏆 TARGETED VECTOR WINS:
-{wins_text}
-
-⚠️ THE SILENT KILLER:
-{killers_text}
-
-📊 SYSTEM STATISTICAL ANALYSIS:
-{numbers_text}
-
-🔥 IMMEDIATE ACTION DIRECTIVE:
-{directive}"""
 
 ai_client = AIClient()
