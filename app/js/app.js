@@ -474,29 +474,36 @@ function injectInstallStyles() {
   style.id = 'install-ui-styles';
   style.textContent = `
     #install-banner{position:fixed;left:12px;right:12px;bottom:84px;z-index:10001;max-width:520px;margin:0 auto;
-      background:var(--bg-card);border:1px solid rgba(108,99,255,0.35);border-radius:16px;padding:12px 12px 12px 14px;
-      display:flex;align-items:center;gap:12px;box-shadow:0 10px 30px rgba(0,0,0,0.5);animation:installUp .3s ease-out}
-    #install-banner img{width:40px;height:40px;border-radius:10px;flex-shrink:0}
+      background:linear-gradient(135deg,var(--bg-card),var(--bg-secondary));border:1px solid rgba(108,99,255,0.4);border-radius:16px;padding:14px 14px 14px 16px;
+      display:flex;align-items:center;gap:14px;box-shadow:0 10px 40px rgba(108,99,255,0.2);animation:installUp .4s cubic-bezier(0.34,1.56,0.64,1)}
+    #install-banner img{width:48px;height:48px;border-radius:12px;flex-shrink:0;box-shadow:0 4px 12px rgba(0,0,0,0.2)}
     #install-banner .ib-text{flex:1;min-width:0}
-    #install-banner .ib-title{font-weight:600;font-size:14px;color:var(--text-primary)}
-    #install-banner .ib-sub{font-size:12px;color:var(--text-secondary);margin-top:2px}
-    #install-banner .ib-go{background:var(--accent);color:#fff;border:none;border-radius:10px;padding:9px 14px;font-weight:600;font-size:13px;cursor:pointer;flex-shrink:0}
-    #install-banner .ib-x{background:none;border:none;color:var(--text-secondary);font-size:20px;line-height:1;padding:4px 6px;cursor:pointer;flex-shrink:0}
-    #install-sheet{position:fixed;inset:0;z-index:10002;background:rgba(0,0,0,0.7);display:flex;align-items:flex-end;justify-content:center}
-    #install-sheet .is-card{background:var(--bg-card);border:1px solid var(--border);border-radius:20px 20px 0 0;width:100%;max-width:520px;
-      padding:22px 20px 28px;color:var(--text-primary);animation:installUp .25s ease-out}
-    #install-sheet h3{margin:0 0 4px;font-size:18px}
-    #install-sheet .is-sub{color:var(--text-secondary);font-size:13px;margin-bottom:16px}
+    #install-banner .ib-title{font-weight:700;font-size:15px;color:var(--text-primary);margin-bottom:4px}
+    #install-banner .ib-sub{font-size:13px;color:var(--text-secondary);line-height:1.4}
+    #install-banner .ib-go{background:linear-gradient(135deg,var(--accent),var(--pink));color:#fff;border:none;border-radius:12px;padding:10px 18px;font-weight:700;font-size:14px;cursor:pointer;flex-shrink:0;transition:transform 0.2s ease,box-shadow 0.2s ease}
+    #install-banner .ib-go:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(108,99,255,0.4)}
+    #install-banner .ib-go:active{transform:translateY(0)}
+    #install-banner .ib-x{background:none;border:none;color:var(--text-secondary);font-size:22px;line-height:1;padding:6px 8px;cursor:pointer;flex-shrink:0;transition:color 0.2s ease;border-radius:8px}
+    #install-banner .ib-x:hover{background:rgba(0,0,0,0.05);color:var(--text-primary)}
+    @keyframes installUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+    #install-sheet{position:fixed;inset:0;z-index:10002;background:rgba(0,0,0,0.8);backdrop-filter:blur(4px);display:flex;align-items:flex-end;justify-content:center}
+    #install-sheet .is-card{background:linear-gradient(135deg,var(--bg-card),var(--bg-secondary));border:1px solid var(--border);border-radius:24px 24px 0 0;width:100%;max-width:520px;
+      padding:24px 24px 32px;color:var(--text-primary);animation:installUp .3s cubic-bezier(0.34,1.56,0.64,1);box-shadow:0 -10px 40px rgba(0,0,0,0.3)}
+    #install-sheet h3{margin:0 0 6px;font-size:20px;font-weight:700;color:var(--text-primary)}
+    #install-sheet .is-sub{color:var(--text-secondary);font-size:14px;margin-bottom:20px;line-height:1.5}
     #install-sheet ol{margin:0;padding:0;list-style:none;counter-reset:step}
-    #install-sheet li{counter-increment:step;display:flex;align-items:center;gap:12px;padding:10px 0;font-size:14px;line-height:1.4}
-    #install-sheet li::before{content:counter(step);flex-shrink:0;width:26px;height:26px;border-radius:50%;background:rgba(108,99,255,0.18);
-      color:var(--accent);font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center}
-    #install-sheet .is-ico{display:inline-flex;vertical-align:middle;padding:2px 6px;border-radius:6px;background:rgba(255,255,255,0.08);margin:0 2px}
-    #install-sheet .is-actions{display:flex;flex-direction:column;gap:10px;margin-top:18px}
-    #install-sheet button{width:100%;padding:12px;border-radius:12px;font-weight:600;font-size:14px;cursor:pointer}
-    #install-sheet .is-primary{background:var(--accent);color:#fff;border:none}
+    #install-sheet li{counter-increment:step;display:flex;align-items:flex-start;gap:14px;padding:12px 0;font-size:14px;line-height:1.5;color:var(--text-primary)}
+    #install-sheet li::before{content:counter(step);flex-shrink:0;width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--pink));
+      color:#fff;font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(108,99,255,0.3)}
+    #install-sheet .is-ico{display:inline-flex;vertical-align:middle;padding:3px 8px;border-radius:6px;background:rgba(108,99,255,0.1);margin:0 3px;color:var(--accent);font-weight:600}
+    #install-sheet .is-actions{display:flex;flex-direction:column;gap:12px;margin-top:24px}
+    #install-sheet button{width:100%;padding:14px;border-radius:14px;font-weight:700;font-size:15px;cursor:pointer;transition:transform 0.2s ease,box-shadow 0.2s ease}
+    #install-sheet .is-primary{background:linear-gradient(135deg,var(--accent),var(--pink));color:#fff;border:none;box-shadow:0 4px 16px rgba(108,99,255,0.3)}
+    #install-sheet .is-primary:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(108,99,255,0.4)}
+    #install-sheet .is-primary:active{transform:translateY(0)}
     #install-sheet .is-secondary{background:none;color:var(--text-secondary);border:1px solid var(--border)}
-    @keyframes installUp{from{transform:translateY(20px);opacity:0}to{transform:none;opacity:1}}
+    #install-sheet .is-secondary:hover{background:rgba(0,0,0,0.05);color:var(--text-primary)}
+    @keyframes installUp{from{transform:translateY(30px);opacity:0}to{transform:none;opacity:1}}
   `;
   document.head.appendChild(style);
 }
@@ -569,7 +576,7 @@ function initTheme() {
 // fromTap: true when called straight from a button click. Browsers only allow
 // the native install prompt inside a user tap, so automatic calls (e.g. arriving
 // via ?install=1) show an "Install now" button instead of prompting directly.
-function showInstallHelp(fromTap = true) {
+function showInstallHelp(fromTap = true)
   if (isRunningInstalled()) {
     showToast('VEKTRA is already installed on this device ✓', 'success');
     return;
@@ -606,21 +613,30 @@ function showInstallHelp(fromTap = true) {
       : '') +
       `<button class="${isAndroid ? 'is-secondary' : 'is-primary'}" onclick="copyInstallLink('${appUrl}')">Copy link</button>`;
   } else if (platform === 'ios') {
+    title = 'Add VEKTRA to iPhone Home Screen';
+    sub = 'Install VEKTRA as a native iOS app - full screen, no browser bar, works offline.';
     steps = `
       <li><span>Tap the <b>Share</b> button <span class="is-ico">${SHARE_ICON_SVG}</span> in your browser bar</span></li>
       <li><span>Scroll down and tap <b>"Add to Home Screen"</b></span></li>
-      <li><span>Tap <b>"Add"</b> - VEKTRA appears on your home screen</span></li>`;
+      <li><span>Tap <b>"Add"</b> - VEKTRA appears on your home screen like a native app</span></li>
+      <li><span><b>Optional:</b> Add to your home screen dock for quick access</span></li>`;
   } else if (platform === 'android') {
+    title = 'Install VEKTRA on Android';
+    sub = 'Install VEKTRA as a native Android app - full screen, no browser bar, push notifications.';
     steps = `
       <li><span>Tap the <span class="is-ico">⋮</span> menu in your browser (top right)</span></li>
       <li><span>Tap <b>"Install app"</b> or <b>"Add to Home screen"</b></span></li>
-      <li><span>Confirm - VEKTRA appears with your other apps</span></li>`;
-  } else {
+      <li><span>Confirm - VEKTRA installs as a native Android app</span></li>
+      <li><span><b>Optional:</b> Pin to home screen for one-tap access</span></li>`;
+  } else if (platform === 'desktop') {
+    title = 'Install VEKTRA on Desktop';
+    sub = 'Install VEKTRA as a desktop app - standalone window, taskbar/dock integration, offline support.';
     steps = `
-      <li><span>Look for the install icon <span class="is-ico">⊕</span> at the right end of the address bar</span></li>
-      <li><span>Or open the browser menu and choose <b>"Install VEKTRA"</b></span></li>
-      <li><span>VEKTRA opens in its own window, like a desktop app</span></li>`;
-  }
+      <li><span>Click the <b>Install</b> button in your browser's address bar</span></li>
+      <li><span>Confirm the installation prompt</span></li>
+      <li><span>VEKTRA will appear in your applications menu</span></li>
+      <li><span><b>Windows:</b> Pin to taskbar for quick access</span></li>
+      <li><span><b>Mac:</b> Add to dock for one-click launch</span></li>`;
 
   const sheet = document.createElement('div');
   sheet.id = 'install-sheet';
@@ -650,24 +666,24 @@ async function copyInstallLink(url) {
 function maybeShowInstallBanner() {
   if (installBannerShown || isRunningInstalled() || installDismissedRecently()) return;
   const platform = getInstallPlatform();
-  // Desktop only gets the banner when the browser can actually prompt;
-  // phones always get it, since that's where people need the help
+  // Show banner on all platforms - mobile users need the help, desktop users get the prompt
   if (platform === 'desktop' && !deferredInstallPrompt) return;
-  // Only nag signed-in users - the login screen should stay focused on signing in
-  const nav = document.getElementById('bottom-nav');
-  if (!nav || nav.style.display === 'none') return;
-
+  // Show to both signed-in and unsigned-in users now (was only signed-in before)
   installBannerShown = true;
   injectInstallStyles();
   const banner = document.createElement('div');
   banner.id = 'install-banner';
   const sub = platform === 'in-app'
     ? 'Open in your browser to install'
+    : platform === 'ios'
+    ? 'Add to home screen for full-screen experience'
+    : platform === 'android'
+    ? 'Install VEKTRA app on your device'
     : 'Faster, full screen, right on your home screen';
   banner.innerHTML = `
     <img src="/app/assets/icon-192.png" alt="">
     <div class="ib-text">
-      <div class="ib-title">Get the VEKTRA app</div>
+      <div class="ib-title">📲 Install VEKTRA</div>
       <div class="ib-sub">${sub}</div>
     </div>
     <button class="ib-go" onclick="triggerInstall()">${deferredInstallPrompt ? 'Install' : 'How?'}</button>
@@ -707,12 +723,10 @@ window.addEventListener('load', () => {
     if (btn) btn.style.display = 'none';
     return;
   }
-  // Wait until the user has signed in and settled before suggesting install
-  let checks = 0;
-  const timer = setInterval(() => {
+  // Show install banner to ALL users after 3 seconds (removed sign-in requirement)
+  setTimeout(() => {
     maybeShowInstallBanner();
-    if (installBannerShown || ++checks > 40) clearInterval(timer);
-  }, 15000);
+  }, 3000);
   // Landing page "Install" links arrive with ?install=1 - show the steps right away
   if (new URLSearchParams(window.location.search).get('install') === '1') {
     setTimeout(() => showInstallHelp(false), 1200);
@@ -891,7 +905,7 @@ async function register() {
       bodyPayload.referral_code = referralCode;
     }
     
-    const onSlow = () => { if (btnEl) btnEl.textContent = 'Waking up server (up to ~60s on first visit)...'; };
+    const onSlow = () => { if (btnEl) btnEl.textContent = 'Waking up server (Chill a minute we start it up!!)...'; };
 
     const res = await wakeAwareFetch(`${API}/api/v1/auth/register`, {
       method: 'POST',
@@ -1175,11 +1189,30 @@ async function loadDashboard() {
   
   console.log('currentUser =', currentUser);
 
-  // Show loading state
+  // Show loading state with skeleton
   const dashboardEl = document.getElementById('dashboard');
   if (dashboardEl) {
     dashboardEl.style.opacity = '0.5';
     dashboardEl.style.pointerEvents = 'none';
+    // Add skeleton overlay for better perceived performance
+    if (!dashboardEl.querySelector('.skeleton-container')) {
+      const skeleton = document.createElement('div');
+      skeleton.className = 'skeleton-container';
+      skeleton.innerHTML = `
+        <div class="skeleton skeleton-text-lg" style="width: 60%"></div>
+        <div class="skeleton skeleton-text-sm" style="width: 40%"></div>
+        <div class="skeleton-item" style="margin-top: 1rem">
+          <div class="skeleton skeleton-bar" style="width: 100%"></div>
+          <div class="skeleton skeleton-bar" style="width: 80%"></div>
+          <div class="skeleton skeleton-bar" style="width: 60%"></div>
+        </div>
+        <div class="skeleton-item">
+          <div class="skeleton skeleton-bar" style="width: 100%"></div>
+          <div class="skeleton skeleton-bar" style="width: 70%"></div>
+        </div>
+      `;
+      dashboardEl.insertBefore(skeleton, dashboardEl.firstChild);
+    }
   }
 
   // Dynamic greeting
@@ -1223,7 +1256,16 @@ async function loadDashboard() {
 
     if (!res.ok) {
       console.error('Failed to load snapshots:', res.status);
-      showToast('Could not load your data. Please refresh.', 'error');
+      if (res.status === 401) {
+        showToast('Session expired. Please sign in again.', 'error');
+        logout();
+        return;
+      }
+      if (res.status === 500) {
+        showToast('Server error. Please try again.', 'error');
+      } else {
+        showToast('Could not load your data. Please refresh.', 'error');
+      }
       return;
     }
 
@@ -1343,11 +1385,14 @@ async function loadDashboard() {
     console.error('Could not load snapshots:', e);
     showToast('Could not load your data. Please refresh.', 'error');
   } finally {
-    // Remove loading state
+    // Remove loading state and skeleton
     if (dashboardEl) {
       dashboardEl.style.opacity = '1';
       dashboardEl.style.pointerEvents = 'auto';
+      const skeleton = dashboardEl.querySelector('.skeleton-container');
+      if (skeleton) skeleton.remove();
     }
+    hideLoader();
   }
   checkBirthday();
   checkPaymentReturn();
@@ -1944,6 +1989,250 @@ async function onboardStep3() {
   showToast('Welcome to VEKTRA, ' + (currentUser?.username || '') + '! Log your first day to activate your score 🔥', 'success', 6000);
 }
 
+// ── Render daily report breakdown ──
+function renderDailyBreakdown(content) {
+  const breakdownEl = document.getElementById('daily-breakdown');
+  if (!breakdownEl) return;
+
+  const data = content || {};
+  const sections = [];
+
+  // Mental section
+  if (data.mood_score !== undefined || data.energy_level !== undefined || data.focus_level !== undefined) {
+    sections.push({
+      icon: '🧠',
+      title: 'Mental State',
+      metrics: [
+        { label: 'Mood', value: data.mood_score !== undefined ? `${data.mood_score}/10` : '—', color: data.mood_score >= 7 ? 'var(--success)' : data.mood_score >= 5 ? 'var(--warning)' : 'var(--danger)' },
+        { label: 'Energy', value: data.energy_level !== undefined ? `${data.energy_level}/10` : '—', color: data.energy_level >= 7 ? 'var(--success)' : data.energy_level >= 5 ? 'var(--warning)' : 'var(--danger)' },
+        { label: 'Focus', value: data.focus_level !== undefined ? `${data.focus_level}/10` : '—', color: data.focus_level >= 7 ? 'var(--success)' : data.focus_level >= 5 ? 'var(--warning)' : 'var(--danger)' },
+      ]
+    });
+  }
+
+  // Body section
+  if (data.sleep_hours !== undefined || data.screen_time !== undefined) {
+    sections.push({
+      icon: '💪',
+      title: 'Body & Habits',
+      metrics: [
+        { label: 'Sleep', value: data.sleep_hours !== undefined ? `${data.sleep_hours}h` : '—', color: data.sleep_hours >= 7 ? 'var(--success)' : data.sleep_hours >= 5 ? 'var(--warning)' : 'var(--danger)' },
+        { label: 'Screen Time', value: data.screen_time !== undefined ? `${data.screen_time}h` : '—', color: data.screen_time <= 4 ? 'var(--success)' : data.screen_time <= 6 ? 'var(--warning)' : 'var(--danger)' },
+      ]
+    });
+  }
+
+  // Finance section
+  if (data.cashflow !== undefined) {
+    sections.push({
+      icon: '💰',
+      title: 'Financial Flow',
+      metrics: [
+        { label: 'Cash Flow', value: data.cashflow >= 0 ? `+${data.cashflow}` : data.cashflow, color: data.cashflow >= 0 ? 'var(--success)' : 'var(--danger)' },
+      ]
+    });
+  }
+
+  // Goals section
+  if (data.goal_hit !== undefined || data.tomorrow_goal) {
+    sections.push({
+      icon: '🎯',
+      title: 'Goals & Execution',
+      metrics: [
+        { label: 'Today\'s Goal', value: data.goal_hit ? '✓ Hit' : '✗ Missed', color: data.goal_hit ? 'var(--success)' : 'var(--danger)' },
+        { label: 'Tomorrow', value: data.tomorrow_goal ? 'Set' : '—', color: data.tomorrow_goal ? 'var(--accent)' : 'var(--text-muted)' },
+      ]
+    });
+  }
+
+  if (sections.length === 0) {
+    breakdownEl.innerHTML = '<div style="text-align:center;color:var(--text-muted);font-size:14px;padding:2rem">No data logged today</div>';
+    return;
+  }
+
+  breakdownEl.innerHTML = sections.map(section => `
+    <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:1rem;margin-bottom:1rem">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:0.75rem">
+        <span style="font-size:20px">${section.icon}</span>
+        <span style="font-size:14px;font-weight:700;color:var(--text-primary)">${section.title}</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:8px">
+        ${section.metrics.map(m => `
+          <div style="background:var(--bg-card);padding:8px;border-radius:6px;border:1px solid var(--border)">
+            <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">${m.label}</div>
+            <div style="font-size:16px;font-weight:700;color:${m.color}">${m.value}</div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderScoreSparkline(scores) {
+  const canvas = document.getElementById('score-sparkline');
+  if (!canvas || !scores || scores.length < 2) return;
+
+  const ctx = canvas.getContext('2d');
+  const width = canvas.offsetWidth;
+  const height = canvas.offsetHeight;
+  canvas.width = width;
+  canvas.height = height;
+
+  const padding = 8;
+  const chartWidth = width - padding * 2;
+  const chartHeight = height - padding * 2;
+
+  const minScore = Math.min(...scores);
+  const maxScore = Math.max(...scores);
+  const scoreRange = maxScore - minScore || 1;
+
+  ctx.clearRect(0, 0, width, height);
+
+  // Draw gradient background
+  const gradient = ctx.createLinearGradient(0, 0, 0, height);
+  gradient.addColorStop(0, 'rgba(108, 99, 255, 0.2)');
+  gradient.addColorStop(1, 'rgba(108, 99, 255, 0)');
+  ctx.fillStyle = gradient;
+
+  // Draw line
+  ctx.beginPath();
+  ctx.strokeStyle = '#6c63ff';
+  ctx.lineWidth = 2;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+
+  scores.forEach((score, i) => {
+    const x = padding + (i / (scores.length - 1)) * chartWidth;
+    const y = padding + chartHeight - ((score - minScore) / scoreRange) * chartHeight;
+    if (i === 0) {
+      ctx.moveTo(x, y);
+    } else {
+      ctx.lineTo(x, y);
+    }
+  });
+  ctx.stroke();
+
+  // Draw points
+  scores.forEach((score, i) => {
+    const x = padding + (i / (scores.length - 1)) * chartWidth;
+    const y = padding + chartHeight - ((score - minScore) / scoreRange) * chartHeight;
+    ctx.beginPath();
+    ctx.arc(x, y, 3, 0, Math.PI * 2);
+    ctx.fillStyle = '#6c63ff';
+    ctx.fill();
+  });
+}
+
+function generateDataDrivenInsights(content, insights) {
+  const actions = [];
+  const score = content.report_score || 0;
+  const engines = insights.engines || {};
+  const money = insights.money || {};
+
+  // Priority Focus - based on lowest scoring engine
+  let lowestEngine = null;
+  let lowestScore = 100;
+  Object.entries(engines).forEach(([name, data]) => {
+    if (data.score !== null && data.score < lowestScore) {
+      lowestScore = data.score;
+      lowestEngine = name;
+    }
+  });
+
+  if (lowestEngine) {
+    const focusActions = {
+      Financial: 'Review your spending patterns. Track every expense for the next 7 days.',
+      Mental: 'Schedule 15 minutes of mindfulness or journaling daily.',
+      Execution: 'Break your largest goal into 3 smaller, achievable tasks.',
+      Body: 'Aim for 7+ hours of sleep and reduce screen time by 1 hour.',
+      Growth: 'Dedicate 30 minutes daily to learning a new skill.',
+    };
+    actions.push({
+      heading: '🎯 Priority Focus',
+      color: 'var(--success)',
+      rgb: '34,197,94',
+      title: `Strengthen your ${lowestEngine} engine`,
+      detail: focusActions[lowestEngine] || 'Focus on the area with the most room for improvement.',
+      target: `${lowestEngine} score to ${lowestScore + 10}+`
+    });
+  }
+
+  // Risk Mitigation - based on concerning patterns
+  if (money.savings_rate !== null && money.savings_rate < 10) {
+    actions.push({
+      heading: '⚠️ Risk Mitigation',
+      color: 'var(--warning)',
+      rgb: '245,158,11',
+      title: 'Low savings rate detected',
+      detail: `Your current savings rate is ${money.savings_rate}%. Aim to save at least 20% of income for financial resilience.`,
+      target: 'Savings rate to 20%+'
+    });
+  } else if (content.avg_sleep && content.avg_sleep < 6) {
+    actions.push({
+      heading: '⚠️ Risk Mitigation',
+      color: 'var(--warning)',
+      rgb: '245,158,11',
+      title: 'Sleep deprivation affecting performance',
+      detail: `Average sleep is ${content.avg_sleep}h. Below 6h significantly impacts focus, mood, and decision-making.`,
+      target: 'Sleep to 7h+ per night'
+    });
+  } else if (content.goal_hit_rate !== null && content.goal_hit_rate < 50) {
+    actions.push({
+      heading: '⚠️ Risk Mitigation',
+      color: 'var(--warning)',
+      rgb: '245,158,11',
+      title: 'Goal completion rate below 50%',
+      detail: 'Set smaller, more achievable goals. Build momentum with quick wins before scaling up.',
+      target: 'Goal hit rate to 70%+'
+    });
+  } else {
+    actions.push({
+      heading: '⚠️ Risk Mitigation',
+      color: 'var(--warning)',
+      rgb: '245,158,11',
+      title: 'Maintain consistency',
+      detail: 'Continue logging daily. Consistency is the foundation of trajectory improvement.',
+      target: 'Log 7 days in a row'
+    });
+  }
+
+  // Opportunity Capture - based on strengths
+  let highestEngine = null;
+  let highestScore = 0;
+  Object.entries(engines).forEach(([name, data]) => {
+    if (data.score !== null && data.score > highestScore) {
+      highestScore = data.score;
+      highestEngine = name;
+    }
+  });
+
+  if (highestEngine) {
+    const opportunityActions = {
+      Financial: 'Leverage your strong position to invest or build an emergency fund.',
+      Mental: 'Use your mental clarity to tackle complex decisions or creative work.',
+      Execution: 'Take on your most challenging project while your execution is strong.',
+      Body: 'Use your physical energy to intensify workouts or try new activities.',
+      Growth: 'Accelerate learning in areas that interest you most.',
+    };
+    actions.push({
+      heading: '🚀 Opportunity Capture',
+      color: 'var(--accent)',
+      rgb: '108,99,255',
+      title: `Capitalize on ${highestEngine} strength`,
+      detail: opportunityActions[highestEngine] || 'Your strongest area is a leverage point for overall improvement.',
+      target: 'Apply strength to next challenge'
+    });
+  }
+
+  return actions.map(action => `
+    <div style="padding:12px;background:rgba(${action.rgb},0.1);border:1px solid rgba(${action.rgb},0.3);border-radius:var(--radius-sm);transition:transform 0.2s ease" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
+      <div style="font-size:13px;font-weight:600;color:${action.color};margin-bottom:4px">${action.heading}: ${escHtml(action.title)}</div>
+      <div style="font-size:13px;color:var(--text-primary);line-height:1.5">${escHtml(action.detail)}</div>
+      ${action.target ? `<div style="margin-top:8px;font-size:12px;font-weight:700;color:${action.color}">🎯 Target: ${escHtml(action.target)}</div>` : ''}
+    </div>
+  `).join('');
+}
+
 // ── Load and display report ──
 let currentReportData = null; // { report, content } for the loaded weekly report, used by shareReportAsImage()
 
@@ -1971,9 +2260,19 @@ async function loadReport(reportType = 'weekly') {
   updateReportTabLocks();
 
   showLoader('Generating your report...');
-  
+
+  // Add loading skeleton animation
+  const scoreEl = document.getElementById('report-score');
+  if (scoreEl) {
+    scoreEl.textContent = '...';
+    scoreEl.style.opacity = '0.5';
+  }
+
   const narrativeEl = document.getElementById('report-narrative');
-  if (narrativeEl) narrativeEl.textContent = 'Generating...';
+  if (narrativeEl) {
+    narrativeEl.textContent = 'Analyzing your trajectory data...';
+    narrativeEl.style.opacity = '0.7';
+  }
   
   try {
     console.log('Fetching report from API');
@@ -2048,7 +2347,10 @@ async function loadReport(reportType = 'weekly') {
     const cashflowEl = document.getElementById('report-cashflow');
     const goalsEl = document.getElementById('report-goals');
     
-    if (scoreEl) scoreEl.textContent = report.vektra_score ? report.vektra_score.toFixed(0) : '—';
+    if (scoreEl) {
+      scoreEl.textContent = report.vektra_score ? report.vektra_score.toFixed(0) : '—';
+      scoreEl.style.opacity = '1';
+    }
     const eyebrowEl = document.getElementById('report-eyebrow');
     if (eyebrowEl) {
       eyebrowEl.textContent = reportType === 'quarterly' ? 'Quarterly Report'
@@ -2118,6 +2420,7 @@ async function loadReport(reportType = 'weekly') {
       .replace(/<\/form>/g, '')
       .trim();
     if (narrativeEl) {
+      narrativeEl.style.opacity = '1';
       if (content.narrative && reportReady) {
         narrativeEl.style.whiteSpace = 'normal';
         narrativeEl.innerHTML = renderNarrativeSections(content);
@@ -2147,8 +2450,21 @@ async function loadReport(reportType = 'weekly') {
 
     renderReportExtras(reportType, content, reportReady);
 
-    loadWeeklyComparison();
-    
+    // Render daily-specific breakdown for daily reports
+    const dailyBreakdownEl = document.getElementById('daily-breakdown');
+    const weeklyComparisonEl = document.getElementById('weekly-comparison');
+    if (dailyBreakdownEl && weeklyComparisonEl) {
+      if (reportType === 'daily') {
+        dailyBreakdownEl.style.display = 'block';
+        weeklyComparisonEl.style.display = 'none';
+        renderDailyBreakdown(content);
+      } else {
+        dailyBreakdownEl.style.display = 'none';
+        weeklyComparisonEl.style.display = 'block';
+        loadWeeklyComparison();
+      }
+    }
+
     console.log('loadReport completed successfully - END');
 
   } catch(e) {
@@ -2712,6 +3028,14 @@ function renderReportExtras(reportType, content, reportReady) {
   const differentiator = document.getElementById('report-differentiator');
   if (differentiator) differentiator.style.display = reportReady ? 'none' : 'block';
 
+  // Render detailed engine breakdown
+  renderDetailedEngineBreakdown(insights.engines);
+
+  // Render score sparkline if we have score history
+  if (insights.current?.score_history && Array.isArray(insights.current.score_history)) {
+    renderScoreSparkline(insights.current.score_history);
+  }
+
   // Trend card
   const angleEl = document.getElementById('trajectory-angle');
   const angleSub = document.getElementById('trajectory-angle-sub');
@@ -2738,35 +3062,44 @@ function renderReportExtras(reportType, content, reportReady) {
   const patternsEl = document.getElementById('pattern-insights');
   if (patternsEl) {
     const rows = [];
-    (insights.drivers || []).forEach(d => rows.push(['📈', `Your ${d.label} lever`, d.text]));
+    (insights.drivers || []).forEach(d => rows.push(['📈', `Your ${d.label} lever`, d.text, `Gap: ${d.gap} pts`]));
     if (insights.weekday) {
       const w = insights.weekday;
-      rows.push(['🔄', `${w.best}s vs ${w.worst}s`, `You average ${w.best_avg} on ${w.best}s and ${w.worst_avg} on ${w.worst}s.`]);
+      rows.push(['🔄', `${w.best}s vs ${w.worst}s`, `You average ${w.best_avg} on ${w.best}s and ${w.worst_avg} on ${w.worst}s.`, `${w.best_avg - w.worst_avg} pt difference`]);
     }
     if (insights.best_day) {
       const b = insights.best_day;
-      rows.push(['⚡', `Best day: ${b.weekday} (${b.score})`, b.why?.length ? `You ${b.why.join(' and ')}.` : 'Your highest score this period.']);
+      rows.push(['⚡', `Best day: ${b.weekday} (${b.score})`, b.why?.length ? `You ${b.why.join(' and ')}.` : 'Your highest score this period.', 'Peak performance']);
     }
     if (insights.worst_day) {
       const w = insights.worst_day;
-      rows.push(['🧊', `Toughest day: ${w.weekday} (${w.score})`, w.why?.length ? `You ${w.why.join(' and ')}.` : 'Your lowest score this period.']);
+      rows.push(['🧊', `Toughest day: ${w.weekday} (${w.score})`, w.why?.length ? `You ${w.why.join(' and ')}.` : 'Your lowest score this period.', 'Low point']);
     }
     if (insights.consistency) {
       const c = insights.consistency;
-      rows.push(['🔥', `${c.logged} of ${c.period_days} days logged`, `Longest streak: ${c.longest_streak} day${c.longest_streak === 1 ? '' : 's'}. Current: ${c.current_streak}.`]);
+      rows.push(['🔥', `${c.logged} of ${c.period_days} days logged`, `Longest streak: ${c.longest_streak} day${c.longest_streak === 1 ? '' : 's'}. Current: ${c.current_streak}.`, `${c.rate}% consistency`]);
     }
-    if (!rows.length) rows.push(['📊', 'Patterns need a few days', 'Log sleep, screen time and deep work daily. After 4 days VEKTRA shows which of them moves your score most.']);
+    if (insights.money) {
+      const m = insights.money;
+      if (m.savings_rate !== null) {
+        rows.push(['💰', `Savings rate: ${m.savings_rate}%`, `Monthly pace: ${m.monthly_pace > 0 ? '+' : ''}${m.monthly_pace}`, `${m.income > 0 ? 'Positive flow' : 'Negative flow'}`]);
+      }
+    }
+    if (!rows.length) rows.push(['📊', 'Patterns need a few days', 'Log sleep, screen time and deep work daily. After 4 days VEKTRA shows which of them moves your score most.', 'Keep logging']);
     const visible = content.locked_sections ? rows.slice(0, 1) : rows;
     const hidden = rows.length - visible.length;
-    patternsEl.innerHTML = visible.map(([icon, title, text]) => `
-      <div style="display:flex;align-items:flex-start;gap:12px;padding:12px;background:var(--bg-secondary);border-radius:var(--radius-sm)">
+    patternsEl.innerHTML = visible.map(([icon, title, text, badge]) => `
+      <div style="display:flex;align-items:flex-start;gap:12px;padding:12px;background:var(--bg-secondary);border-radius:var(--radius-sm);transition:transform 0.2s ease" onmouseover="this.style.transform='translateX(4px)'" onmouseout="this.style.transform='none'">
         <div style="font-size:22px;line-height:1">${icon}</div>
-        <div>
-          <div style="font-size:13px;font-weight:600;color:var(--text-primary)">${escHtml(title)}</div>
+        <div style="flex:1">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+            <div style="font-size:13px;font-weight:600;color:var(--text-primary)">${escHtml(title)}</div>
+            ${badge ? `<span style="font-size:10px;color:var(--accent);background:rgba(108,99,255,0.1);padding:2px 6px;border-radius:4px;border:1px solid rgba(108,99,255,0.2)">${escHtml(badge)}</span>` : ''}
+          </div>
           <div style="font-size:12px;color:var(--text-secondary);line-height:1.5">${escHtml(text)}</div>
         </div>
       </div>`).join('')
-      + (hidden ? `<div style="font-size:12px;color:var(--text-muted);text-align:center">🔒 ${hidden} more pattern${hidden === 1 ? '' : 's'} in the full report</div>` : '');
+      + (hidden ? `<div style="font-size:12px;color:var(--text-muted);text-align:center;padding:8px;background:var(--bg-card);border-radius:var(--radius-sm);border:1px dashed var(--border)">🔒 ${hidden} more pattern${hidden === 1 ? '' : 's'} in the full report</div>` : '');
   }
 
   // Comparative intelligence: real deltas and an honest percentile
@@ -2793,7 +3126,7 @@ function renderReportExtras(reportType, content, reportReady) {
   const actionsEl = document.getElementById('actionable-insights');
   if (actionsEl) {
     const card = (heading, color, rgb, action) => `
-      <div style="padding:12px;background:rgba(${rgb},0.1);border:1px solid rgba(${rgb},0.3);border-radius:var(--radius-sm)">
+      <div style="padding:12px;background:rgba(${rgb},0.1);border:1px solid rgba(${rgb},0.3);border-radius:var(--radius-sm);transition:transform 0.2s ease" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
         <div style="font-size:13px;font-weight:600;color:${color};margin-bottom:4px">${heading}: ${escHtml(action.title)}</div>
         <div style="font-size:13px;color:var(--text-primary);line-height:1.5">${escHtml(action.detail)}</div>
         ${action.target ? `<div style="margin-top:8px;font-size:12px;font-weight:700;color:${color}">🎯 Target: ${escHtml(action.target)}</div>` : ''}
@@ -2809,9 +3142,12 @@ function renderReportExtras(reportType, content, reportReady) {
           <button class="btn-primary" style="width:100%;margin-top:10px" onclick="openUpgrade('tier1')">Unlock my plan</button>
         </div>`;
     } else {
-      actionsEl.innerHTML = `<div style="font-size:13px;color:var(--text-secondary);line-height:1.6">Your plan appears once this ${word} has enough logged days.</div>`;
+      // Generate data-driven insights if AI plan isn't available
+      const dataDrivenInsights = generateDataDrivenInsights(content, insights);
+      actionsEl.innerHTML = dataDrivenInsights;
     }
   }
+}
 }
 
 async function regenerateReport() {
@@ -2838,6 +3174,58 @@ function renderEngineBar(id, label, score, color, maxScore = 100, detail = '') {
       </div>
     </div>
   `;
+}
+
+function renderDetailedEngineBreakdown(engines) {
+  const container = document.getElementById('engine-breakdown-detailed');
+  if (!container) return;
+
+  const engineConfig = {
+    Financial: { color: '#22c55e', icon: '💰', submetrics: ['income', 'savings_rate', 'emergencies'] },
+    Mental: { color: '#6c63ff', icon: '🧠', submetrics: ['mood', 'energy', 'focus'] },
+    Execution: { color: '#ec4899', icon: '⚡', submetrics: ['goals_hit', 'focus_hours', 'decisions'] },
+    Body: { color: '#f59e0b', icon: '💪', submetrics: ['sleep', 'screen_time', 'health'] },
+    Growth: { color: '#06b6d4', icon: '🌱', submetrics: ['skills', 'ideas', 'interactions'] },
+  };
+
+  const html = Object.entries(engines || {}).map(([name, data]) => {
+    const config = engineConfig[name] || { color: '#666', icon: '📊', submetrics: [] };
+    const score = data.score !== null ? Math.round(data.score) : '—';
+    const hasScore = data.score !== null && data.score !== undefined;
+    const pct = hasScore ? Math.round(Math.min(100, Math.max(0, data.score))) : 0;
+    const detail = data.detail || 'No data logged';
+
+    return `
+      <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:1rem;transition:transform 0.2s ease,box-shadow 0.2s ease" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 4px 12px rgba(0,0,0,0.15)'" onmouseout="this.style.transform='none';this.style.boxShadow='none'">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:20px">${config.icon}</span>
+            <span style="font-size:14px;font-weight:700;color:var(--text-primary)">${name}</span>
+          </div>
+          <span style="font-size:18px;font-weight:800;color:${hasScore ? config.color : 'var(--text-muted)'}">${score}/100</span>
+        </div>
+        
+        <div style="background:var(--bg-card);border-radius:4px;height:6px;overflow:hidden;margin-bottom:0.75rem">
+          <div style="width:${pct}%;height:100%;background:${config.color};border-radius:4px;transition:width 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)"></div>
+        </div>
+        
+        <div style="font-size:12px;color:var(--text-secondary);line-height:1.5;margin-bottom:0.5rem">${escHtml(detail)}</div>
+        
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <span style="font-size:11px;color:var(--text-muted);background:var(--bg-card);padding:4px 8px;border-radius:4px;border:1px solid var(--border)">
+            ${data.days || 0} days logged
+          </span>
+          ${hasScore ? `
+            <span style="font-size:11px;color:${pct >= 70 ? 'var(--success)' : pct >= 40 ? 'var(--warning)' : 'var(--danger)'};background:var(--bg-card);padding:4px 8px;border-radius:4px;border:1px solid var(--border)">
+              ${pct >= 70 ? 'Strong' : pct >= 40 ? 'Building' : 'Needs work'}
+            </span>
+          ` : ''}
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  container.innerHTML = html;
 }
 
 // ── Profile ──

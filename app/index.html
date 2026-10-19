@@ -3,14 +3,29 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://accounts.google.com https://cdnjs.cloudflare.com https://analytics.tiktok.com; style-src 'self' 'unsafe-inline' https://accounts.google.com; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https://vektra-backend-qic7.onrender.com https://accounts.google.com https://ipapi.co https://formspree.io https://*.tiktok.com https://*.tiktokw.us; frame-src https://accounts.google.com; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; upgrade-insecure-requests">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <script>if(window.top!==window.self){document.documentElement.style.display='none';try{window.top.location=window.self.location.href}catch(e){}}</script>
-<title>VEKTRA</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VEKTRA - Track Your Trajectory, Know Your Vector</title>
+<meta name="description" content="VEKTRA is a trajectory intelligence system that measures the direction and momentum of your life across 5 engines: Financial, Mental, Execution, Body, and Growth. Stop counting checkboxes - start measuring your vector.">
+<meta name="keywords" content="habit tracker, trajectory intelligence, personal growth, life tracking, momentum, vector, productivity, self-improvement, daily logging, goals">
+<meta name="author" content="VEKTRA">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
 <meta name='probely-verification' content='b76c21b8-3479-44ef-8b10-ae1871e49824' />
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%236c63ff' width='100' height='100' rx='20'/><text x='50' y='65' font-size='50' font-family='Arial' font-weight='bold' fill='white' text-anchor='middle'>V</text></svg>">
 <link rel="stylesheet" href="css/style.css">
 <link rel="stylesheet" href="/app/assets/fonts/inter.css">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0a0a0f">
+<!-- Open Graph / Social Media -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="VEKTRA - Track Your Trajectory, Know Your Vector">
+<meta property="og:description" content="Stop counting checkboxes. Measure your life's vector with trajectory intelligence across 5 engines: Financial, Mental, Execution, Body, and Growth.">
+<meta property="og:url" content="https://vektraapp.online/app/">
+<meta property="og:image" content="https://vektraapp.online/app/assets/icon-512.png">
+<meta property="og:site_name" content="VEKTRA">
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="VEKTRA - Track Your Trajectory, Know Your Vector">
+<meta name="twitter:description" content="Stop counting checkboxes. Measure your life's vector with trajectory intelligence.">
+<meta name="twitter:image" content="https://vektraapp.online/app/assets/icon-512.png">
 <!-- Home-screen install (iOS ignores the manifest icons/name, so it needs these) -->
 <link rel="apple-touch-icon" href="/app/assets/apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -426,19 +441,19 @@ var e=ttq._i[t]||[],n=0;n<ttq.methods.length;n++)ttq.setAndDefer(e,ttq.methods[n
   </div>
 
   <!-- Streak Metrics Container Card -->
-  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:1rem;margin-bottom:1rem;display:flex;align-items:center;justify-content:space-between">
+  <div style="background:linear-gradient(135deg,var(--bg-card),var(--bg-secondary));border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem;display:flex;align-items:center;justify-content:space-between;box-shadow:var(--card-shadow)">
     <div>
-      <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">CURRENT STREAK</div>
-      <div id="dash-streak" style="font-size:24px;font-weight:700">🔥 0 days</div>
+      <div style="font-size:11px;color:var(--text-secondary);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.08em;font-weight:600">CURRENT STREAK</div>
+      <div id="dash-streak" style="font-size:28px;font-weight:800;color:var(--accent);text-shadow:0 0 20px var(--accent-glow)">🔥 0 days</div>
     </div>
-    <div style="font-size:11px;color:var(--text-muted);text-align:right;line-height:1.4">Log daily<br>to keep it alive</div>
+    <div style="font-size:12px;color:var(--text-muted);text-align:right;line-height:1.5">Log daily<br>to keep it alive</div>
   </div>
 
   <!-- Weekly Tracking Variables Meta Row -->
-  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:1rem;margin-bottom:1rem">
-    <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.08em">This week summary</div>
-    <div id="dash-week-summary" style="font-size:16px;font-weight:700;color:var(--text-primary)">0 logs • 0 unique days</div>
-    <div id="dash-week-status" style="font-size:13px;color:var(--text-secondary);margin-top:4px">Keep logging to unlock a richer weekly trajectory summary.</div>
+  <div style="background:linear-gradient(135deg,var(--bg-card),var(--bg-secondary));border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem;box-shadow:var(--card-shadow)">
+    <div style="font-size:11px;color:var(--text-secondary);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.08em;font-weight:600">This week summary</div>
+    <div id="dash-week-summary" style="font-size:18px;font-weight:700;color:var(--text-primary)">0 logs • 0 unique days</div>
+    <div id="dash-week-status" style="font-size:13px;color:var(--text-secondary);margin-top:6px;line-height:1.5">Keep logging to unlock a richer weekly trajectory summary.</div>
   </div>
 
   <!-- Real-time Pulse Metric -->
@@ -824,6 +839,9 @@ var e=ttq._i[t]||[],n=0;n<ttq.methods.length;n++)ttq.setAndDefer(e,ttq.methods[n
     </div>
   </div>
 
+  <!-- Daily Breakdown (shown only for daily reports) -->
+  <div id="daily-breakdown" style="display:none"></div>
+
   <!-- Score Card -->
   <div style="background:linear-gradient(135deg,var(--bg-card),var(--bg-secondary));border:1px solid var(--border);border-radius:var(--radius);padding:2rem;margin-bottom:1.5rem;text-align:center;box-shadow:var(--card-shadow);position:relative;overflow:hidden">
     <div style="position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--accent),transparent);opacity:0.5"></div>
@@ -894,6 +912,11 @@ var e=ttq._i[t]||[],n=0;n<ttq.methods.length;n++)ttq.setAndDefer(e,ttq.methods[n
         <div style="font-size:12px;color:var(--text-secondary);margin-top:4px">Projected score</div>
       </div>
     </div>
+    <!-- Score Trend Sparkline -->
+    <div style="margin-top:1rem;padding:1rem;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm)">
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px">SCORE TREND OVER PERIOD</div>
+      <canvas id="score-sparkline" style="width:100%;height:60px"></canvas>
+    </div>
     <div style="margin-top:1rem;padding:1rem;background:rgba(108,99,255,0.05);border-radius:var(--radius-sm);border-left:3px solid var(--accent)">
       <div style="font-size:13px;color:var(--text-primary);line-height:1.6">
         <strong>Why this matters:</strong> VEKTRA tracks not just what you do, but the DIRECTION you're moving. Unlike habit trackers that count checkboxes, we measure the VECTOR of your life - how close you are to your north star and how fast you're getting there.
@@ -961,28 +984,35 @@ var e=ttq._i[t]||[],n=0;n<ttq.methods.length;n++)ttq.setAndDefer(e,ttq.methods[n
       VEKTRA's 5-engine system goes beyond surface-level tracking. Each engine represents a core dimension of life success, measured as a composite signal rather than isolated metrics.
     </div>
 
-    <div class="engine-bar" id="bar-financial" data-label="Financial" data-color="#22c55e"></div>
-    <div class="engine-bar" id="bar-mental" data-label="Mental" data-color="#6c63ff"></div>
-    <div class="engine-bar" id="bar-execution" data-label="Execution" data-color="#ec4899"></div>
-    <div class="engine-bar" id="bar-body" data-label="Body" data-color="#f59e0b"></div>
-    <div class="engine-bar" id="bar-growth" data-label="Growth" data-color="#06b6d4"></div>
+    <div id="engine-breakdown-detailed" style="display:flex;flex-direction:column;gap:1rem">
+      <!-- Detailed engine cards will be rendered here -->
+    </div>
   </div>
 
   <!-- Comparative Analysis -->
   <div style="background:linear-gradient(135deg,var(--bg-card),var(--bg-secondary));border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem;margin-bottom:1.5rem;box-shadow:var(--card-shadow)">
     <div style="font-size:12px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:1.25rem;font-weight:700">Comparative Intelligence</div>
-    <div id="comparative-insights" style="display:flex;flex-direction:column;gap:10px">
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px;background:var(--bg-secondary);border-radius:var(--radius-sm)">
-        <span id="compare-week-label" style="font-size:13px;color:var(--text-primary)">Score vs last period</span>
-        <span id="compare-week" style="font-size:14px;font-weight:700;color:var(--text-muted)">Loading...</span>
+    <div id="comparative-insights" style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:12px;background:var(--bg-secondary);border-radius:var(--radius-sm);transition:transform 0.2s ease" onmouseover="this.style.transform='translateX(4px)'" onmouseout="this.style.transform='none'">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:16px">📊</span>
+          <span id="compare-week-label" style="font-size:13px;color:var(--text-primary)">Score vs last period</span>
+        </div>
+        <span id="compare-week" style="font-size:15px;font-weight:700;color:var(--text-muted)">Loading...</span>
       </div>
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px;background:var(--bg-secondary);border-radius:var(--radius-sm)">
-        <span id="compare-month-label" style="font-size:13px;color:var(--text-primary)">Goals hit vs last period</span>
-        <span id="compare-month" style="font-size:14px;font-weight:700;color:var(--text-muted)">Loading...</span>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:12px;background:var(--bg-secondary);border-radius:var(--radius-sm);transition:transform 0.2s ease" onmouseover="this.style.transform='translateX(4px)'" onmouseout="this.style.transform='none'">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:16px">🎯</span>
+          <span id="compare-month-label" style="font-size:13px;color:var(--text-primary)">Goals hit vs last period</span>
+        </div>
+        <span id="compare-month" style="font-size:15px;font-weight:700;color:var(--text-muted)">Loading...</span>
       </div>
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px;background:var(--bg-secondary);border-radius:var(--radius-sm)">
-        <span style="font-size:13px;color:var(--text-primary)">Among VEKTRA users</span>
-        <span id="compare-percentile" style="font-size:14px;font-weight:700;color:var(--text-muted)">Loading...</span>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:12px;background:var(--bg-secondary);border-radius:var(--radius-sm);transition:transform 0.2s ease" onmouseover="this.style.transform='translateX(4px)'" onmouseout="this.style.transform='none'">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:16px">👥</span>
+          <span style="font-size:13px;color:var(--text-primary)">Among VEKTRA users</span>
+        </div>
+        <span id="compare-percentile" style="font-size:15px;font-weight:700;color:var(--text-muted)">Loading...</span>
       </div>
     </div>
   </div>

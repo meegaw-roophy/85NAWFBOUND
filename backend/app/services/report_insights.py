@@ -323,6 +323,7 @@ def headline_numbers(rows: List[dict], engines: Optional[Dict[str, dict]] = None
     goals_set = sum(1 for r in rows if _has(r.get("tomorrow_goal")))
     goals_hit = sum(1 for r in rows if r.get("target_hit_bool") is True)
     net = sum((r["daily_income"] or 0) - (r["expenses"] or 0) for r in rows)
+    score_history = [r.get("vektra_score") for r in rows if r.get("vektra_score") is not None]
     return {
         "score": composite_score(engines if engines is not None else engine_breakdown(rows)),
         "mood": _avg(r.get("mood_score") for r in rows),
@@ -330,6 +331,7 @@ def headline_numbers(rows: List[dict], engines: Optional[Dict[str, dict]] = None
         "net_cash_flow": round(net, 2),
         "goal_hit_rate": round(goals_hit / goals_set * 100) if goals_set else None,
         "days_logged": len(rows),
+        "score_history": score_history,
     }
 
 
