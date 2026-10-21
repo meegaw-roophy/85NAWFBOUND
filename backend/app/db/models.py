@@ -21,7 +21,6 @@ class User(Base):
     username                = Column(String(50),  unique=True, index=True, nullable=False)
     email                   = Column(String(255), unique=True, index=True, nullable=False)
     password_hash           = Column(String(255), nullable=False)
-    full_name               = Column(String(255), nullable=True)
     dob                     = Column(Date,        nullable=True)   # birthday card trigger + age calc
 
     # ── email verification ───────────────────

@@ -22,7 +22,6 @@ async def get_birthdays_today(db: AsyncSession = Depends(get_session), current_u
             {
                 "id": u.id,
                 "username": u.username,
-                "full_name": u.full_name,
                 "dob": u.dob.isoformat() if u.dob else None
             }
             for u in birthday_users

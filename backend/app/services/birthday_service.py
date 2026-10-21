@@ -54,7 +54,7 @@ class BirthdayService:
         
         # Generate high-res image
         image_bytes = visual_generator.generate_birthday_image(
-            user_name=user.full_name or user.username,
+            user_name=user.username,
             age=age,
             width=1920,
             height=1080
@@ -63,14 +63,13 @@ class BirthdayService:
         image_base64 = visual_generator.encode_image_to_base64(image_bytes)
         
         # Generate personalized message
-        message = f"Happy {age}th Birthday, {user.full_name or user.username}! 🎉\n\n"
+        message = f"Happy {age}th Birthday, {user.username}! 🎉\n\n"
         message += "Another year closer to your North Star. Keep tracking your trajectory with VEKTRA.\n\n"
         message += "Vector = Magnitude × Direction"
         
         return {
             'user_id': user.id,
             'username': user.username,
-            'full_name': user.full_name,
             'age': age,
             'image_base64': image_base64,
             'message': message,

@@ -45,7 +45,6 @@ async def google_oauth_login(
 
     google_id = idinfo.get("sub")
     email = idinfo.get("email")
-    name = idinfo.get("name")
     email_verified = idinfo.get("email_verified", False)
 
     if not google_id or not email or not email_verified:
@@ -79,7 +78,6 @@ async def google_oauth_login(
                 # Unusable random password - this account only ever signs in
                 # via Google, but password_hash is a required column.
                 password_hash=get_password_hash(secrets.token_urlsafe(32)),
-                full_name=name,
                 oauth_provider="google",
                 oauth_id=google_id,
                 is_verified=True,

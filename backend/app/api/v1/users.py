@@ -15,7 +15,6 @@ router = APIRouter(prefix="/users", tags=["users"])
 
 
 class UserUpdate(BaseModel):
-    full_name: Optional[str] = None
     email: Optional[EmailStr] = None
     primary_goal: Optional[str] = None
     north_star: Optional[str] = None

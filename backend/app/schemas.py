@@ -8,7 +8,6 @@ class UserCreate(BaseModel):
     email: EmailStr
     password: str
     referral_code: Optional[str] = None
-    full_name: Optional[str] = None
     dob: Optional[date] = None
     current_location: Optional[str] = None
     country_code: Optional[str] = None
@@ -21,7 +20,6 @@ class UserOut(BaseModel):
     id: int
     username: str
     email: str
-    full_name: Optional[str] = None
     primary_goal: Optional[str] = None
     north_star: Optional[str] = None
     north_star_deadline: Optional[date] = None

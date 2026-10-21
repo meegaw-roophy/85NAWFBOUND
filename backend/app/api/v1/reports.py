@@ -193,8 +193,7 @@ async def get_shared_report(share_token: str, db: AsyncSession = Depends(get_ses
         user = user_result.scalar_one_or_none()
         if user:
             response_data["user"] = {
-                "username": user.username,
-                "full_name": user.full_name
+                "username": user.username
             }
     
     return response_data
