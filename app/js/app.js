@@ -576,7 +576,7 @@ function initTheme() {
 // fromTap: true when called straight from a button click. Browsers only allow
 // the native install prompt inside a user tap, so automatic calls (e.g. arriving
 // via ?install=1) show an "Install now" button instead of prompting directly.
-function showInstallHelp(fromTap = true)
+function showInstallHelp(fromTap = true) {
   if (isRunningInstalled()) {
     showToast('VEKTRA is already installed on this device ✓', 'success');
     return;
@@ -637,6 +637,7 @@ function showInstallHelp(fromTap = true)
       <li><span>VEKTRA will appear in your applications menu</span></li>
       <li><span><b>Windows:</b> Pin to taskbar for quick access</span></li>
       <li><span><b>Mac:</b> Add to dock for one-click launch</span></li>`;
+  }
 
   const sheet = document.createElement('div');
   sheet.id = 'install-sheet';
@@ -3147,7 +3148,6 @@ function renderReportExtras(reportType, content, reportReady) {
       actionsEl.innerHTML = dataDrivenInsights;
     }
   }
-}
 }
 
 async function regenerateReport() {
