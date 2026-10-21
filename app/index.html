@@ -390,14 +390,15 @@ var e=ttq._i[t]||[],n=0;n<ttq.methods.length;n++)ttq.setAndDefer(e,ttq.methods[n
   </div>
 
   <!-- VEKTRA Premium Vector Score Card Container -->
-  <div class="score-card-wrapper" style="margin-bottom:1.25rem">
-    <div class="score-card-inner" style="position: relative; overflow: hidden; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem;">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.12em;">VEKTRA Trajectory Score</div>
-        <div id="dash-vector-badge" style="font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 20px; background: rgba(108,99,255,0.15); color: #6c63ff;">STABLE</div>
+  <div class="score-card-wrapper" style="margin-bottom:1.5rem">
+    <div class="score-card-inner" style="position: relative; overflow: hidden; background: linear-gradient(135deg,var(--bg-card),var(--bg-secondary)); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.75rem; box-shadow: var(--card-shadow);">
+      <div style="position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--accent),transparent);opacity:0.5"></div>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <div style="font-size:12px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.1em;font-weight:600;">VEKTRA Trajectory Score</div>
+        <div id="dash-vector-badge" style="font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 20px; background: rgba(108,99,255,0.15); color: var(--accent);">STABLE</div>
       </div>
-      <div id="dash-score" style="font-size:64px;font-weight:800;background:linear-gradient(135deg,#6c63ff,#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1;letter-spacing:-0.03em;">—</div>
-      <div style="font-size:11px;color:var(--text-muted);margin-top:4px">INDEX SCALE / 100</div>
+      <div id="dash-score" style="font-size:72px;font-weight:900;background:linear-gradient(135deg,var(--accent),var(--pink));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1;letter-spacing:-0.03em;filter:drop-shadow(0 0 30px rgba(108,99,255,0.3))">—</div>
+      <div style="font-size:12px;color:var(--text-secondary);margin-top:6px;font-weight:500">INDEX SCALE / 100</div>
 
       <!-- Micro-Vector Metrics Divider Row Module -->
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.05);">
@@ -415,29 +416,29 @@ var e=ttq._i[t]||[],n=0;n<ttq.methods.length;n++)ttq.setAndDefer(e,ttq.methods[n
   </div>
 
   <!-- Smart Insight Container Card -->
-  <div id="smart-insight-card" style="background:linear-gradient(135deg,rgba(108,99,255,0.08),rgba(236,72,153,0.08));border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
-    <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">Today's Insight</div>
-    <div id="smart-insight" style="font-size:14px;color:var(--text-primary);line-height:1.5">Log your first snapshot to unlock personalized insights</div>
-    <div id="silent-killers-container" style="display:flex;flex-direction:column;gap:0.5rem;margin-top:0.75rem"></div>
+  <div id="smart-insight-card" style="background:linear-gradient(135deg,rgba(108,99,255,0.1),rgba(236,72,153,0.1));border:1px solid rgba(108,99,255,0.2);border-radius:var(--radius);padding:1.5rem;margin-bottom:1rem;box-shadow:var(--card-shadow)">
+    <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:10px;font-weight:600">Today's Insight</div>
+    <div id="smart-insight" style="font-size:15px;color:var(--text-primary);line-height:1.6;font-weight:500">Log your first snapshot to unlock personalized insights</div>
+    <div id="silent-killers-container" style="display:flex;flex-direction:column;gap:8px;margin-top:10px"></div>
   </div>
 
   <!-- Quick Stats Grid Row Profile -->
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:1rem">
-    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:1rem">
-      <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.05em;">NET WORTH</div>
-      <div id="dash-networth" style="font-size:18px;font-weight:700;color:var(--text-primary);">—</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:1rem">
+    <div style="background:linear-gradient(135deg,var(--bg-card),var(--bg-secondary));border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;box-shadow:var(--card-shadow);transition:all 0.2s ease">
+      <div style="font-size:11px;color:var(--text-secondary);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.08em;font-weight:600">NET WORTH</div>
+      <div id="dash-networth" style="font-size:20px;font-weight:800;color:var(--text-primary);">—</div>
     </div>
-    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:1rem">
-      <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.05em;">SURVIVAL RUNWAY</div>
-      <div id="dash-runway" style="font-size:18px;font-weight:700;color:var(--text-primary);">— days</div>
+    <div style="background:linear-gradient(135deg,var(--bg-card),var(--bg-secondary));border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;box-shadow:var(--card-shadow);transition:all 0.2s ease">
+      <div style="font-size:11px;color:var(--text-secondary);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.08em;font-weight:600">SURVIVAL RUNWAY</div>
+      <div id="dash-runway" style="font-size:20px;font-weight:800;color:var(--text-primary);">— days</div>
     </div>
   </div>
 
   <!-- Score Trend Native SVG Grid -->
-  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:1rem;margin-bottom:1rem">
-    <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">7-Day Trajectory</div>
+  <div style="background:linear-gradient(135deg,var(--bg-card),var(--bg-secondary));border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem;box-shadow:var(--card-shadow)">
+    <div style="font-size:11px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:10px;font-weight:600">7-Day Trajectory</div>
     <svg id="score-chart" viewBox="0 0 300 80" style="width:100%;height:80px"></svg>
-    <div id="chart-labels" style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-muted);margin-top:4px"></div>
+    <div id="chart-labels" style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-secondary);margin-top:6px"></div>
   </div>
 
   <!-- Streak Metrics Container Card -->
@@ -630,11 +631,11 @@ var e=ttq._i[t]||[],n=0;n<ttq.methods.length;n++)ttq.setAndDefer(e,ttq.methods[n
     <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:1rem">Body & Health</div>
 
     <!-- Quick-add sleep buttons -->
-    <div style="display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap">
-      <button onclick="quickSetSleep(7.5)" style="padding:6px 12px;border-radius:var(--radius-sm);border:1px solid var(--border);background:rgba(108,99,255,0.1);color:var(--text-primary);cursor:pointer;font-size:12px;font-family:var(--font)">😴 7.5h</button>
-      <button onclick="quickSetSleep(8)" style="padding:6px 12px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;font-size:12px;font-family:var(--font)">😴 8h</button>
-      <button onclick="quickSetSleep(6)" style="padding:6px 12px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;font-size:12px;font-family:var(--font)">😴 6h</button>
-      <button onclick="quickSetSleep(5)" style="padding:6px 12px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;font-size:12px;font-family:var(--font)">😴 5h</button>
+    <div style="display:flex;gap:10px;margin-bottom:1rem;flex-wrap:wrap">
+      <button onclick="quickSetSleep(7.5)" style="padding:8px 14px;border-radius:var(--radius-sm);border:1px solid var(--accent);background:rgba(108,99,255,0.15);color:var(--text-primary);cursor:pointer;font-size:13px;font-family:var(--font);font-weight:600;transition:all 0.2s ease">😴 7.5h</button>
+      <button onclick="quickSetSleep(8)" style="padding:8px 14px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;font-size:13px;font-family:var(--font);transition:all 0.2s ease">😴 8h</button>
+      <button onclick="quickSetSleep(6)" style="padding:8px 14px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;font-size:13px;font-family:var(--font);transition:all 0.2s ease">😴 6h</button>
+      <button onclick="quickSetSleep(5)" style="padding:8px 14px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;font-size:13px;font-family:var(--font);transition:all 0.2s ease">😴 5h</button>
     </div>
 
     <div class="slider-field">
@@ -683,11 +684,11 @@ var e=ttq._i[t]||[],n=0;n<ttq.methods.length;n++)ttq.setAndDefer(e,ttq.methods[n
     <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:1rem">Performance & Focus</div>
 
     <!-- Quick-add focus hours buttons -->
-    <div style="display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap">
-      <button onclick="quickSetFocus(4)" style="padding:6px 12px;border-radius:var(--radius-sm);border:1px solid var(--border);background:rgba(108,99,255,0.1);color:var(--text-primary);cursor:pointer;font-size:12px;font-family:var(--font)">🎯 4h</button>
-      <button onclick="quickSetFocus(6)" style="padding:6px 12px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;font-size:12px;font-family:var(--font)">🎯 6h</button>
-      <button onclick="quickSetFocus(8)" style="padding:6px 12px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;font-size:12px;font-family:var(--font)">🎯 8h</button>
-      <button onclick="quickSetFocus(2)" style="padding:6px 12px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;font-size:12px;font-family:var(--font)">🎯 2h</button>
+    <div style="display:flex;gap:10px;margin-bottom:1rem;flex-wrap:wrap">
+      <button onclick="quickSetFocus(4)" style="padding:8px 14px;border-radius:var(--radius-sm);border:1px solid var(--accent);background:rgba(108,99,255,0.15);color:var(--text-primary);cursor:pointer;font-size:13px;font-family:var(--font);font-weight:600;transition:all 0.2s ease">🎯 4h</button>
+      <button onclick="quickSetFocus(6)" style="padding:8px 14px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;font-size:13px;font-family:var(--font);transition:all 0.2s ease">🎯 6h</button>
+      <button onclick="quickSetFocus(8)" style="padding:8px 14px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;font-size:13px;font-family:var(--font);transition:all 0.2s ease">🎯 8h</button>
+      <button onclick="quickSetFocus(2)" style="padding:8px 14px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;font-size:13px;font-family:var(--font);transition:all 0.2s ease">🎯 2h</button>
     </div>
 
     <div class="slider-field">
@@ -1101,52 +1102,55 @@ var e=ttq._i[t]||[],n=0;n<ttq.methods.length;n++)ttq.setAndDefer(e,ttq.methods[n
   </div>
 
   <!-- Tier Badge -->
-  <div style="background:linear-gradient(135deg,#1a1a2e,#16213e);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem;display:flex;justify-content:space-between;align-items:center">
+  <div style="background:linear-gradient(135deg,var(--bg-card),var(--bg-secondary));border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem;margin-bottom:1rem;display:flex;justify-content:space-between;align-items:center;box-shadow:var(--card-shadow);position:relative;overflow:hidden">
+    <div style="position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--accent),transparent);opacity:0.5"></div>
     <div>
-      <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">CURRENT PLAN</div>
-      <div id="profile-tier" style="font-size:18px;font-weight:700;color:var(--accent)">Free</div>
+      <div style="font-size:11px;color:var(--text-secondary);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.08em;font-weight:600">CURRENT PLAN</div>
+      <div id="profile-tier" style="font-size:22px;font-weight:800;color:var(--accent);text-shadow:0 0 20px var(--accent-glow)">Free</div>
     </div>
-    <button onclick="openUpgrade()" style="padding:8px 16px;background:linear-gradient(135deg,#6c63ff,#ec4899);border:none;border-radius:var(--radius-sm);color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font)">Upgrade</button>
+    <button onclick="openUpgrade()" style="padding:10px 20px;background:linear-gradient(135deg,var(--accent),var(--pink));border:none;border-radius:var(--radius-sm);color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:var(--font);transition:transform 0.2s ease,box-shadow 0.2s ease">Upgrade</button>
   </div>
 
   <button id="admin-link-btn" class="btn-secondary" style="display:none;margin-bottom:1rem" onclick="openAdminAnalytics()">📊 Admin: Landing Analytics</button>
 
   <!-- Stats Row -->
-  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:1rem">
-    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:.75rem;text-align:center">
-      <div style="font-size:10px;color:var(--text-muted);margin-bottom:4px">STREAK</div>
-      <div id="profile-streak" style="font-size:20px;font-weight:700">—</div>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:1rem">
+    <div style="background:linear-gradient(135deg,var(--bg-card),var(--bg-secondary));border:1px solid var(--border);border-radius:var(--radius);padding:1rem;text-align:center;box-shadow:var(--card-shadow);transition:transform 0.2s ease">
+      <div style="font-size:11px;color:var(--text-secondary);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.08em;font-weight:600">STREAK</div>
+      <div id="profile-streak" style="font-size:24px;font-weight:800;color:var(--accent)">—</div>
     </div>
-    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:.75rem;text-align:center">
-      <div style="font-size:10px;color:var(--text-muted);margin-bottom:4px">SCORE</div>
-      <div id="profile-score" style="font-size:20px;font-weight:700">—</div>
+    <div style="background:linear-gradient(135deg,var(--bg-card),var(--bg-secondary));border:1px solid var(--border);border-radius:var(--radius);padding:1rem;text-align:center;box-shadow:var(--card-shadow);transition:transform 0.2s ease">
+      <div style="font-size:11px;color:var(--text-secondary);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.08em;font-weight:600">SCORE</div>
+      <div id="profile-score" style="font-size:24px;font-weight:800;color:var(--success)">—</div>
     </div>
-    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:.75rem;text-align:center">
-      <div style="font-size:10px;color:var(--text-muted);margin-bottom:4px">LOGS</div>
-      <div id="profile-logs" style="font-size:20px;font-weight:700">—</div>
+    <div style="background:linear-gradient(135deg,var(--bg-card),var(--bg-secondary));border:1px solid var(--border);border-radius:var(--radius);padding:1rem;text-align:center;box-shadow:var(--card-shadow);transition:transform 0.2s ease">
+      <div style="font-size:11px;color:var(--text-secondary);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.08em;font-weight:600">LOGS</div>
+      <div id="profile-logs" style="font-size:24px;font-weight:800;color:var(--pink)">—</div>
     </div>
   </div>
 
   <!-- Update North Star -->
-  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
-    <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">North Star</div>
-    <textarea id="profile-northstar" style="width:100%;padding:12px 14px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;font-family:var(--font);outline:none;resize:vertical;min-height:80px"></textarea>
+  <div style="background:linear-gradient(135deg,var(--bg-card),var(--bg-secondary));border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem;margin-bottom:1rem;box-shadow:var(--card-shadow)">
+    <div style="font-size:11px;color:var(--accent);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.08em;font-weight:600">North Star</div>
+    <textarea id="profile-northstar" style="width:100%;padding:14px 16px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:15px;font-family:var(--font);outline:none;resize:vertical;min-height:90px;line-height:1.6;transition:border-color 0.2s ease"></textarea>
   </div>
 
   <!-- Goal Progress -->
-  <div style="background:linear-gradient(135deg,#1a1a2e,#16213e);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
-    <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">North Star Progress</div>
+  <div style="background:linear-gradient(135deg,rgba(108,99,255,0.08),rgba(236,72,153,0.08));border:1px solid rgba(108,99,255,0.2);border-radius:var(--radius);padding:1.5rem;margin-bottom:1rem;box-shadow:var(--card-shadow)">
+    <div style="font-size:11px;color:var(--accent);margin-bottom:12px;text-transform:uppercase;letter-spacing:0.08em;font-weight:600">North Star Progress</div>
     <div style="margin-bottom:12px">
-      <div style="display:flex;justify-content:space-between;margin-bottom:6px">
-        <span style="font-size:13px;color:var(--text-secondary)">Overall Progress</span>
-        <span id="goal-progress-pct" style="font-size:13px;font-weight:700;color:var(--accent)">0%</span>
+      <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+        <span style="font-size:14px;color:var(--text-primary);font-weight:500">Overall Progress</span>
+        <span id="goal-progress-pct" style="font-size:14px;font-weight:700;color:var(--accent)">0%</span>
       </div>
-      <div style="height:8px;background:var(--bg-secondary);border-radius:4px;overflow:hidden">
-        <div id="goal-progress-bar" style="height:100%;background:linear-gradient(90deg,#6c63ff,#ec4899);width:0%;transition:width 0.5s ease"></div>
+      <div style="height:10px;background:var(--bg-secondary);border-radius:5px;overflow:hidden">
+        <div id="goal-progress-bar" style="height:100%;background:linear-gradient(90deg,var(--accent),var(--pink));width:0%;transition:width 0.6s cubic-bezier(0.34,1.56,0.64,1);position:relative">
+          <div style="position:absolute;top:0;left:0;right:0;bottom:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.2),transparent);animation:shimmer 2s infinite"></div>
+        </div>
       </div>
     </div>
-    <div id="next-milestone" style="font-size:13px;color:var(--text-muted)">No milestones set yet</div>
-    <button onclick="goTo('goals')" style="margin-top:12px;padding:8px 16px;background:rgba(108,99,255,0.2);border:1px solid var(--accent);border-radius:var(--radius-sm);color:var(--accent);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font)">Manage Milestones →</button>
+    <div id="next-milestone" style="font-size:14px;color:var(--text-secondary);line-height:1.5">No milestones set yet</div>
+    <button onclick="goTo('goals')" style="margin-top:14px;padding:10px 18px;background:rgba(108,99,255,0.15);border:1px solid var(--accent);border-radius:var(--radius-sm);color:var(--accent);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font);transition:all 0.2s ease">Manage Milestones →</button>
   </div>
 
   <!-- Subscription Upgrade Button -->
@@ -1595,41 +1599,44 @@ var e=ttq._i[t]||[],n=0;n<ttq.methods.length;n++)ttq.setAndDefer(e,ttq.methods[n
   </div>
 
   <!-- Progress Overview -->
-  <div style="background:linear-gradient(135deg,#1a1a2e,#16213e);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
-    <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">Overall Progress</div>
+  <div style="background:linear-gradient(135deg,rgba(108,99,255,0.08),rgba(236,72,153,0.08));border:1px solid rgba(108,99,255,0.2);border-radius:var(--radius);padding:1.5rem;margin-bottom:1rem;box-shadow:var(--card-shadow);position:relative;overflow:hidden">
+    <div style="position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--accent),transparent);opacity:0.5"></div>
+    <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:12px;font-weight:600">Overall Progress</div>
     <div style="margin-bottom:12px">
-      <div style="display:flex;justify-content:space-between;margin-bottom:6px">
-        <span style="font-size:13px;color:var(--text-secondary)">Milestones Completed</span>
-        <span id="goals-completed" style="font-size:13px;font-weight:700;color:var(--accent)">0/0</span>
+      <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+        <span style="font-size:14px;color:var(--text-primary);font-weight:500">Milestones Completed</span>
+        <span id="goals-completed" style="font-size:14px;font-weight:700;color:var(--accent)">0/0</span>
       </div>
-      <div style="height:8px;background:var(--bg-secondary);border-radius:4px;overflow:hidden">
-        <div id="goals-progress-bar" style="height:100%;background:linear-gradient(90deg,#6c63ff,#ec4899);width:0%;transition:width 0.5s ease"></div>
+      <div style="height:10px;background:var(--bg-secondary);border-radius:5px;overflow:hidden">
+        <div id="goals-progress-bar" style="height:100%;background:linear-gradient(90deg,var(--accent),var(--pink));width:0%;transition:width 0.6s cubic-bezier(0.34,1.56,0.64,1);position:relative">
+          <div style="position:absolute;top:0;left:0;right:0;bottom:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.2),transparent);animation:shimmer 2s infinite"></div>
+        </div>
       </div>
     </div>
   </div>
 
   <!-- Add New Milestone -->
-  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
-    <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:.75rem">Add New Milestone</div>
-    <div class="text-field" style="margin-bottom:12px">
+  <div style="background:linear-gradient(135deg,var(--bg-card),var(--bg-secondary));border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem;margin-bottom:1rem;box-shadow:var(--card-shadow)">
+    <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:12px;font-weight:600">Add New Milestone</div>
+    <div class="text-field" style="margin-bottom:14px">
       <label for="goal-title">Milestone Title</label>
-      <input type="text" id="goal-title" placeholder="e.g. Launch MVP product" style="width:100%;padding:12px 14px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;font-family:var(--font);outline:none">
+      <input type="text" id="goal-title" placeholder="e.g. Launch MVP product" style="width:100%;padding:14px 16px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:15px;font-family:var(--font);outline:none;transition:border-color 0.2s ease">
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
       <div class="number-field">
         <label for="goal-intensity">Intensity (1-10)</label>
-        <input type="number" id="goal-intensity" placeholder="5" min="1" max="10" style="width:100%;padding:12px 14px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;font-family:var(--font);outline:none">
+        <input type="number" id="goal-intensity" placeholder="5" min="1" max="10" style="width:100%;padding:14px 16px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:15px;font-family:var(--font);outline:none;transition:border-color 0.2s ease">
       </div>
       <div class="number-field">
         <label for="goal-effort">Effort (1-10)</label>
-        <input type="number" id="goal-effort" placeholder="5" min="1" max="10" style="width:100%;padding:12px 14px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;font-family:var(--font);outline:none">
+        <input type="number" id="goal-effort" placeholder="5" min="1" max="10" style="width:100%;padding:14px 16px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:15px;font-family:var(--font);outline:none;transition:border-color 0.2s ease">
       </div>
     </div>
-    <div class="text-field" style="margin-bottom:12px">
+    <div class="text-field" style="margin-bottom:14px">
       <label for="goal-deadline">Target Date</label>
-      <input type="date" id="goal-deadline" style="width:100%;padding:12px 14px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;font-family:var(--font);outline:none">
+      <input type="date" id="goal-deadline" style="width:100%;padding:14px 16px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:15px;font-family:var(--font);outline:none;transition:border-color 0.2s ease">
     </div>
-    <div id="goal-error" style="display:none;color:var(--danger);font-size:13px;margin-bottom:8px;text-align:center"></div>
+    <div id="goal-error" style="display:none;color:var(--danger);font-size:13px;margin-bottom:10px;text-align:center"></div>
     <button id="goal-add-btn" class="btn-primary" onclick="addGoal()">Add Milestone</button>
   </div>
 
@@ -1742,10 +1749,10 @@ var e=ttq._i[t]||[],n=0;n<ttq.methods.length;n++)ttq.setAndDefer(e,ttq.methods[n
   </div>
 
   <!-- Filter Tabs -->
-  <div style="display:flex;gap:8px;margin-bottom:1.5rem">
-    <button onclick="filterHistory('all')" id="hist-filter-all" class="hist-filter-btn" style="flex:1;padding:10px;border-radius:var(--radius-sm);border:1px solid var(--accent);background:rgba(108,99,255,0.2);color:var(--accent);cursor:pointer;font-size:13px;font-family:var(--font)">All</button>
-    <button onclick="filterHistory('weekly')" id="hist-filter-weekly" class="hist-filter-btn" style="flex:1;padding:10px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;font-size:13px;font-family:var(--font)">Weekly</button>
-    <button onclick="filterHistory('monthly')" id="hist-filter-monthly" class="hist-filter-btn" style="flex:1;padding:10px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;font-size:13px;font-family:var(--font)">Monthly</button>
+  <div style="display:flex;gap:10px;margin-bottom:1.5rem">
+    <button onclick="filterHistory('all')" id="hist-filter-all" class="hist-filter-btn" style="flex:1;padding:12px;border-radius:var(--radius-sm);border:2px solid var(--accent);background:rgba(108,99,255,0.15);color:var(--accent);cursor:pointer;font-size:13px;font-family:var(--font);font-weight:600;transition:all 0.2s ease">All</button>
+    <button onclick="filterHistory('weekly')" id="hist-filter-weekly" class="hist-filter-btn" style="flex:1;padding:12px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;font-size:13px;font-family:var(--font);font-weight:600;transition:all 0.2s ease">Weekly</button>
+    <button onclick="filterHistory('monthly')" id="hist-filter-monthly" class="hist-filter-btn" style="flex:1;padding:12px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;font-size:13px;font-family:var(--font);font-weight:600;transition:all 0.2s ease">Monthly</button>
   </div>
 
   <!-- Reports List -->
@@ -2028,12 +2035,12 @@ var e=ttq._i[t]||[],n=0;n<ttq.methods.length;n++)ttq.setAndDefer(e,ttq.methods[n
     <div style="font-size:12px;color:var(--text-muted);margin-bottom:1.5rem;line-height:1.5">The premium upgrade flow is under refinement. This preview helps you visualize pricing and commitment options before launch.</div>
 
     <!-- Tier Selector -->
-    <div style="display:flex;gap:8px;margin-bottom:1.5rem">
-      <button id="tier-btn-tier1" onclick="selectTier('tier1')" style="flex:1;padding:12px;border-radius:var(--radius-sm);border:2px solid var(--accent);background:rgba(108,99,255,0.15);color:var(--text-primary);cursor:pointer;font-family:var(--font);font-weight:600;font-size:14px">
-        Vector<br><span id="tier-price-tier1" style="font-size:11px;color:var(--text-muted);font-weight:400">Loading…</span>
+    <div style="display:flex;gap:12px;margin-bottom:1.5rem">
+      <button id="tier-btn-tier1" onclick="selectTier('tier1')" style="flex:1;padding:14px;border-radius:var(--radius);border:2px solid var(--accent);background:linear-gradient(135deg,rgba(108,99,255,0.15),rgba(108,99,255,0.05));color:var(--text-primary);cursor:pointer;font-family:var(--font);font-weight:700;font-size:15px;transition:all 0.2s ease;box-shadow:0 4px 12px rgba(108,99,255,0.2)">
+        Vector<br><span id="tier-price-tier1" style="font-size:12px;color:var(--text-muted);font-weight:400;margin-top:4px;display:block">Loading…</span>
       </button>
-      <button id="tier-btn-tier2" onclick="selectTier('tier2')" style="flex:1;padding:12px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;font-family:var(--font);font-weight:600;font-size:14px">
-        Apex<br><span id="tier-price-tier2" style="font-size:11px;color:var(--text-muted);font-weight:400">Loading…</span>
+      <button id="tier-btn-tier2" onclick="selectTier('tier2')" style="flex:1;padding:14px;border-radius:var(--radius);border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;font-family:var(--font);font-weight:700;font-size:15px;transition:all 0.2s ease">
+        Apex<br><span id="tier-price-tier2" style="font-size:12px;color:var(--text-muted);font-weight:400;margin-top:4px;display:block">Loading…</span>
       </button>
     </div>
 
@@ -2048,24 +2055,24 @@ var e=ttq._i[t]||[],n=0;n<ttq.methods.length;n++)ttq.setAndDefer(e,ttq.methods[n
       <div style="font-size:13px;color:var(--text-muted);margin-bottom:1rem">Choose by days or by amount. Both options sync automatically.</div>
       
       <!-- Tab toggle -->
-      <div style="display:flex;gap:8px;margin-bottom:1rem">
-        <button id="tab-days" onclick="switchTab('days')" style="flex:1;padding:8px;border-radius:var(--radius-sm);border:1px solid var(--accent);background:rgba(108,99,255,0.15);color:var(--text-primary);cursor:pointer;font-size:13px;font-weight:600;font-family:var(--font)">By Days</button>
-        <button id="tab-amount" onclick="switchTab('amount')" style="flex:1;padding:8px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;font-size:13px;font-weight:600;font-family:var(--font)">By Amount</button>
+      <div style="display:flex;gap:10px;margin-bottom:1rem">
+        <button id="tab-days" onclick="switchTab('days')" style="flex:1;padding:10px;border-radius:var(--radius-sm);border:2px solid var(--accent);background:rgba(108,99,255,0.15);color:var(--text-primary);cursor:pointer;font-size:13px;font-weight:700;font-family:var(--font);transition:all 0.2s ease">By Days</button>
+        <button id="tab-amount" onclick="switchTab('amount')" style="flex:1;padding:10px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;font-size:13px;font-weight:700;font-family:var(--font);transition:all 0.2s ease">By Amount</button>
       </div>
 
       <!-- Days Slider Option -->
       <div id="option-days">
-        <div style="font-size:13px;color:var(--text-muted);margin-bottom:1rem">Only 30 days? Are we building a legacy or just a hobby? Slide more to commit and save money.</div>
-        
+        <div style="font-size:14px;color:var(--text-primary);margin-bottom:1rem;line-height:1.5;font-weight:500">Only 30 days? Are we building a legacy or just a hobby? Slide more to commit and save money.</div>
+
         <!-- Slider -->
-        <input type="range" id="days-slider" min="30" max="366" value="30" 
+        <input type="range" id="days-slider" min="30" max="366" value="30"
               oninput="onSliderChange(this.value)"
-              style="width:100%;accent-color:var(--accent);cursor:pointer;margin-bottom:.75rem">
-        
+              style="width:100%;margin-bottom:1rem">
+
         <!-- Days display -->
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem">
-          <span style="font-size:13px;color:var(--text-muted)">Duration</span>
-          <span id="days-display" style="font-size:20px;font-weight:800;color:var(--text-primary)">30 days</span>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;padding:12px;background:var(--bg-secondary);border-radius:var(--radius-sm)">
+          <span style="font-size:14px;color:var(--text-secondary);font-weight:500">Duration</span>
+          <span id="days-display" style="font-size:22px;font-weight:800;color:var(--accent)">30 days</span>
         </div>
 
         <!-- Milestone markers -->
@@ -2115,33 +2122,34 @@ var e=ttq._i[t]||[],n=0;n<ttq.methods.length;n++)ttq.setAndDefer(e,ttq.methods[n
     </div>
 
     <!-- Price Card -->
-    <div style="background:linear-gradient(135deg,#1a1a2e,#16213e);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
-      <div id="price-loading" style="text-align:center;color:var(--text-muted);font-size:14px;padding:1rem">Calculating...</div>
-      
+    <div style="background:linear-gradient(135deg,rgba(108,99,255,0.08),rgba(236,72,153,0.08));border:1px solid rgba(108,99,255,0.2);border-radius:var(--radius);padding:1.5rem;margin-bottom:1rem;box-shadow:var(--card-shadow);position:relative;overflow:hidden">
+      <div style="position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--accent),transparent);opacity:0.5"></div>
+      <div id="price-loading" style="text-align:center;color:var(--text-secondary);font-size:14px;padding:1rem">Calculating...</div>
+
       <div id="price-content" style="display:none">
         <!-- Total price big display -->
-        <div style="text-align:center;margin-bottom:1rem">
-          <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">TOTAL PRICE</div>
-          <div id="price-total" style="font-size:48px;font-weight:900;background:linear-gradient(135deg,#6c63ff,#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1">—</div>
-          <div id="price-monthly-eq" style="font-size:13px;color:var(--text-muted);margin-top:4px"></div>
+        <div style="text-align:center;margin-bottom:1.25rem">
+          <div style="font-size:11px;color:var(--text-secondary);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.08em;font-weight:600">TOTAL PRICE</div>
+          <div id="price-total" style="font-size:52px;font-weight:900;background:linear-gradient(135deg,var(--accent),var(--pink));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1;filter:drop-shadow(0 0 20px rgba(108,99,255,0.3))">—</div>
+          <div id="price-monthly-eq" style="font-size:14px;color:var(--text-secondary);margin-top:6px;font-weight:500"></div>
         </div>
 
         <!-- Savings highlight -->
-        <div id="savings-card" style="display:none;background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.3);border-radius:var(--radius-sm);padding:.75rem;margin-bottom:1rem;text-align:center">
-          <div style="font-size:12px;color:var(--success);margin-bottom:2px">YOU SAVE</div>
-          <div id="price-saved" style="font-size:20px;font-weight:800;color:var(--success)"></div>
-          <div id="price-bonus-days" style="font-size:12px;color:var(--success);margin-top:2px"></div>
+        <div id="savings-card" style="display:none;background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.4);border-radius:var(--radius-sm);padding:1rem;margin-bottom:1rem;text-align:center">
+          <div style="font-size:12px;color:var(--success);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.08em;font-weight:600">YOU SAVE</div>
+          <div id="price-saved" style="font-size:24px;font-weight:800;color:var(--success)"></div>
+          <div id="price-bonus-days" style="font-size:13px;color:var(--success);margin-top:4px"></div>
         </div>
 
         <!-- Price breakdown -->
-        <div style="display:flex;flex-direction:column;gap:6px;font-size:13px">
-          <div style="border-top:1px solid var(--border);padding-top:6px;display:flex;justify-content:space-between;font-weight:700">
+        <div style="display:flex;flex-direction:column;gap:8px;font-size:14px">
+          <div style="border-top:1px solid var(--border);padding-top:8px;display:flex;justify-content:space-between;font-weight:700">
             <span>Total (<span id="total-days-display"></span> days)</span>
             <span id="price-final">—</span>
           </div>
           <div style="display:flex;justify-content:space-between">
-            <span style="color:var(--text-muted)">Expires</span>
-            <span id="price-expires" style="font-size:12px">—</span>
+            <span style="color:var(--text-secondary)">Expires</span>
+            <span id="price-expires" style="font-size:13px">—</span>
           </div>
         </div>
 
@@ -2161,10 +2169,10 @@ var e=ttq._i[t]||[],n=0;n<ttq.methods.length;n++)ttq.setAndDefer(e,ttq.methods[n
     </div>
 
     <!-- CTA Button -->
-    <button id="checkout-btn" class="btn-primary" onclick="proceedToCheckout()" style="margin-bottom:.75rem" disabled>
+    <button id="checkout-btn" class="btn-primary" onclick="proceedToCheckout()" style="margin-bottom:1rem;padding:16px;font-size:15px;font-weight:700" disabled>
       Accept Terms to Pay
     </button>
-    <div style="font-size:12px;color:var(--text-muted);text-align:center">🔒 Secure checkout via Paystack. Card and M-Pesa accepted.</div>
+    <div style="font-size:13px;color:var(--text-secondary);text-align:center;line-height:1.5">🔒 Secure checkout via Paystack. Card and M-Pesa accepted.</div>
 
   </div>
 
@@ -2181,46 +2189,47 @@ var e=ttq._i[t]||[],n=0;n<ttq.methods.length;n++)ttq.setAndDefer(e,ttq.methods[n
     </div>
 
     <!-- Vector Package -->
-    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
+    <div style="background:linear-gradient(135deg,var(--bg-card),var(--bg-secondary));border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem;margin-bottom:1rem;box-shadow:var(--card-shadow);transition:all 0.3s ease">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
         <div>
-          <div style="font-size:16px;font-weight:700;color:var(--text-primary)">Vector</div>
-          <div style="font-size:12px;color:var(--text-muted)">For the focused builder</div>
+          <div style="font-size:18px;font-weight:800;color:var(--text-primary)">Vector</div>
+          <div style="font-size:13px;color:var(--text-secondary);margin-top:4px">For the focused builder</div>
         </div>
-        <div style="font-size:24px">🎯</div>
+        <div style="font-size:32px">🎯</div>
       </div>
-      <ul style="list-style:none;padding:0;margin:0;font-size:13px;color:var(--text-secondary);line-height:1.8">
-        <li style="margin-bottom:8px">✓ Unlimited daily logging</li>
-        <li style="margin-bottom:8px">✓ Weekly AI harsh-truth reports</li>
-        <li style="margin-bottom:8px">✓ Full score breakdown</li>
-        <li style="margin-bottom:8px">✓ Streak tracking</li>
-        <li style="margin-bottom:8px">✓ Financial engine</li>
-        <li style="margin-bottom:8px">✓ Log history</li>
+      <ul style="list-style:none;padding:0;margin:0;font-size:14px;color:var(--text-secondary);line-height:2">
+        <li style="margin-bottom:10px">✓ Unlimited daily logging</li>
+        <li style="margin-bottom:10px">✓ Weekly AI harsh-truth reports</li>
+        <li style="margin-bottom:10px">✓ Full score breakdown</li>
+        <li style="margin-bottom:10px">✓ Streak tracking</li>
+        <li style="margin-bottom:10px">✓ Financial engine</li>
+        <li style="margin-bottom:10px">✓ Log history</li>
         <li>✓ Birthday trajectory card</li>
       </ul>
     </div>
 
     <!-- Apex Package -->
-    <div style="background:linear-gradient(135deg,rgba(108,99,255,0.1),rgba(236,72,153,0.1));border:1px solid var(--accent);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
+    <div style="background:linear-gradient(135deg,rgba(108,99,255,0.12),rgba(236,72,153,0.12));border:2px solid var(--accent);border-radius:var(--radius);padding:1.5rem;margin-bottom:1rem;box-shadow:0 8px 24px rgba(108,99,255,0.2);transition:all 0.3s ease;position:relative;overflow:hidden">
+      <div style="position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--accent),transparent);opacity:0.6"></div>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
         <div>
-          <div style="font-size:16px;font-weight:700;color:var(--accent)">Apex</div>
-          <div style="font-size:12px;color:var(--text-muted)">For the serious operator</div>
+          <div style="font-size:18px;font-weight:800;color:var(--accent)">Apex</div>
+          <div style="font-size:13px;color:var(--text-secondary);margin-top:4px">For the serious operator</div>
         </div>
-        <div style="font-size:24px">⚡</div>
+        <div style="font-size:32px">⚡</div>
       </div>
-      <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.75rem">Everything in Vector, plus:</div>
-      <ul style="list-style:none;padding:0;margin:0;font-size:13px;color:var(--text-secondary);line-height:1.8">
-        <li style="margin-bottom:8px">✓ Monthly deep reports</li>
-        <li style="margin-bottom:8px">✓ Quarterly strategy report</li>
-        <li style="margin-bottom:8px">✓ Custom AI tone</li>
-        <li style="margin-bottom:8px">✓ Early feature access</li>
+      <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:1rem;font-weight:600">Everything in Vector, plus:</div>
+      <ul style="list-style:none;padding:0;margin:0;font-size:14px;color:var(--text-secondary);line-height:2">
+        <li style="margin-bottom:10px">✓ Monthly deep reports</li>
+        <li style="margin-bottom:10px">✓ Quarterly strategy report</li>
+        <li style="margin-bottom:10px">✓ Custom AI tone</li>
+        <li style="margin-bottom:10px">✓ Early feature access</li>
         <li>👑 Founder badge</li>
       </ul>
     </div>
 
     <!-- CTA -->
-    <button onclick="goTo('upgrade')" style="width:100%;padding:14px;background:linear-gradient(135deg,#6c63ff,#ec4899);border:none;border-radius:var(--radius-sm);color:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:var(--font)">Choose a Plan →</button>
+    <button onclick="goTo('upgrade')" style="width:100%;padding:16px;background:linear-gradient(135deg,var(--accent),var(--pink));border:none;border-radius:var(--radius);color:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:var(--font);transition:all 0.3s ease;box-shadow:0 6px 20px rgba(108,99,255,0.3)">Choose a Plan →</button>
 
   </div>
 
