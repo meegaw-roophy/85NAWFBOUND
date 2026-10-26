@@ -8,6 +8,10 @@ from app import crud
 from app.core.deps import FREE_TIER_LOG_LIMIT, get_current_user, get_effective_tier
 from app.services.math_engine import calculate_correlations
 from app.services.vektra_engine import calculate_vektra_score
+from app.db.session import AsyncSessionLocal
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -38,6 +42,16 @@ async def add_snapshot(user_id: int, payload: SnapshotCreate, db: AsyncSession =
     data['vektra_score'] = score_result.vektra_score
 
     snap = await crud.create_snapshot(db, user_id, data)
+
+    # XP only for a new day's log (a repeat log returns the existing one), and
+    # in its own session so a points failure can never fail the saved log.
+    if not getattr(snap, 'is_duplicate', False):
+        try:
+            async with AsyncSessionLocal() as points_db:
+                await crud.award_points_for_log(points_db, user_id, snap)
+        except Exception:
+            logger.exception("Awarding XP failed for user %s", user_id)
+
     return snap
 
 

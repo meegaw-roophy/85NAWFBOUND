@@ -237,6 +237,10 @@ function goTo(screen) {
     loadAchievements();
     loadStreakCalendar();
   }
+
+  if (screen === 'cashpool') {
+    loadCashpool();
+  }
   
   // Strip splash out of auth controller array and toggle bottom navigation bar
   const authScreens = ['welcome', 'login', 'register', 'password-reset-request', 'password-reset']; 
@@ -1228,6 +1232,9 @@ async function loadDashboard() {
   document.getElementById('dash-username').textContent =
     currentUser.username || 'User';
 
+  // Load user points/level
+  loadUserPoints();
+
   document.getElementById('dash-northstar').textContent =
     currentUser.north_star || 'Not set yet — update in profile';
 
@@ -1571,7 +1578,7 @@ function updateProgress() {
 
 function setDailyLogReadOnly(readonly, message = '') {
   const statusEl = document.getElementById('daily-log-status');
-  const controls = document.querySelectorAll('#daily-log input, #daily-log textarea, #daily-log button');
+  const controls = document.querySelectorAll('#daily-log input, #daily-log textarea, #daily-log select, #daily-log button');
   controls.forEach(control => {
     control.disabled = readonly;
   });
@@ -1603,7 +1610,7 @@ async function checkTodayLogStatus() {
 function openDailyLog() {
   const today = new Date().toLocaleDateString('en-US', {weekday:'long', month:'long', day:'numeric'});
   document.getElementById('log-date').textContent = today;
-  
+
   // Hide goal hit question for new users
   fetch(`${API}/api/v1/users/${currentUser.id}/snapshots`, {
     headers: { 'Authorization': `Bearer ${authToken}` }
@@ -1613,10 +1620,159 @@ function openDailyLog() {
       goalSection.style.display = snapshots.length === 0 ? 'none' : 'block';
     }
   }).catch(() => {});
-  
+
   goTo('daily-log');
   restoreDraft();
+  let quick = false;
+  try { quick = localStorage.getItem(QUICK_LOG_KEY) === '1'; } catch (e) {}
+  applyQuickLogMode(quick);
+  loadDailySpendCap();
 }
+
+// Quick Log hides the Growth and Performance groups. The choice is a
+// per-device convenience, so it lives in localStorage.
+const QUICK_LOG_KEY = 'vektra-quick-log';
+
+function applyQuickLogMode(on) {
+  ['group-growth', 'group-performance'].forEach(id => {
+    const group = document.getElementById(id);
+    if (group) group.style.display = on ? 'none' : 'block';
+  });
+  const toggle = document.getElementById('quick-log-toggle');
+  if (toggle) toggle.checked = on;
+}
+
+function toggleQuickLogMode() {
+  const on = !!document.getElementById('quick-log-toggle')?.checked;
+  applyQuickLogMode(on);
+  try { localStorage.setItem(QUICK_LOG_KEY, on ? '1' : '0'); } catch (e) {}
+}
+
+window.toggleQuickLogMode = toggleQuickLogMode;
+
+// The daily cap comes from the cashpool, loaded once when the log opens, so
+// typing an amount checks it locally instead of calling the API per keystroke.
+let dailySpendCap = null;
+
+async function loadDailySpendCap() {
+  try {
+    const res = await fetch(`${API}/api/v1/cashpool`, { headers: { 'Authorization': `Bearer ${authToken}` } });
+    dailySpendCap = res.ok ? (await res.json()).daily_spend_cap : null;
+  } catch (e) {
+    dailySpendCap = null;
+  }
+  checkSpendCap();
+}
+
+function checkSpendCap() {
+  const warningEl = document.getElementById('spend-cap-warning');
+  const messageEl = document.getElementById('spend-cap-message');
+  if (!warningEl || !messageEl) return;
+  const spent = parseFloat(document.getElementById('inp-expenses')?.value) || 0;
+  const over = dailySpendCap ? spent - dailySpendCap : 0;
+  warningEl.style.display = over > 0 ? 'block' : 'none';
+  if (over > 0) messageEl.textContent = `${fmtMoney(over)} over your ${fmtMoney(dailySpendCap)} daily cap`;
+}
+
+async function loadSpendingCategories() {
+  try {
+    const res = await fetch(`${API}/api/v1/cashpool/spending-by-category?days=30`, {
+      headers: { 'Authorization': `Bearer ${authToken}` }
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      renderSpendingCategories(data.categories);
+    }
+  } catch (e) {
+    console.error('Spending categories load error:', e);
+  }
+}
+
+function renderSpendingCategories(categories) {
+  const container = document.getElementById('spending-categories');
+  if (!container) return;
+
+  const categoryLabels = {
+    food: '🍔 Food & Dining',
+    transport: '🚗 Transport',
+    shopping: '🛍️ Shopping',
+    entertainment: '🎬 Entertainment',
+    bills: '📄 Bills & Utilities',
+    health: '💊 Health & Medical',
+    business: '💼 Business',
+    education: '📚 Education',
+    marketing: '📢 Marketing',
+    other: '📦 Other',
+    uncategorized: '❓ Uncategorized'
+  };
+
+  if (!categories || Object.keys(categories).length === 0) {
+    container.innerHTML = '<div style="font-size:13px;color:var(--text-secondary);text-align:center;padding:1rem">Log expenses with categories to see breakdown</div>';
+    return;
+  }
+
+  const total = Object.values(categories).reduce((sum, val) => sum + val, 0);
+  const sortedCategories = Object.entries(categories).sort((a, b) => b[1] - a[1]);
+
+  container.innerHTML = sortedCategories.map(([category, amount]) => {
+    const percentage = total > 0 ? Math.round(amount / total * 100) : 0;
+    const label = categoryLabels[category] || escHtml(category);
+
+    return `
+      <div style="margin-bottom:8px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+          <span style="font-size:13px;color:var(--text-primary)">${label}</span>
+          <span style="font-size:13px;font-weight:600;color:var(--text-primary)">${fmtMoney(amount)} (${percentage}%)</span>
+        </div>
+        <div style="height:6px;background:var(--bg-secondary);border-radius:3px;overflow:hidden">
+          <div style="height:100%;background:linear-gradient(90deg,var(--accent),var(--pink));width:${percentage}%;transition:width 0.6s ease"></div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+window.loadSpendingCategories = loadSpendingCategories;
+window.checkSpendCap = checkSpendCap;
+
+// ── Gamification Functions ──
+async function loadUserPoints() {
+  try {
+    const res = await fetch(`${API}/api/v1/gamification/points`, {
+      headers: { 'Authorization': `Bearer ${authToken}` }
+    });
+
+    if (res.ok) {
+      const points = await res.json();
+      renderUserPoints(points);
+    }
+  } catch (e) {
+    console.error('Points load error:', e);
+  }
+}
+
+function renderUserPoints(points) {
+  const levelEl = document.getElementById('xp-level');
+  const progressBarEl = document.getElementById('xp-progress-bar');
+  const currentXPEl = document.getElementById('xp-current');
+  const nextXPEl = document.getElementById('xp-next');
+
+  if (levelEl) {
+    levelEl.textContent = `Level ${points.level}`;
+  }
+  if (progressBarEl) {
+    progressBarEl.style.width = `${Math.min(100, points.xp_into_level / points.xp_level_span * 100)}%`;
+  }
+  if (currentXPEl) {
+    currentXPEl.textContent = `${points.total_points.toLocaleString()} XP`;
+  }
+  if (nextXPEl) {
+    nextXPEl.textContent = `${points.points_to_next} XP to Level ${points.level + 1}`;
+  }
+}
+
+window.loadUserPoints = loadUserPoints;
 
 function openWeeklyQuestions() {
   goTo('weekly-questions');
@@ -1787,6 +1943,7 @@ async function submitLog() {
     uncomfortable_moments: document.getElementById('inp-uncomfortable')?.value || null,
     daily_income:          parseFloat(document.getElementById('inp-income')?.value) || null,
     expenses:              parseFloat(document.getElementById('inp-expenses')?.value) || null,
+    expense_category:      document.getElementById('inp-expense-category')?.value || null,
     savings_investments:   parseFloat(document.getElementById('inp-savings')?.value) || null,
     any_emergency:         document.getElementById('inp-emergency')?.value || null,
     tomorrow_goal:         document.getElementById('inp-tomorrow')?.value || null,
@@ -2376,7 +2533,7 @@ async function loadReport(reportType = 'weekly') {
     if (daysEl) daysEl.textContent = `${uniqueDays}/${periodDays}`;
     if (timerEl) timerEl.textContent = `${reportCountdown}/${periodDays}`;
     if (cashflowEl) {
-      cashflowEl.textContent = content.net_cash_flow !== undefined ? (content.net_cash_flow >= 0 ? '+' : '') + content.net_cash_flow : '—';
+      cashflowEl.textContent = content.net_cash_flow != null ? fmtMoney(content.net_cash_flow, { withSign: true }) : '—';
       cashflowEl.style.color = content.net_cash_flow >= 0 ? 'var(--success)' : 'var(--danger)';
     }
     if (goalsEl) goalsEl.textContent = content.goals_set > 0 ? `${content.goals_hit}/${content.goals_set}` : '—';
@@ -2462,7 +2619,7 @@ async function loadReport(reportType = 'weekly') {
       } else {
         dailyBreakdownEl.style.display = 'none';
         weeklyComparisonEl.style.display = 'block';
-        loadWeeklyComparison();
+        renderPeriodComparison(reportType, content.insights || {});
       }
     }
 
@@ -2594,13 +2751,13 @@ function buildInputsRecap(content) {
   }
   if (content.total_income != null && content.total_expenses != null) {
     const flow = content.net_cash_flow ?? (content.total_income - content.total_expenses);
-    rows.push(`You logged <strong>${content.total_income}</strong> income and <strong>${content.total_expenses}</strong> expenses — net ${flow >= 0 ? '+' : ''}${flow}.`);
+    rows.push(`You logged <strong>${fmtMoney(content.total_income)}</strong> income and <strong>${fmtMoney(content.total_expenses)}</strong> expenses — net ${fmtMoney(flow, { withSign: true })}.`);
   }
   if (content.goals_set) {
     rows.push(`You set <strong>${content.goals_set}</strong> goal${content.goals_set === 1 ? '' : 's'} and hit <strong>${content.goals_hit || 0}</strong> of them.`);
   }
   if (content.best_decisions && content.best_decisions.length > 0) {
-    rows.push(`Best decision you logged: "${content.best_decisions[0]}"`);
+    rows.push(`Best decision you logged: "${escHtml(content.best_decisions[0])}"`);
   }
   if (content.procrastination_days) {
     rows.push(`Procrastination flagged on <strong>${content.procrastination_days}</strong> day${content.procrastination_days === 1 ? '' : 's'}.`);
@@ -2619,7 +2776,9 @@ function buildRadarSVG(scores, size = 440) {
     { key: 'Body',      color: '#f59e0b' },
     { key: 'Growth',    color: '#06b6d4' }
   ];
-  const labelPad = Math.round(size * 0.18);
+  // Room for the labels (drawn at 1.22x the radius) on every side: html2canvas
+  // renders the SVG as an image, so anything past its edge is cut off.
+  const labelPad = Math.round(size * 0.3);
   const svgSize = size + labelPad * 2;
   const center = svgSize / 2;
   const maxRadius = size / 2;
@@ -2656,7 +2815,7 @@ function buildRadarSVG(scores, size = 440) {
   }).join('');
 
   const labels = categories.map((cat, i) => {
-    const [lx, ly] = pointAt(i, 1.32);
+    const [lx, ly] = pointAt(i, 1.22);
     const val = Math.round(scores[cat.key] ?? 0);
     const fontSize = Math.round(size * 0.05);
     return `
@@ -2708,27 +2867,30 @@ function buildShareCardHTML({ report, content }) {
   const fmt = d => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   const periodLabel = `${fmt(start)} – ${fmt(end)}, ${end.getFullYear()}`;
 
-  const name = currentUser?.full_name?.split(' ')[0] || currentUser?.username || 'My';
-  const highlight = extractReportHighlight(report.summary_text) || 'Consistency compounds. Keep logging to sharpen your trajectory.';
+  const name = escHtml(currentUser?.username || 'My');
+  const win = content.narrative?.wins?.[0];
+  const highlight = escHtml((win && `${win.title}. ${win.detail || ''}`.trim())
+    || extractReportHighlight(report.summary_text)
+    || 'Consistency compounds. Keep logging to sharpen your trajectory.');
 
   const statTile = (label, value, color) => `
     <div style="flex:1;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:20px;padding:24px 12px;text-align:center">
       <div style="font-size:15px;color:#8888aa;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px">${label}</div>
-      <div style="font-size:34px;font-weight:800;color:${color}">${value}</div>
+      <div style="font-size:28px;font-weight:800;color:${color};overflow-wrap:anywhere;line-height:1.2">${value}</div>
     </div>
   `;
 
   return `
     <div style="width:1080px;height:1920px;background:radial-gradient(circle at 50% 0%, #1a1a2e 0%, #0a0a0f 55%);display:flex;flex-direction:column;padding:80px 70px;box-sizing:border-box;font-family:'Inter',-apple-system,sans-serif;color:#f0f0f5">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:40px">
-        <div style="font-size:38px;font-weight:800;letter-spacing:0.02em;background:linear-gradient(135deg,#6c63ff,#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent">VEKTRA</div>
+        <div style="font-size:38px;font-weight:800;letter-spacing:0.02em;color:#8b84ff">VEKTRA</div>
         <div style="font-size:22px;color:#8888aa;text-transform:uppercase;letter-spacing:0.1em">Weekly Trajectory</div>
       </div>
 
       <div style="font-size:24px;color:#8888aa;margin-bottom:6px">${name}'s week · ${periodLabel}</div>
 
       <div style="text-align:center;margin:20px 0 0">
-        <div style="font-size:180px;font-weight:800;line-height:1;background:linear-gradient(135deg,#6c63ff,#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent">${score}</div>
+        <div style="font-size:180px;font-weight:800;line-height:1;color:#a59fff;text-shadow:0 0 60px rgba(108,99,255,0.45)">${score}</div>
         <div style="font-size:24px;color:#8888aa;text-transform:uppercase;letter-spacing:0.15em;margin-top:8px">VEKTRA Score</div>
       </div>
 
@@ -2738,7 +2900,7 @@ function buildShareCardHTML({ report, content }) {
 
       <div style="display:flex;gap:16px;margin-bottom:40px">
         ${statTile('Days Logged', `${uniqueDays}/7`, '#f0f0f5')}
-        ${statTile('Cash Flow', (cashFlow !== undefined && cashFlow !== null) ? (cashFlow >= 0 ? '+' : '') + Math.round(cashFlow) : '—', (cashFlow ?? 0) >= 0 ? '#22c55e' : '#da0e0e')}
+        ${statTile('Cash Flow', (cashFlow !== undefined && cashFlow !== null) ? fmtMoney(cashFlow, { withSign: true }) : '—', (cashFlow ?? 0) >= 0 ? '#22c55e' : '#ef4444')}
         ${statTile('Goal Rate', (goalRate !== undefined && goalRate !== null) ? `${Math.round(goalRate)}%` : '—', '#ec4899')}
         ${statTile('Avg Sleep', sleepAvg ? `${sleepAvg.toFixed(1)}h` : '—', '#f59e0b')}
       </div>
@@ -2805,7 +2967,10 @@ async function shareReportAsImage() {
 
   try {
     const cardEl = renderHost.firstElementChild;
-    const canvas = await html2canvas(cardEl, { backgroundColor: null, useCORS: true });
+    // scale: 1 keeps the canvas at the card's own 1080x1920. The default uses
+    // the phone's pixel ratio (3x = 3240x5760), which is past iOS Safari's
+    // canvas size limit and produced a blank or failed image.
+    const canvas = await html2canvas(cardEl, { backgroundColor: '#0a0a0f', useCORS: true, scale: 1, logging: false });
     hideLoader();
 
     canvas.toBlob(async (blob) => {
@@ -2965,6 +3130,23 @@ function signed(n, digits = 0) {
   return `${v > 0 ? '+' : v < 0 ? '−' : '±'}${Math.abs(v).toFixed(digits)}`;
 }
 
+// Whole amounts in the user's own currency with thousands separators
+// ("KES 8,650", "$8,650"); withSign adds +/− for flows and deltas.
+function fmtMoney(n, { withSign = false } = {}) {
+  const v = Number(n);
+  if (!isFinite(v)) return '—';
+  let body;
+  try {
+    body = new Intl.NumberFormat('en-US', {
+      style: 'currency', currency: currentUser?.currency || 'USD', maximumFractionDigits: 0, minimumFractionDigits: 0,
+    }).format(Math.abs(v));
+  } catch (e) {
+    body = Math.round(Math.abs(v)).toLocaleString('en-US');
+  }
+  const sign = v < 0 ? '−' : withSign && v > 0 ? '+' : '';
+  return sign + body;
+}
+
 function renderNarrativeSections(content) {
   const n = content.narrative || {};
   const list = items => (items || []).map(i => `
@@ -3083,7 +3265,7 @@ function renderReportExtras(reportType, content, reportReady) {
     if (insights.money) {
       const m = insights.money;
       if (m.savings_rate !== null) {
-        rows.push(['💰', `Savings rate: ${m.savings_rate}%`, `Monthly pace: ${m.monthly_pace > 0 ? '+' : ''}${m.monthly_pace}`, `${m.income > 0 ? 'Positive flow' : 'Negative flow'}`]);
+        rows.push(['💰', `Savings rate: ${m.savings_rate}%`, `Kept ${fmtMoney(m.net, { withSign: true })} of ${fmtMoney(m.income)}. At this pace: ${fmtMoney(m.monthly_net_pace, { withSign: true })} a month, spending ${fmtMoney(m.monthly_spend_pace)}.`, m.net >= 0 ? 'Positive flow' : 'Negative flow']);
       }
     }
     if (!rows.length) rows.push(['📊', 'Patterns need a few days', 'Log sleep, screen time and deep work daily. After 4 days VEKTRA shows which of them moves your score most.', 'Keep logging']);
@@ -3118,10 +3300,11 @@ function renderReportExtras(reportType, content, reportReady) {
   setCompare('compare-month', 'compare-month-label', `Goals hit vs last ${word}`,
     known(vs.goal_hit_rate) ? `${signed(vs.goal_hit_rate)}%` : '—',
     known(vs.goal_hit_rate) ? vs.goal_hit_rate >= 0 : null);
+  // Hidden until there are enough users for a percentile to mean something.
   const pct = content.percentile;
-  setCompare('compare-percentile', null, null,
-    pct ? `Ahead of ${pct.better_than_pct}%` : 'Not enough users yet',
-    pct ? pct.better_than_pct >= 50 : null);
+  const pctRow = document.getElementById('compare-percentile')?.parentElement;
+  if (pctRow) pctRow.style.display = pct ? '' : 'none';
+  if (pct) setCompare('compare-percentile', null, null, `Ahead of ${pct.better_than_pct}%`, pct.better_than_pct >= 50);
 
   // High-impact actions from the plan
   const actionsEl = document.getElementById('actionable-insights');
@@ -4801,8 +4984,6 @@ async function viewReport(reportId) {
     
     if (res.ok) {
       const report = await res.json();
-      // Load the report into the current report view
-      currentReport = report;
       goTo('reports');
       displayReportData(report);
     } else {
@@ -4842,71 +5023,49 @@ function displayReportData(report) {
   }
 }
 
-// ── WEEKLY COMPARISON ENGINE ──
-async function loadWeeklyComparison() {
-  if (!currentUser || !authToken) return;
-  
-  try {
-    const res = await fetch(`${API}/api/v1/users/${currentUser.id}/snapshots/comparison`, {
-      headers: { 'Authorization': `Bearer ${authToken}` }
-    });
-    
-    if (res.ok) {
-      const data = await res.json();
-      renderWeeklyComparison(data);
-    } else {
-      console.error('Failed to load comparison');
-      document.getElementById('comparison-metrics').innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:40px;color:var(--text-muted);font-size:13px">Comparison unavailable</div>';
-    }
-  } catch (e) {
-    console.error('Error loading comparison:', e);
-    document.getElementById('comparison-metrics').innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:40px;color:var(--text-muted);font-size:13px">Could not load comparison</div>';
-  }
-}
-
-function renderWeeklyComparison(data) {
+// Built from the report's own insights (same period, same numbers as the rest
+// of the report). It used to call a separate rolling-7-day endpoint, so the
+// strip and the report disagreed. Changes are absolute: a percent change is
+// meaningless when last period's value was zero or negative (e.g. cash flow).
+function renderPeriodComparison(reportType, insights) {
   const container = document.getElementById('comparison-metrics');
   if (!container) return;
-  
+  const word = periodWord(reportType);
+  const title = document.getElementById('comparison-title');
+  if (title) title.textContent = `vs Last ${word.charAt(0).toUpperCase()}${word.slice(1)}`;
+
+  const current = insights.current || {};
+  const previous = insights.vs_previous?.previous;
+  const delta = insights.vs_previous?.delta || {};
+  if (!previous) {
+    container.innerHTML = `<div style="font-size:13px;color:var(--text-muted);text-align:center;padding:8px 0">No logs from last ${word} to compare yet.</div>`;
+    return;
+  }
+
+  const known = v => v !== null && v !== undefined;
   const metrics = [
-    { key: 'vektra_score', label: 'VEKTRA Score', format: (v) => v ? v.toFixed(1) : '—' },
-    { key: 'mood_score', label: 'Mood', format: (v) => v ? v.toFixed(1) : '—' },
-    { key: 'sleep_hours', label: 'Sleep', format: (v) => v ? v.toFixed(1) + 'h' : '—' },
-    { key: 'focus_hours', label: 'Focus', format: (v) => v ? v.toFixed(1) + 'h' : '—' },
-    { key: 'net_cash_flow', label: 'Cash Flow', format: (v) => v ? (v >= 0 ? '+' : '') + v.toFixed(0) : '—' }
+    { key: 'score', label: 'VEKTRA Score', value: v => v.toFixed(1), change: d => `${signed(d, 1)} pts` },
+    { key: 'mood', label: 'Mood', value: v => `${v.toFixed(1)}/10`, change: d => signed(d, 1) },
+    { key: 'sleep', label: 'Sleep', value: v => `${v.toFixed(1)}h`, change: d => `${signed(d, 1)}h` },
+    { key: 'goal_hit_rate', label: 'Goals hit', value: v => `${Math.round(v)}%`, change: d => `${signed(d)} pts` },
+    { key: 'net_cash_flow', label: 'Cash flow', value: v => fmtMoney(v, { withSign: true }), change: d => fmtMoney(d, { withSign: true }) },
+    { key: 'days_logged', label: 'Days logged', value: v => `${v}`, change: d => signed(d) },
   ];
-  
-  const html = metrics.map(metric => {
-    const current = data.current_week[metric.key];
-    const previous = data.previous_week[metric.key];
-    const change = data.changes[metric.key];
-    
-    if (change === null || current === null || previous === null) {
-      return `
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0">
-          <span style="font-size:13px;color:var(--text-secondary)">${metric.label}</span>
-          <span style="font-size:13px;color:var(--text-muted)">No data</span>
-        </div>
-      `;
-    }
-    
-    const isPositive = change >= 0;
-    const arrow = isPositive ? '↑' : '↓';
-    const color = isPositive ? 'var(--success)' : 'var(--danger)';
-    const sign = isPositive ? '+' : '';
-    
+
+  container.innerHTML = metrics.map(m => {
+    const now = current[m.key];
+    const d = delta[m.key];
+    const right = !known(now)
+      ? '<span style="font-size:13px;color:var(--text-muted)">No data</span>'
+      : `<span style="font-size:13px;color:var(--text-primary)">${escHtml(m.value(now))}</span>` + (known(d)
+        ? `<span style="font-size:12px;font-weight:600;color:${d > 0 ? 'var(--success)' : d < 0 ? 'var(--danger)' : 'var(--text-muted)'}">${d > 0 ? '↑' : d < 0 ? '↓' : '→'} ${escHtml(m.change(d))}</span>`
+        : '');
     return `
       <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0">
-        <span style="font-size:13px;color:var(--text-secondary)">${metric.label}</span>
-        <div style="display:flex;align-items:center;gap:8px">
-          <span style="font-size:13px;color:var(--text-primary)">${metric.format(current)}</span>
-          <span style="font-size:12px;color:${color};font-weight:600">${arrow} ${sign}${change.toFixed(1)}%</span>
-        </div>
-      </div>
-    `;
+        <span style="font-size:13px;color:var(--text-secondary)">${m.label}</span>
+        <div style="display:flex;align-items:center;gap:8px">${right}</div>
+      </div>`;
   }).join('');
-  
-  container.innerHTML = html;
 }
 
 // ── SMART DASHBOARD ──
@@ -5978,6 +6137,115 @@ function clearCache() {
     showToast('Cache cleared successfully', 'success');
   }
 }
+
+// ── Cashpool Functions ──
+// The server recomputes the last-30-days numbers on every read, using the
+// same definitions as the reports (savings rate = kept / earned, as 0-1).
+let cashpoolData = null;
+
+async function loadCashpool() {
+  try {
+    const res = await fetch(`${API}/api/v1/cashpool`, {
+      headers: { 'Authorization': `Bearer ${authToken}` }
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    cashpoolData = await res.json();
+    renderCashpoolUI();
+    loadSpendingCategories();
+  } catch (e) {
+    console.error('Cashpool load error:', e);
+    showToast('Could not load your cashpool. Try again.', 'error');
+  }
+}
+
+function renderCashpoolUI() {
+  const c = cashpoolData;
+  if (!c) return;
+  const set = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
+  const known = v => v !== null && v !== undefined;
+
+  // Savings rate
+  const rate = c.current_savings_rate;
+  const rateEl = document.getElementById('cashpool-savings-rate');
+  set('cashpool-savings-rate', known(rate) ? Math.round(rate * 100) : '—');
+  if (rateEl) rateEl.style.color = !known(rate) ? 'var(--text-muted)' : rate < 0 ? 'var(--danger)' : 'var(--success)';
+  set('cashpool-target-rate', known(c.target_savings_rate) ? `${Math.round(c.target_savings_rate * 100)}%` : '—');
+  const bar = document.getElementById('cashpool-savings-bar');
+  if (bar) {
+    const pct = known(rate) && c.target_savings_rate ? Math.max(0, Math.min(100, rate / c.target_savings_rate * 100)) : 0;
+    bar.style.width = `${pct}%`;
+  }
+
+  // Runway: unknown until capital is logged, rather than a misleading 0
+  const runway = c.current_runway_days;
+  set('cashpool-runway', known(runway) ? Math.round(runway).toLocaleString() : '—');
+  set('cashpool-target-runway', known(c.target_runway_days) ? `${Math.round(c.target_runway_days)} days` : '—');
+  const note = document.getElementById('cashpool-runway-note');
+  if (note) note.style.display = known(runway) ? 'none' : 'block';
+  const warn = document.getElementById('runway-warning');
+  if (warn) warn.style.display = known(runway) && c.target_runway_days && runway < c.target_runway_days * 0.3 ? 'block' : 'none';
+
+  // Daily cap
+  const capEl = document.getElementById('cashpool-daily-cap');
+  if (capEl) capEl.value = known(c.daily_spend_cap) ? c.daily_spend_cap : '';
+  const breachEl = document.getElementById('cap-breach-alert');
+  if (breachEl) breachEl.style.display = c.cap_breach_count > 0 ? 'block' : 'none';
+  set('cap-breach-count', c.cap_breach_count || 0);
+
+  // Emergency fund, measured against the latest capital logged
+  const fundEl = document.getElementById('cashpool-emergency-target');
+  if (fundEl) fundEl.value = known(c.emergency_fund_target) ? c.emergency_fund_target : '';
+  set('cashpool-emergency-current', known(c.emergency_fund_current) ? fmtMoney(c.emergency_fund_current) : '—');
+  const status = document.getElementById('emergency-status');
+  if (status) {
+    const met = c.emergency_fund_met;
+    status.style.display = c.emergency_fund_target && known(c.emergency_fund_current) ? 'block' : 'none';
+    status.textContent = met ? '✓ Met' : 'Not met';
+    status.style.background = met ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)';
+    status.style.color = met ? 'var(--success)' : 'var(--danger)';
+  }
+
+  // Last 30 days
+  set('cashpool-period-income', known(c.period_income) ? fmtMoney(c.period_income) : '—');
+  set('cashpool-period-expenses', known(c.period_expenses) ? fmtMoney(c.period_expenses) : '—');
+  set('cashpool-period-savings', known(c.period_savings) ? fmtMoney(c.period_savings) : '—');
+  set('cashpool-days-logged', known(c.period_days_logged) ? `${c.period_days_logged}/30` : '—');
+}
+
+async function saveCashpoolSettings() {
+  const amount = id => {
+    const raw = document.getElementById(id)?.value;
+    const n = parseFloat(raw);
+    return raw === '' || isNaN(n) ? null : n;  // empty clears the setting
+  };
+  const updateData = {
+    daily_spend_cap: amount('cashpool-daily-cap'),
+    emergency_fund_target: amount('cashpool-emergency-target'),
+  };
+  if (Object.values(updateData).some(v => v !== null && v < 0)) {
+    showToast('Amounts can’t be negative', 'error');
+    return;
+  }
+
+  try {
+    const res = await fetch(`${API}/api/v1/cashpool`, {
+      method: 'PUT',
+      headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(updateData)
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    cashpoolData = await res.json();
+    dailySpendCap = cashpoolData.daily_spend_cap;
+    renderCashpoolUI();
+    showToast('Cashpool saved', 'success');
+  } catch (e) {
+    console.error('Cashpool save error:', e);
+    showToast('Could not save your cashpool. Try again.', 'error');
+  }
+}
+
+window.loadCashpool = loadCashpool;
+window.saveCashpoolSettings = saveCashpoolSettings;
 
 function renderAdminBarList(containerId, rows, emptyText) {
   const el = document.getElementById(containerId);

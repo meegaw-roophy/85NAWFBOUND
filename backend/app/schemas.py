@@ -1,5 +1,5 @@
 from pydantic import BaseModel, EmailStr, ConfigDict, Field, computed_field
-from typing import Optional, Any, List
+from typing import Optional, Any, List, Literal
 from datetime import datetime, date, time
 
 
@@ -72,6 +72,10 @@ class SnapshotCreate(BaseModel):
     # finance
     daily_income: Optional[float] = None
     expenses: Optional[float] = None
+    expense_category: Optional[Literal[
+        'food', 'transport', 'shopping', 'entertainment', 'bills',
+        'health', 'business', 'education', 'marketing', 'other',
+    ]] = None
     savings_investments: Optional[float] = None
     current_net_worth: Optional[float] = None
     current_capital: Optional[float] = None
@@ -371,4 +375,60 @@ class AchievementOut(BaseModel):
     completed: bool
     completed_at: Optional[datetime] = None
     created_at: Optional[datetime] = None
+    model_config = ConfigDict(from_attributes=True)
+
+
+# ─────────────────────────────────────────────
+#  CASHPOOL  (savings & spending discipline)
+# ─────────────────────────────────────────────
+# Amounts are in the user's own currency. Rates are fractions (0.35 = 35%).
+class CashpoolUpdate(BaseModel):
+    target_savings_rate: Optional[float] = Field(None, ge=0, le=1)
+    target_monthly_savings: Optional[float] = Field(None, ge=0)
+    daily_spend_cap: Optional[float] = Field(None, ge=0)
+    weekly_spend_cap: Optional[float] = Field(None, ge=0)
+    monthly_spend_cap: Optional[float] = Field(None, ge=0)
+    target_runway_days: Optional[float] = Field(None, ge=0)
+    emergency_fund_target: Optional[float] = Field(None, ge=0)
+    alert_on_cap_breach: Optional[bool] = None
+    alert_on_low_runway: Optional[bool] = None
+    alert_on_savings_miss: Optional[bool] = None
+
+
+class CashpoolOut(BaseModel):
+    target_savings_rate: Optional[float] = None
+    current_savings_rate: Optional[float] = None
+    total_savings: Optional[float] = None
+    target_monthly_savings: Optional[float] = None
+    daily_spend_cap: Optional[float] = None
+    weekly_spend_cap: Optional[float] = None
+    monthly_spend_cap: Optional[float] = None
+    cap_breach_count: int = 0
+    last_cap_breach_at: Optional[datetime] = None
+    current_runway_days: Optional[float] = None
+    target_runway_days: Optional[float] = None
+    emergency_fund_target: Optional[float] = None
+    emergency_fund_current: Optional[float] = None
+    emergency_fund_met: bool = False
+    period_start: Optional[date] = None
+    period_income: Optional[float] = None
+    period_expenses: Optional[float] = None
+    period_savings: Optional[float] = None
+    period_days_logged: Optional[int] = None
+    alert_on_cap_breach: bool = True
+    alert_on_low_runway: bool = True
+    alert_on_savings_miss: bool = True
+    updated_at: Optional[datetime] = None
+    model_config = ConfigDict(from_attributes=True)
+
+
+# ─────────────────────────────────────────────
+#  XP  (points are awarded server-side only, for new daily logs)
+# ─────────────────────────────────────────────
+class UserPointsOut(BaseModel):
+    total_points: int = 0
+    level: int = 1
+    xp_into_level: int = 0
+    xp_level_span: int = 100
+    points_to_next: int = 100
     model_config = ConfigDict(from_attributes=True)

@@ -423,6 +423,18 @@ input[type="range"]::-webkit-slider-thumb:hover {
   100% { transform: translateX(100%); }
 }
 
+/* Fire glow animation for streak */
+@keyframes fireGlow {
+  0%, 100% {
+    text-shadow: 0 0 20px var(--accent-glow), 0 0 40px rgba(255, 100, 0, 0.3);
+    transform: scale(1);
+  }
+  50% {
+    text-shadow: 0 0 30px var(--accent-glow), 0 0 60px rgba(255, 100, 0, 0.5);
+    transform: scale(1.05);
+  }
+}
+
 /* Profile stat cards hover effect */
 #profile > div[style*="grid-template-columns:repeat(3,1fr)"] > div {
   cursor: pointer;

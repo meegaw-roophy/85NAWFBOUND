@@ -154,6 +154,7 @@ class AIClient:
             "period": period_label,
             "north_star": user_data.get("north_star"),
             "primary_goal": user_data.get("primary_goal"),
+            "currency": user_data.get("currency"),
             "insights": summary.get("insights"),
             "totals": {k: summary.get(k) for k in (
                 "avg_mood", "avg_energy", "avg_focus", "avg_sleep", "avg_screen_time",
@@ -184,7 +185,7 @@ Fields:
 - wins: 2-3 things that went right, each tied to a number.
 - leaks: 2-3 things quietly costing them the most, most damaging first.
 - patterns: 2-3 non-obvious connections from insights.drivers, best_day/worst_day, weekday or vs_previous. These should make them say "I never noticed that".
-- money: 1-2 sentences on cash flow, savings rate and pace. If no money was logged, say that tracking it is the missing piece.
+- money: 1-2 sentences on cash flow, savings rate and pace. If no money was logged, say that tracking it is the missing piece. monthly_net_pace is what they keep per month and monthly_spend_pace is what they spend; never swap them. If survival_runway is null, their capital isn't logged: say so instead of calling runway zero. Write amounts in their currency when one is given.
 - focus, risk, opportunity: one concrete action each for next {period_label}, each with a measurable target (e.g. "7h sleep on 5 of 7 nights").
 - challenge: one punchy line daring them to beat a specific number next {period_label}.
 {_language_instruction(user_data.get('language'))}"""
@@ -245,7 +246,7 @@ Fields:
         # Each leak carries the action that fixes it, so the plan's "risk"
         # step is concrete instead of repeating the problem back.
         if cash.get("net") is not None and cash["net"] < 0:
-            leaks.append({"title": "Spending more than you earn", "detail": f"Net {cash['net']:+,.0f} {period_word}. At this pace that's {cash['monthly_pace']:+,.0f} a month.",
+            leaks.append({"title": "Spending more than you earn", "detail": f"Net {cash['net']:+,.0f} {period_word}. At this pace that's {cash['monthly_net_pace']:+,.0f} a month.",
                           "action": "Stop the cash bleed", "target": f"Daily spend under {cash['avg_daily_spend'] * 0.8:,.0f} (now {cash['avg_daily_spend']:,.0f})"})
         if cur.get("goal_hit_rate") is not None and cur["goal_hit_rate"] < 50:
             leaks.append({"title": "Goals set, not hit", "detail": f"Only {cur['goal_hit_rate']}% of your goals got done. Fewer, smaller goals will beat more ambitious ones you skip.",

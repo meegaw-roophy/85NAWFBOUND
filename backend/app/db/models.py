@@ -73,6 +73,9 @@ class User(Base):
     circles                 = relationship('CircleMember', back_populates='user', cascade='all, delete')
     weekly_questions        = relationship('WeeklyQuestion', back_populates='user', cascade='all, delete')
     monthly_questions       = relationship('MonthlyQuestion', back_populates='user', cascade='all, delete')
+    cashpool                = relationship('Cashpool',     back_populates='user', uselist=False, cascade='all, delete')
+    user_points             = relationship('UserPoints',    back_populates='user', uselist=False, cascade='all, delete')
+    point_transactions      = relationship('PointTransaction', back_populates='user', cascade='all, delete')
 
 
 # ─────────────────────────────────────────────
@@ -221,6 +224,7 @@ class Snapshot(Base):
     # ── FINANCE ───────────────────────────────
     daily_income            = Column(Float,   nullable=True)    # all money in today
     expenses                = Column(Float,   nullable=True)    # all money out today
+    expense_category        = Column(String(50), nullable=True) # category: food, transport, shopping, etc.
     savings_investments     = Column(Float,   nullable=True)    # saved or invested today
     current_net_worth       = Column(Float,   nullable=True)    # updated weekly
     current_capital         = Column(Float,   nullable=True)    # liquid cash available — weekly
@@ -525,6 +529,55 @@ class LandingClick(Base):
 
 
 # ─────────────────────────────────────────────
+#  CASHPOOL  (savings & spending discipline)
+# ─────────────────────────────────────────────
+class Cashpool(Base):
+    __tablename__ = 'cashpools'
+
+    id              = Column(Integer, primary_key=True, index=True)
+    user_id         = Column(Integer, ForeignKey('users.id', ondelete='CASCADE'), nullable=False, unique=True)
+    created_at      = Column(DateTime, default=datetime.datetime.utcnow)
+    updated_at      = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+
+    # ── Savings tracking ──────────────────────
+    target_savings_rate     = Column(Float,   nullable=True)   # e.g. 0.35 for 35%
+    current_savings_rate    = Column(Float,   nullable=True)   # computed from snapshots
+    total_savings           = Column(Float,   nullable=True)   # cumulative savings
+    target_monthly_savings  = Column(Float,   nullable=True)   # goal amount per month
+
+    # ── Spending caps ─────────────────────────
+    daily_spend_cap         = Column(Float,   nullable=True)   # max allowed per day
+    weekly_spend_cap        = Column(Float,   nullable=True)   # max allowed per week
+    monthly_spend_cap       = Column(Float,   nullable=True)   # max allowed per month
+    cap_breach_count        = Column(Integer, default=0)       # times cap was exceeded
+    last_cap_breach_at      = Column(DateTime, nullable=True)   # most recent breach
+
+    # ── Runway tracking ───────────────────────
+    current_runway_days     = Column(Float,   nullable=True)   # days survivable at current burn
+    target_runway_days      = Column(Float,   nullable=True)   # goal runway (e.g. 180 days)
+    runway_warning_sent     = Column(Boolean, default=False)   # warning when runway < target
+
+    # ── Emergency fund ────────────────────────
+    emergency_fund_target   = Column(Float,   nullable=True)   # target emergency fund amount
+    emergency_fund_current  = Column(Float,   nullable=True)   # current emergency fund balance
+    emergency_fund_met      = Column(Boolean, default=False)   # target achieved
+
+    # ── Weekly/period tracking ────────────────
+    period_start            = Column(Date,    nullable=True)   # start of current tracking period
+    period_income           = Column(Float,   nullable=True)   # income this period
+    period_expenses         = Column(Float,   nullable=True)   # expenses this period
+    period_savings          = Column(Float,   nullable=True)   # savings this period
+    period_days_logged      = Column(Integer, nullable=True)   # days logged this period
+
+    # ── Alerts & notifications ────────────────
+    alert_on_cap_breach     = Column(Boolean, default=True)    # notify when cap exceeded
+    alert_on_low_runway     = Column(Boolean, default=True)    # notify when runway low
+    alert_on_savings_miss   = Column(Boolean, default=True)    # notify when savings rate missed
+
+    user = relationship('User', back_populates='cashpool')
+
+
+# ─────────────────────────────────────────────
 #  ACHIEVEMENT
 # ─────────────────────────────────────────────
 class Achievement(Base):
@@ -544,3 +597,36 @@ class Achievement(Base):
     completed_at    = Column(DateTime, nullable=True)
 
     user            = relationship('User')
+
+
+# ─────────────────────────────────────────────
+#  USER POINTS  (gamification XP)
+# ─────────────────────────────────────────────
+class UserPoints(Base):
+    __tablename__ = 'user_points'
+
+    id              = Column(Integer, primary_key=True, index=True)
+    user_id         = Column(Integer, ForeignKey('users.id', ondelete='CASCADE'), nullable=False, unique=True)
+    total_points    = Column(Integer, default=0)    # total XP earned
+    level           = Column(Integer, default=1)     # user level
+    points_to_next  = Column(Integer, default=100)  # points needed for next level
+    created_at      = Column(DateTime, default=datetime.datetime.utcnow)
+    updated_at      = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+
+    user            = relationship('User', back_populates='user_points')
+
+
+# ─────────────────────────────────────────────
+#  POINT TRANSACTION  (point history)
+# ─────────────────────────────────────────────
+class PointTransaction(Base):
+    __tablename__ = 'point_transactions'
+
+    id              = Column(Integer, primary_key=True, index=True)
+    user_id         = Column(Integer, ForeignKey('users.id', ondelete='CASCADE'), nullable=False, index=True)
+    points          = Column(Integer, nullable=False)  # points earned or spent
+    reason          = Column(String(100), nullable=False)  # daily_log, streak_7, achievement, etc.
+    description     = Column(Text, nullable=True)  # description of the transaction
+    created_at      = Column(DateTime, default=datetime.datetime.utcnow)
+
+    user            = relationship('User', back_populates='point_transactions')

@@ -29,6 +29,8 @@ from .questions import router as questions_router
 from .news import router as news_router
 from .analytics import router as analytics_router
 from .referrals import router as referrals_router
+from .cashpool import router as cashpool_router
+from .gamification import router as gamification_router
 
 router = APIRouter()
 
@@ -68,3 +70,5 @@ router.include_router(questions_router, prefix="/questions", tags=["questions"])
 router.include_router(news_router)
 router.include_router(analytics_router, prefix="/analytics", tags=["analytics"])
 router.include_router(referrals_router, prefix="/users/{user_id}/referral")
+router.include_router(cashpool_router, prefix="/cashpool", tags=["cashpool"])
+router.include_router(gamification_router, prefix="/gamification", tags=["gamification"])

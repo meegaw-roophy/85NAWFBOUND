@@ -83,8 +83,11 @@ async def build_weekly_summary(
     procrast_days    = sum(1 for s in snapshots if s.procrastination_delta and s.procrastination_delta > 0)
 
     # ── Survival runway (latest snapshot) ────
+    # Unknown (None), not 0, until capital is logged: the engine scores missing
+    # capital as zero runway, which the narrative then reported as "broke".
     latest = sorted(snapshots, key=lambda s: s.timestamp, reverse=True)[0]
-    survival_runway  = latest.survival_runway
+    capital_logged   = any(s.current_capital is not None for s in snapshots)
+    survival_runway  = latest.survival_runway if capital_logged else None
 
     # ── Growth counts ────────────────────────
     skills_count     = sum(1 for s in snapshots if s.skills_learned)
@@ -233,6 +236,7 @@ async def generate_period_report(
         'primary_goal': user.primary_goal if user else None,
         'feedback_tone': user.preferred_feedback_tone if user else 'Balanced',
         'language': user.language if user else None,
+        'currency': user.currency if user else None,
     }
 
     summary = await build_weekly_summary(snapshots, period_days=period_days, previous_snapshots=previous)

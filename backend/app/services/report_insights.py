@@ -307,7 +307,10 @@ def money(rows: List[dict]) -> Optional[dict]:
             "weekday": WEEKDAYS[biggest["date"].weekday()],
             "amount": round(biggest["expenses"] or 0, 2),
         } if (biggest["expenses"] or 0) > 0 else None,
-        "monthly_pace": round(net / len(money_rows) * 30, 2),
+        # Per logged day x 30. Two names, not one "pace": a single field let the
+        # narrative call the net figure a spending pace.
+        "monthly_net_pace": round(net / len(money_rows) * 30, 2),
+        "monthly_spend_pace": round(spent / len(money_rows) * 30, 2),
         "emergencies": sum(1 for r in money_rows if r.get("any_emergency")),
     }
 

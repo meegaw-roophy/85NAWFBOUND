@@ -2,7 +2,7 @@ from datetime import datetime, date, timedelta
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List, Optional
-from app.db.models import User, Snapshot, Report, Subscription, Payment, Goal, ReferralCommission, WithdrawalRequest, RefundRequest, Referral
+from app.db.models import User, Snapshot, Report, Subscription, Payment, Goal, ReferralCommission, WithdrawalRequest, RefundRequest, Referral, Cashpool, UserPoints, PointTransaction
 from collections.abc import Sequence
 import csv
 import json
@@ -1210,5 +1210,171 @@ async def export_user_data_json(db: AsyncSession, user_id: int) -> dict:
             'interactions_done': snap.interactions_done,
         }
         export_data['snapshots'].append(snapshot_dict)
-    
+
     return export_data
+
+
+
+# ─────────────────────────────────────────────
+#  CASHPOOL  (savings & spending discipline)
+# ─────────────────────────────────────────────
+CASHPOOL_WINDOW_DAYS = 30
+
+
+async def get_or_create_cashpool(db: AsyncSession, user_id: int) -> Cashpool:
+    result = await db.execute(select(Cashpool).where(Cashpool.user_id == user_id))
+    cashpool = result.scalars().first()
+    if not cashpool:
+        # No default spend caps: 1,500 means very different things in KES
+        # and USD, so caps stay empty until the user sets their own.
+        cashpool = Cashpool(user_id=user_id, target_savings_rate=0.35, target_runway_days=180)
+        db.add(cashpool)
+        await db.commit()
+        await db.refresh(cashpool)
+    return cashpool
+
+
+async def update_cashpool(db: AsyncSession, cashpool: Cashpool, update_data: dict) -> Cashpool:
+    # exclude_unset upstream: an explicit null clears a cap, an omitted field is left alone.
+    for key, value in update_data.items():
+        setattr(cashpool, key, value)
+    await db.commit()
+    return await recalculate_cashpool_metrics(db, cashpool.user_id)
+
+
+async def _recent_snapshots(db: AsyncSession, user_id: int, days: int) -> List[Snapshot]:
+    since = date.today() - timedelta(days=days - 1)
+    result = await db.execute(
+        select(Snapshot)
+        .where(Snapshot.user_id == user_id)
+        .where(func.coalesce(Snapshot.log_date, func.date(Snapshot.timestamp)) >= since)
+        .order_by(Snapshot.timestamp.desc())
+    )
+    return result.scalars().all()
+
+
+async def recalculate_cashpool_metrics(db: AsyncSession, user_id: int) -> Cashpool:
+    """Refresh the last-30-days numbers from the user's logs.
+
+    Uses the same definitions as the reports so the two never disagree:
+    savings rate = (income - spending) / income, as a fraction.
+    """
+    cashpool = await get_or_create_cashpool(db, user_id)
+    snapshots = await _recent_snapshots(db, user_id, CASHPOOL_WINDOW_DAYS)
+    money_snaps = [s for s in snapshots if s.daily_income is not None or s.expenses is not None]
+
+    income = sum(s.daily_income or 0 for s in money_snaps)
+    spent = sum(s.expenses or 0 for s in money_snaps)
+    cashpool.period_start = date.today() - timedelta(days=CASHPOOL_WINDOW_DAYS - 1)
+    cashpool.period_income = round(income, 2)
+    cashpool.period_expenses = round(spent, 2)
+    cashpool.period_savings = round(sum(s.savings_investments or 0 for s in snapshots), 2)
+    cashpool.total_savings = cashpool.period_savings
+    cashpool.period_days_logged = len(snapshots)
+    cashpool.current_savings_rate = round((income - spent) / income, 4) if income > 0 else None
+
+    # Runway is only meaningful once the user has logged their capital;
+    # without it the engine reports 0 days, which reads as "broke".
+    latest_capital = next((s for s in snapshots if s.current_capital is not None), None)
+    cashpool.current_runway_days = latest_capital.survival_runway if latest_capital else None
+    cashpool.emergency_fund_current = latest_capital.current_capital if latest_capital else None
+    cashpool.emergency_fund_met = bool(
+        cashpool.emergency_fund_target and cashpool.emergency_fund_current is not None
+        and cashpool.emergency_fund_current >= cashpool.emergency_fund_target
+    )
+
+    breaches = [s for s in money_snaps if cashpool.daily_spend_cap and (s.expenses or 0) > cashpool.daily_spend_cap]
+    cashpool.cap_breach_count = len(breaches)
+    cashpool.last_cap_breach_at = max((s.timestamp for s in breaches), default=None)
+
+    await db.commit()
+    await db.refresh(cashpool)
+    return cashpool
+
+
+async def get_spending_by_category(db: AsyncSession, user_id: int, days: int = CASHPOOL_WINDOW_DAYS) -> dict:
+    totals: dict = {}
+    for snap in await _recent_snapshots(db, user_id, days):
+        if snap.expenses:
+            category = snap.expense_category or 'uncategorized'
+            totals[category] = round(totals.get(category, 0) + snap.expenses, 2)
+    return totals
+
+
+# ─────────────────────────────────────────────
+#  XP  (awarded server-side for each new daily log)
+# ─────────────────────────────────────────────
+def xp_level(total_points: int) -> tuple:
+    """(level, xp into that level, xp the level spans). Each level needs 50% more XP."""
+    level, floor, span = 1, 0, 100
+    while total_points >= floor + span:
+        floor += span
+        level += 1
+        span = int(span * 1.5)
+    return level, total_points - floor, span
+
+
+async def get_or_create_user_points(db: AsyncSession, user_id: int) -> UserPoints:
+    result = await db.execute(select(UserPoints).where(UserPoints.user_id == user_id))
+    points = result.scalars().first()
+    if not points:
+        points = UserPoints(user_id=user_id, total_points=0, level=1, points_to_next=100)
+        db.add(points)
+        await db.commit()
+        await db.refresh(points)
+    return points
+
+
+def user_points_payload(points: UserPoints) -> dict:
+    level, into, span = xp_level(points.total_points or 0)
+    return {
+        "total_points": points.total_points or 0,
+        "level": level,
+        "xp_into_level": into,
+        "xp_level_span": span,
+        "points_to_next": span - into,
+    }
+
+
+async def award_points_for_log(db: AsyncSession, user_id: int, snapshot: Snapshot) -> None:
+    points, reasons = 10, []
+
+    log_day = snapshot.log_date or snapshot.timestamp.date()
+    result = await db.execute(
+        select(func.coalesce(Snapshot.log_date, func.date(Snapshot.timestamp)))
+        .where(Snapshot.user_id == user_id)
+        .where(func.coalesce(Snapshot.log_date, func.date(Snapshot.timestamp)) >= log_day - timedelta(days=6))
+    )
+    days = {d if isinstance(d, date) else date.fromisoformat(str(d)) for d in result.scalars().all()}
+    days.add(log_day)
+    streak = 0
+    while log_day - timedelta(days=streak) in days:
+        streak += 1
+    if streak >= 7:
+        points += 20
+        reasons.append("7-day streak")
+    elif streak >= 3:
+        points += 10
+        reasons.append(f"{streak}-day streak")
+
+    if snapshot.vektra_score and snapshot.vektra_score >= 80:
+        points += 15
+        reasons.append("score 80+")
+
+    engines_logged = sum(1 for v in (
+        snapshot.mood_score, snapshot.sleep_hours, snapshot.daily_income,
+        snapshot.focus_hours, snapshot.skills_learned,
+    ) if v is not None and v != '')
+    if engines_logged >= 5:
+        points += 10
+        reasons.append("complete log")
+
+    db.add(PointTransaction(
+        user_id=user_id, points=points, reason='daily_log',
+        description="Daily log" + (f" ({', '.join(reasons)})" if reasons else ""),
+    ))
+    user_points = await get_or_create_user_points(db, user_id)
+    user_points.total_points = (user_points.total_points or 0) + points
+    user_points.level, into, span = xp_level(user_points.total_points)
+    user_points.points_to_next = span - into
+    await db.commit()
